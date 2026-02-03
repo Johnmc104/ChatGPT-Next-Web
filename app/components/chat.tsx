@@ -116,6 +116,7 @@ import { prettyObject } from "../utils/format";
 import { ExportMessageModal } from "./exporter";
 import { getClientConfig } from "../config/client";
 import { useAllModels } from "../utils/hooks";
+import { ModelSelector } from "./model-selector";
 import { ClientApi, MultimodalContent } from "../client/api";
 import { createTTSPlayer } from "../utils/audio";
 import { MsEdgeTTS, OUTPUT_FORMAT } from "../utils/ms_edge_tts";
@@ -680,40 +681,25 @@ export function ChatActions(props: {
         />
 
         {showModelSelector && (
-          <Selector
-            defaultSelectedValue={`${currentModel}@${currentProviderName}`}
-            items={models.map((m) => ({
-              title: `${m.displayName}${
-                m?.provider?.providerName
-                  ? " (" + m?.provider?.providerName + ")"
-                  : ""
-              }`,
-              value: `${m.name}@${m?.provider?.providerName}`,
-              group: (m as any).isCustom 
-                ? Locale.Settings.ModelSelector.CustomGroup 
-                : Locale.Settings.ModelSelector.BuiltinGroup,
+          <ModelSelector
+            models={models.map((m) => ({
+              name: m.name,
+              displayName: m.displayName,
+              provider: m.provider,
+              isCustom: (m as any).isCustom,
             }))}
-            onClose={() => setShowModelSelector(false)}
-            onSelection={(s) => {
-              if (s.length === 0) return;
-              const [model, providerName] = getModelProvider(s[0]);
+            selectedModel={currentModel}
+            selectedProvider={currentProviderName}
+            onSelect={(model, providerName) => {
               chatStore.updateTargetSession(session, (session) => {
                 session.mask.modelConfig.model = model as ModelType;
                 session.mask.modelConfig.providerName =
                   providerName as ServiceProvider;
                 session.mask.syncGlobalConfig = false;
               });
-              if (providerName == "ByteDance") {
-                const selectedModel = models.find(
-                  (m) =>
-                    m.name == model &&
-                    m?.provider?.providerName == providerName,
-                );
-                showToast(selectedModel?.displayName ?? "");
-              } else {
-                showToast(model);
-              }
+              showToast(model);
             }}
+            onClose={() => setShowModelSelector(false)}
           />
         )}
 
