@@ -426,39 +426,28 @@ export const DEEPSEEK_SUMMARIZE_MODEL = "deepseek/deepseek-v3.2";
 
 export const KnowledgeCutOffDate: Record<string, string> = {
   default: "2021-09",
-  "gpt-4-turbo": "2023-12",
-  "gpt-4-turbo-2024-04-09": "2023-12",
-  "gpt-4-turbo-preview": "2023-12",
-  "gpt-4.1": "2024-06",
-  "gpt-4.1-2025-04-14": "2024-06",
-  "gpt-4.1-mini": "2024-06",
-  "gpt-4.1-mini-2025-04-14": "2024-06",
-  "gpt-4.1-nano": "2024-06",
-  "gpt-4.1-nano-2025-04-14": "2024-06",
-  "gpt-4.5-preview": "2023-10",
-  "gpt-4.5-preview-2025-02-27": "2023-10",
-  "gpt-4o": "2023-10",
-  "gpt-4o-2024-05-13": "2023-10",
-  "gpt-4o-2024-08-06": "2023-10",
-  "gpt-4o-2024-11-20": "2023-10",
-  "chatgpt-4o-latest": "2023-10",
+  // OpenRouter format models
+  "openai/gpt-4o-mini": "2023-10",
+  "openai/gpt-4.1": "2024-06",
+  "openai/gpt-5.2": "2025-01",
+  "openai/gpt-5.2-chat": "2025-01",
+  "openai/gpt-5.2-codex": "2025-01",
+  "anthropic/claude-opus-4.5": "2025-01",
+  "anthropic/claude-sonnet-4.5": "2025-01",
+  "anthropic/claude-haiku-4.5": "2025-01",
+  "google/gemini-3-pro-preview": "2025-01",
+  "google/gemini-3-flash-preview": "2025-01",
+  "x-ai/grok-4.1-fast": "2025-01",
+  "x-ai/grok-code-fast-1": "2025-01",
+  "x-ai/grok-4-fast": "2025-01",
+  "deepseek/deepseek-v3.2": "2025-01",
+  "z-ai/glm-4.7": "2025-01",
+  "minimax/minimax-m2.1": "2025-01",
+  // Legacy format (for backward compatibility)
   "gpt-4o-mini": "2023-10",
-  "gpt-4o-mini-2024-07-18": "2023-10",
-  "gpt-4-vision-preview": "2023-04",
-  "o1-mini-2024-09-12": "2023-10",
-  "o1-mini": "2023-10",
-  "o1-preview-2024-09-12": "2023-10",
-  "o1-preview": "2023-10",
-  "o1-2024-12-17": "2023-10",
-  o1: "2023-10",
-  "o3-mini-2025-01-31": "2023-10",
-  "o3-mini": "2023-10",
-  // After improvements,
-  // it's now easier to add "KnowledgeCutOffDate" instead of stupid hardcoding it, as was done previously.
-  "gemini-pro": "2023-12",
-  "gemini-pro-vision": "2023-12",
+  "gpt-4.1": "2024-06",
   "deepseek-chat": "2024-07",
-  "deepseek-coder": "2024-07",
+  "gemini-pro": "2023-12",
 };
 
 export const DEFAULT_TTS_ENGINE = "OpenAI-TTS";
@@ -476,27 +465,22 @@ export const DEFAULT_TTS_VOICES = [
 ];
 
 export const VISION_MODEL_REGEXES = [
-  /vision/,
-  /gpt-4o/,
-  /gpt-4\.1/,
-  /claude.*[34]/,
-  /gemini-1\.5/,
-  /gemini-exp/,
-  /gemini-2\.[05]/,
-  /learnlm/,
-  /qwen-vl/,
-  /qwen2-vl/,
-  /gpt-4-turbo(?!.*preview)/,
-  /^dall-e-3$/,
-  /glm-4v/,
-  /vl/i,
-  /o3/,
-  /o4-mini/,
+  /vision/i,
+  /gpt-4o/i,
+  /gpt-4\.1/i,
+  /gpt-5/i,
+  /claude.*[34]/i,
+  /claude-.*opus/i,
+  /claude-.*sonnet/i,
+  /gemini-[23]/i,
   /grok-4/i,
-  /gpt-5/
+  /glm-4/i,
+  /vl/i,
 ];
 
-export const EXCLUDE_VISION_MODEL_REGEXES = [/claude-3-5-haiku-20241022/];
+export const EXCLUDE_VISION_MODEL_REGEXES = [
+  /haiku/i, // Claude Haiku models have limited vision
+];
 
 // Simplified model list - OpenRouter format for custom API endpoints
 // Reference: https://openrouter.ai/models?order=most-popular
