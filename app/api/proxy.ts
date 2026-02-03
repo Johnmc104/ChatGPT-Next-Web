@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getServerSideConfig } from "@/app/config/server";
+import { cloudflareAIGatewayUrl } from "@/app/utils/cloudflare";
 
 export async function handle(
   req: NextRequest,
@@ -17,9 +18,18 @@ export async function handle(
   req.nextUrl.searchParams.delete("provider");
 
   const subpath = params.path.join("/");
-  const fetchUrl = `${req.headers.get(
-    "x-base-url",
-  )}/${subpath}?${req.nextUrl.searchParams.toString()}`;
+  const baseUrl = req.headers.get("x-base-url") || "";
+  const queryString = req.nextUrl.searchParams.toString();
+  
+  // Build the fetch URL, apply cloudflare AI gateway URL transformation
+  let fetchUrl = `${baseUrl}/${subpath}`;
+  if (queryString) {
+    fetchUrl += `?${queryString}`;
+  }
+  fetchUrl = cloudflareAIGatewayUrl(fetchUrl);
+  
+  console.log("[Proxy] fetchUrl:", fetchUrl);
+  
   const skipHeaders = ["connection", "host", "origin", "referer", "cookie"];
   const headers = new Headers(
     Array.from(req.headers.entries()).filter((item) => {
@@ -34,7 +44,6 @@ export async function handle(
     }),
   );
   // if dalle3 use openai api key
-    const baseUrl = req.headers.get("x-base-url");
     if (baseUrl?.includes("api.openai.com")) {
       if (!serverConfig.apiKey) {
         return NextResponse.json(

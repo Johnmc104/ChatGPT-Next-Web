@@ -20,6 +20,11 @@ export function cloudflareAIGatewayUrl(fetchUrl: string) {
       // is anthropic gateway
       return paths.slice(0, 7).concat(paths.slice(-2)).join("/"); // rebuild ai gateway anthropic_url
     }
+    // https://gateway.ai.cloudflare.com/v1/{account_id}/{gateway_id}/openrouter/v1/chat/completions
+    if ("openrouter" == paths[6]) {
+      // is openrouter gateway
+      return paths.slice(0, 7).concat(paths.slice(-3)).join("/"); // rebuild ai gateway openrouter_url
+    }
     // TODO: Amazon Bedrock, Groq, HuggingFace...
   }
   return fetchUrl;

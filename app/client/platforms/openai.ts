@@ -82,7 +82,7 @@ export interface DalleRequestPayload {
 export class ChatGPTApi implements LLMApi {
   private disableListModels = true;
 
-  path(path: string): string {
+  path(path: string, customHeaders?: Record<string, string>): string {
     const accessStore = useAccessStore.getState();
 
     let baseUrl = "";
@@ -117,8 +117,47 @@ export class ChatGPTApi implements LLMApi {
 
     console.log("[Proxy Endpoint] ", baseUrl, path);
 
+    // When using custom config with external URL, use proxy to avoid CORS
+    const isApp = !!getClientConfig()?.isApp;
+    if (
+      !isApp &&
+      accessStore.useCustomConfig &&
+      baseUrl.startsWith("http") &&
+      !baseUrl.startsWith(location.origin)
+    ) {
+      // Use server-side proxy for external URLs
+      const targetUrl = cloudflareAIGatewayUrl([baseUrl, path].join("/"));
+      if (customHeaders) {
+        customHeaders["X-Base-URL"] = baseUrl;
+      }
+      // Return proxy path with the actual path
+      return `/api/proxy/${path}`;
+    }
+
     // try rebuild url, when using cloudflare ai gateway in client
     return cloudflareAIGatewayUrl([baseUrl, path].join("/"));
+  }
+
+  /**
+   * Get the base URL for custom config (used for X-Base-URL header)
+   */
+  getCustomBaseUrl(): string | undefined {
+    const accessStore = useAccessStore.getState();
+    const isApp = !!getClientConfig()?.isApp;
+    
+    if (!isApp && accessStore.useCustomConfig) {
+      let baseUrl = accessStore.openaiUrl;
+      if (baseUrl.endsWith("/")) {
+        baseUrl = baseUrl.slice(0, baseUrl.length - 1);
+      }
+      if (!baseUrl.startsWith("http")) {
+        baseUrl = "https://" + baseUrl;
+      }
+      if (baseUrl.startsWith("http") && !baseUrl.startsWith(location.origin)) {
+        return baseUrl;
+      }
+    }
+    return undefined;
   }
 
   async extractMessage(res: any) {
@@ -160,12 +199,13 @@ export class ChatGPTApi implements LLMApi {
     options.onController?.(controller);
 
     try {
+      const customBaseUrl = this.getCustomBaseUrl();
       const speechPath = this.path(OpenaiPath.SpeechPath);
       const speechPayload = {
         method: "POST",
         body: JSON.stringify(requestPayload),
         signal: controller.signal,
-        headers: getHeaders(),
+        headers: getHeaders(false, customBaseUrl),
       };
 
       // make a fetch request
@@ -303,6 +343,7 @@ export class ChatGPTApi implements LLMApi {
           isDalle3 ? OpenaiPath.ImagePath : OpenaiPath.ChatPath,
         );
       }
+      const customBaseUrl = this.getCustomBaseUrl();
       if (shouldStream) {
         let index = -1;
         const [tools, funcs] = usePluginStore
@@ -314,7 +355,7 @@ export class ChatGPTApi implements LLMApi {
         streamWithThink(
           chatPath,
           requestPayload,
-          getHeaders(),
+          getHeaders(false, customBaseUrl),
           tools as any,
           funcs,
           controller,
@@ -407,7 +448,7 @@ export class ChatGPTApi implements LLMApi {
           method: "POST",
           body: JSON.stringify(requestPayload),
           signal: controller.signal,
-          headers: getHeaders(),
+          headers: getHeaders(false, customBaseUrl),
         };
 
         // make a fetch request
@@ -440,6 +481,7 @@ export class ChatGPTApi implements LLMApi {
     const startDate = formatDate(startOfMonth);
     const endDate = formatDate(new Date(Date.now() + ONE_DAY));
 
+    const customBaseUrl = this.getCustomBaseUrl();
     const [used, subs] = await Promise.all([
       fetch(
         this.path(
@@ -447,12 +489,12 @@ export class ChatGPTApi implements LLMApi {
         ),
         {
           method: "GET",
-          headers: getHeaders(),
+          headers: getHeaders(false, customBaseUrl),
         },
       ),
       fetch(this.path(OpenaiPath.SubsPath), {
         method: "GET",
-        headers: getHeaders(),
+        headers: getHeaders(false, customBaseUrl),
       }),
     ]);
 
@@ -499,10 +541,11 @@ export class ChatGPTApi implements LLMApi {
       return DEFAULT_MODELS.slice();
     }
 
+    const customBaseUrl = this.getCustomBaseUrl();
     const res = await fetch(this.path(OpenaiPath.ListModelPath), {
       method: "GET",
       headers: {
-        ...getHeaders(),
+        ...getHeaders(false, customBaseUrl),
       },
     });
 
