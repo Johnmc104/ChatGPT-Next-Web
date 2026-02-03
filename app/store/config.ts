@@ -195,20 +195,14 @@ export const useAppConfig = createPersistStore(
   }),
   {
     name: StoreKey.Config,
-    version: 4.1,
+    version: 4.2,
 
     merge(persistedState, currentState) {
       const state = persistedState as ChatConfig | undefined;
       if (!state) return { ...currentState };
-      const models = currentState.models.slice();
-      state.models.forEach((pModel) => {
-        const idx = models.findIndex(
-          (v) => v.name === pModel.name && v.provider === pModel.provider,
-        );
-        if (idx !== -1) models[idx] = pModel;
-        else models.push(pModel);
-      });
-      return { ...currentState, ...state, models: models };
+      // Use current models directly, ignore persisted models
+      // to ensure simplified model list takes effect
+      return { ...currentState, ...state, models: currentState.models };
     },
 
     migrate(persistedState, version) {
@@ -253,6 +247,11 @@ export const useAppConfig = createPersistStore(
           DEFAULT_CONFIG.modelConfig.compressModel;
         state.modelConfig.compressProviderName =
           DEFAULT_CONFIG.modelConfig.compressProviderName;
+      }
+
+      if (version < 4.2) {
+        // Reset models to use new simplified model list
+        state.models = DEFAULT_MODELS as any as LLMModel[];
       }
 
       return state as any;

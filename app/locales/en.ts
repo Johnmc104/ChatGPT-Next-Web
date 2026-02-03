@@ -557,6 +557,10 @@ const en: LocaleType = {
     },
 
     Model: "Model",
+    ModelSelector: {
+      CustomGroup: "Custom Models",
+      BuiltinGroup: "Built-in Models",
+    },
     CompressModel: {
       Title: "Summary Model",
       SubTitle: "Model used to compress history and generate title",

@@ -689,6 +689,9 @@ export function ChatActions(props: {
                   : ""
               }`,
               value: `${m.name}@${m?.provider?.providerName}`,
+              group: (m as any).isCustom 
+                ? Locale.Settings.ModelSelector.CustomGroup 
+                : Locale.Settings.ModelSelector.BuiltinGroup,
             }))}
             onClose={() => setShowModelSelector(false)}
             onSelection={(s) => {

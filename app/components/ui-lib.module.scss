@@ -314,6 +314,18 @@
     opacity: 0.6;
   }
 
+  .selector-group-header {
+    padding: 8px 16px;
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--primary);
+    background-color: var(--second);
+    border-bottom: 1px solid var(--border-in-light);
+    position: sticky;
+    top: 0;
+    z-index: 1;
+  }
+
   &-content {
     min-width: 300px;
     .list {
