@@ -241,7 +241,7 @@ export function validString(x: string): boolean {
   return x?.length > 0;
 }
 
-export function getHeaders(ignoreHeaders: boolean = false) {
+export function getHeaders(ignoreHeaders: boolean = false, customBaseUrl?: string) {
   const accessStore = useAccessStore.getState();
   const chatStore = useChatStore.getState();
   let headers: Record<string, string> = {};
@@ -250,6 +250,11 @@ export function getHeaders(ignoreHeaders: boolean = false) {
       "Content-Type": "application/json",
       Accept: "application/json",
     };
+  }
+
+  // Add X-Base-URL header for proxy when using custom config
+  if (customBaseUrl) {
+    headers["X-Base-URL"] = customBaseUrl;
   }
 
   const clientConfig = getClientConfig();
