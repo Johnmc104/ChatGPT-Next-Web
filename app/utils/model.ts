@@ -61,6 +61,7 @@ export function collectModelTable(
       sorted: number;
       provider?: LLMModel["provider"]; // Marked as optional
       isDefault?: boolean;
+      isCustom?: boolean; // Custom model added by user
     }
   > = {};
 
@@ -70,6 +71,7 @@ export function collectModelTable(
     modelTable[`${m.name}@${m?.provider?.id}`] = {
       ...m,
       displayName: m.name, // 'provider' is copied over if it exists
+      isCustom: false,
     };
   });
 
@@ -127,6 +129,7 @@ export function collectModelTable(
             available,
             provider, // Use optional chaining
             sorted: CustomSeq.next(`${customModelName}@${provider?.id}`),
+            isCustom: true, // Mark as user custom model
           };
         }
       }

@@ -552,6 +552,10 @@ const cn = {
     },
 
     Model: "模型 (model)",
+    ModelSelector: {
+      CustomGroup: "自定义模型",
+      BuiltinGroup: "内置模型",
+    },
     CompressModel: {
       Title: "对话摘要模型",
       SubTitle: "用于压缩历史记录、生成对话标题的模型",

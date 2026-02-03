@@ -480,6 +480,7 @@ export function Selector<T>(props: {
     subTitle?: string;
     value: T;
     disable?: boolean;
+    group?: string; // Optional group name for categorization
   }>;
   defaultSelectedValue?: T[] | T;
   onSelection?: (selection: T[]) => void;
@@ -509,44 +510,105 @@ export function Selector<T>(props: {
     }
   };
 
+  // Group items by their group property
+  const groupedItems = props.items.reduce((acc, item) => {
+    const group = item.group || "";
+    if (!acc[group]) {
+      acc[group] = [];
+    }
+    acc[group].push(item);
+    return acc;
+  }, {} as Record<string, typeof props.items>);
+
+  const groups = Object.keys(groupedItems);
+  const hasGroups = groups.length > 1 || (groups.length === 1 && groups[0] !== "");
+
   return (
     <div className={styles["selector"]} onClick={() => props.onClose?.()}>
       <div className={styles["selector-content"]}>
         <List>
-          {props.items.map((item, i) => {
-            const selected = selectedValues.includes(item.value);
-            return (
-              <ListItem
-                className={clsx(styles["selector-item"], {
-                  [styles["selector-item-disabled"]]: item.disable,
-                })}
-                key={i}
-                title={item.title}
-                subTitle={item.subTitle}
-                icon={<Avatar model={item.value as string} />}
-                onClick={(e) => {
-                  if (item.disable) {
-                    e.stopPropagation();
-                  } else {
-                    handleSelection(e, item.value);
-                  }
-                }}
-              >
-                {selected ? (
-                  <div
-                    style={{
-                      height: 10,
-                      width: 10,
-                      backgroundColor: "var(--primary)",
-                      borderRadius: 10,
-                    }}
-                  ></div>
-                ) : (
-                  <></>
+          {hasGroups ? (
+            // Render with group headers
+            groups.map((group) => (
+              <div key={group}>
+                {group && (
+                  <div className={styles["selector-group-header"]}>
+                    {group}
+                  </div>
                 )}
-              </ListItem>
-            );
-          })}
+                {groupedItems[group].map((item, i) => {
+                  const selected = selectedValues.includes(item.value);
+                  return (
+                    <ListItem
+                      className={clsx(styles["selector-item"], {
+                        [styles["selector-item-disabled"]]: item.disable,
+                      })}
+                      key={`${group}-${i}`}
+                      title={item.title}
+                      subTitle={item.subTitle}
+                      icon={<Avatar model={item.value as string} />}
+                      onClick={(e) => {
+                        if (item.disable) {
+                          e.stopPropagation();
+                        } else {
+                          handleSelection(e, item.value);
+                        }
+                      }}
+                    >
+                      {selected ? (
+                        <div
+                          style={{
+                            height: 10,
+                            width: 10,
+                            backgroundColor: "var(--primary)",
+                            borderRadius: 10,
+                          }}
+                        ></div>
+                      ) : (
+                        <></>
+                      )}
+                    </ListItem>
+                  );
+                })}
+              </div>
+            ))
+          ) : (
+            // Render without groups (original behavior)
+            props.items.map((item, i) => {
+              const selected = selectedValues.includes(item.value);
+              return (
+                <ListItem
+                  className={clsx(styles["selector-item"], {
+                    [styles["selector-item-disabled"]]: item.disable,
+                  })}
+                  key={i}
+                  title={item.title}
+                  subTitle={item.subTitle}
+                  icon={<Avatar model={item.value as string} />}
+                  onClick={(e) => {
+                    if (item.disable) {
+                      e.stopPropagation();
+                    } else {
+                      handleSelection(e, item.value);
+                    }
+                  }}
+                >
+                  {selected ? (
+                    <div
+                      style={{
+                        height: 10,
+                        width: 10,
+                        backgroundColor: "var(--primary)",
+                        borderRadius: 10,
+                      }}
+                    ></div>
+                  ) : (
+                    <></>
+                  )}
+                </ListItem>
+              );
+            })
+          )}
         </List>
       </div>
     </div>
