@@ -59,17 +59,29 @@ export async function handle(
     }),
   );
 
-  // Set Authorization header:
-  // 1. If auth() returned a systemApiKey (user used access code), use that
-  // 2. Otherwise, use the original Authorization header from the request (user's own API key)
-  if (authResult.systemApiKey) {
+  // Set Authorization header for the upstream API call
+  // Priority:
+  // 1. User's own API key (from X-User-Api-Key header) - user wants to use their key
+  // 2. System API key (from auth result) - server provides the key
+  // 3. Original Authorization header (backward compatibility)
+  const userApiKey = req.headers.get("X-User-Api-Key");
+
+  if (userApiKey) {
+    // User provided their own API key, use it for the upstream call
+    headers.set("Authorization", `Bearer ${userApiKey}`);
+    console.log(
+      "[Proxy] Authorization header set with user's own API key (X-User-Api-Key)",
+    );
+  } else if (authResult.systemApiKey) {
+    // User authenticated with access code, use server's API key
     headers.set("Authorization", `Bearer ${authResult.systemApiKey}`);
     console.log("[Proxy] Authorization header set with system API key");
   } else {
+    // Fallback: try to use original Authorization header (if it's an API key, not access code)
     const authValue = req.headers.get("Authorization") ?? "";
-    if (authValue) {
+    if (authValue && !authValue.includes("nk-")) {
       headers.set("Authorization", authValue);
-      console.log("[Proxy] Authorization header set with user API key");
+      console.log("[Proxy] Authorization header set with original auth header");
     }
   }
 
