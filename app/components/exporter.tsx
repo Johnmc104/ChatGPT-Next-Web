@@ -34,11 +34,7 @@ import NextImage from "next/image";
 import { toBlob, toPng } from "html-to-image";
 
 import { prettyObject } from "../utils/format";
-import {
-  DEFAULT_MODELS,
-  EXPORT_MESSAGE_CLASS_NAME,
-  ServiceProvider,
-} from "../constant";
+import { EXPORT_MESSAGE_CLASS_NAME, ServiceProvider } from "../constant";
 import { getClientConfig } from "../config/client";
 import { type ClientApi, getClientApi } from "../client/api";
 import { getMessageTextContent } from "../utils";
@@ -317,25 +313,9 @@ export function PreviewActions(props: {
   const onRenderMsgs = (msgs: ChatMessage[]) => {
     setShouldExport(false);
 
-    // Always use DEFAULT_MODELS providerName to ensure OpenAI-compatible client is used
-    // when custom BASE_URL is configured (e.g., OpenRouter via Cloudflare)
-    const getEffectiveProviderName = (
-      modelName: string,
-      configuredProviderName: string,
-    ): string => {
-      const defaultModel = DEFAULT_MODELS.find((m) => m.name === modelName);
-      if (defaultModel) {
-        return defaultModel.provider.providerName;
-      }
-      return configuredProviderName;
-    };
-
-    const effectiveProviderName = getEffectiveProviderName(
-      config.modelConfig.model,
-      config.modelConfig.providerName as string,
-    );
+    // getClientApi internally handles BASE_URL routing
     const api: ClientApi = getClientApi(
-      effectiveProviderName as ServiceProvider,
+      config.modelConfig.providerName as ServiceProvider,
     );
 
     api

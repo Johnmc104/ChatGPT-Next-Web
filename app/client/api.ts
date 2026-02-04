@@ -362,6 +362,13 @@ export function getHeaders(
     isAzure || isAnthropic || isGoogle,
   );
 
+  console.log("[getHeaders] apiKey:", apiKey ? "***" : "empty");
+  console.log(
+    "[getHeaders] accessCode:",
+    accessStore.accessCode ? "***" : "empty",
+  );
+  console.log("[getHeaders] bearerToken:", bearerToken ? "has value" : "empty");
+
   if (bearerToken) {
     headers[authHeader] = bearerToken;
   } else if (validString(accessStore.accessCode)) {
@@ -370,12 +377,35 @@ export function getHeaders(
     headers["Authorization"] = getBearerToken(
       ACCESS_CODE_PREFIX + accessStore.accessCode,
     );
+    console.log("[getHeaders] set Authorization with access code");
+  } else {
+    console.log("[getHeaders] WARNING: no apiKey and no accessCode!");
   }
 
   return headers;
 }
 
+/**
+ * Check if custom BASE_URL is configured (e.g., OpenRouter, Cloudflare AI Gateway)
+ * When custom BASE_URL is set, all models should use OpenAI-compatible API
+ */
+export function hasCustomBaseUrl(): boolean {
+  const accessStore = useAccessStore.getState();
+  // Check if user enabled custom config with a custom URL
+  if (accessStore.useCustomConfig && accessStore.openaiUrl) {
+    return true;
+  }
+  return false;
+}
+
 export function getClientApi(provider: ServiceProvider): ClientApi {
+  // When custom BASE_URL is configured, always use OpenAI-compatible client
+  // This allows routing all models through OpenRouter/custom endpoints
+  if (hasCustomBaseUrl()) {
+    return new ClientApi(ModelProvider.GPT);
+  }
+
+  // Default behavior: use provider-specific clients
   switch (provider) {
     case ServiceProvider.Google:
       return new ClientApi(ModelProvider.GeminiPro);
