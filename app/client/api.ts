@@ -369,28 +369,43 @@ export function getHeaders(
 
   const authHeader = getAuthHeader();
 
-  const bearerToken = getBearerToken(
-    apiKey,
-    isAzure || isAnthropic || isGoogle,
-  );
-
   console.log("[getHeaders] apiKey:", apiKey ? "***" : "empty");
   console.log(
     "[getHeaders] accessCode:",
     accessStore.accessCode ? "***" : "empty",
   );
-  console.log("[getHeaders] bearerToken:", bearerToken ? "has value" : "empty");
 
-  if (bearerToken) {
-    headers[authHeader] = bearerToken;
-  } else if (validString(accessStore.accessCode)) {
-    // Always send access code if available, regardless of access control setting
-    // The server will validate it
+  // Strategy: Send both access code AND user's API key when both are available
+  // - Access code goes in Authorization header (for server-side validation)
+  // - User's API key goes in X-User-Api-Key header (for actual API calls)
+
+  // 1. Always send access code if available (for authentication)
+  if (validString(accessStore.accessCode)) {
     headers["Authorization"] = getBearerToken(
       ACCESS_CODE_PREFIX + accessStore.accessCode,
     );
     console.log("[getHeaders] set Authorization with access code");
-  } else {
+  }
+
+  // 2. Send user's API key in custom header if available
+  if (validString(apiKey)) {
+    headers["X-User-Api-Key"] = apiKey;
+    console.log("[getHeaders] set X-User-Api-Key with user's API key");
+  }
+
+  // 3. If no access code but has API key, also set Authorization (backward compatibility)
+  if (!validString(accessStore.accessCode) && validString(apiKey)) {
+    const bearerToken = getBearerToken(
+      apiKey,
+      isAzure || isAnthropic || isGoogle,
+    );
+    headers[authHeader] = bearerToken;
+    console.log(
+      "[getHeaders] set Authorization with user API key (no access code)",
+    );
+  }
+
+  if (!validString(accessStore.accessCode) && !validString(apiKey)) {
     console.log("[getHeaders] WARNING: no apiKey and no accessCode!");
   }
 
