@@ -265,7 +265,9 @@ export function getHeaders(
   // Check if custom BASE_URL is configured (e.g., OpenRouter, Cloudflare AI Gateway)
   // When custom URL is set, always use openaiApiKey regardless of provider
   const useCustomUrl =
-    customBaseUrl || (accessStore.useCustomConfig && accessStore.openaiUrl);
+    customBaseUrl ||
+    accessStore.hasCustomBaseUrl ||
+    (accessStore.useCustomConfig && accessStore.openaiUrl);
 
   function getConfig() {
     const modelConfig = chatStore.currentSession().mask.modelConfig;
@@ -401,10 +403,30 @@ export function getHeaders(
  */
 export function hasCustomBaseUrl(): boolean {
   const accessStore = useAccessStore.getState();
-  // Check if user enabled custom config with a custom URL
-  if (accessStore.useCustomConfig && accessStore.openaiUrl) {
+  console.log("[hasCustomBaseUrl] checking...");
+  console.log(
+    "[hasCustomBaseUrl] accessStore.hasCustomBaseUrl:",
+    accessStore.hasCustomBaseUrl,
+  );
+  console.log(
+    "[hasCustomBaseUrl] accessStore.useCustomConfig:",
+    accessStore.useCustomConfig,
+  );
+  console.log(
+    "[hasCustomBaseUrl] accessStore.openaiUrl:",
+    accessStore.openaiUrl,
+  );
+  // Check if server has custom BASE_URL configured (via environment variable)
+  if (accessStore.hasCustomBaseUrl) {
+    console.log("[hasCustomBaseUrl] returning true (server config)");
     return true;
   }
+  // Check if user enabled custom config with a custom URL (via settings page)
+  if (accessStore.useCustomConfig && accessStore.openaiUrl) {
+    console.log("[hasCustomBaseUrl] returning true (user config)");
+    return true;
+  }
+  console.log("[hasCustomBaseUrl] returning false");
   return false;
 }
 

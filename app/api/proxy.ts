@@ -59,12 +59,18 @@ export async function handle(
     }),
   );
 
-  // The auth() function already sets the Authorization header with the server's API key
-  // if the user provided a valid access code. So we just use whatever is in the request headers now.
-  const authValue = req.headers.get("Authorization") ?? "";
-  if (authValue) {
-    headers.set("Authorization", authValue);
-    console.log("[Proxy] Authorization header set");
+  // Set Authorization header:
+  // 1. If auth() returned a systemApiKey (user used access code), use that
+  // 2. Otherwise, use the original Authorization header from the request (user's own API key)
+  if (authResult.systemApiKey) {
+    headers.set("Authorization", `Bearer ${authResult.systemApiKey}`);
+    console.log("[Proxy] Authorization header set with system API key");
+  } else {
+    const authValue = req.headers.get("Authorization") ?? "";
+    if (authValue) {
+      headers.set("Authorization", authValue);
+      console.log("[Proxy] Authorization header set with user API key");
+    }
   }
 
   const controller = new AbortController();
