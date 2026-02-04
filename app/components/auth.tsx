@@ -1,6 +1,6 @@
 import styles from "./auth.module.scss";
 import { IconButton } from "./button";
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Path } from "../constant";
 import { useAccessStore } from "../store";
@@ -14,7 +14,43 @@ import clsx from "clsx";
 export function AuthPage() {
   const navigate = useNavigate();
   const accessStore = useAccessStore();
-  const goChat = () => navigate(Path.Chat);
+  const [error, setError] = useState("");
+
+  const goChat = () => {
+    // Clear any previous error
+    setError("");
+
+    // Check if user has provided their own API key
+    const hasUserKey =
+      accessStore.isValidOpenAI() ||
+      accessStore.isValidGoogle() ||
+      accessStore.isValidAnthropic();
+
+    // Check if server has API key and user provided access code (if needed)
+    const hasServerKey = accessStore.hasServerApiKey;
+    const needCode = accessStore.needCode;
+    const hasAccessCode = accessStore.accessCode.trim().length > 0;
+
+    // Determine if we can proceed
+    if (hasUserKey) {
+      // User has their own key, can proceed
+      navigate(Path.Chat);
+    } else if (!needCode && hasServerKey) {
+      // No access control and server has key
+      navigate(Path.Chat);
+    } else if (needCode && hasAccessCode && hasServerKey) {
+      // Access code provided and server has key
+      navigate(Path.Chat);
+    } else if (needCode && !hasAccessCode) {
+      setError("请输入访问码 / Please enter access code");
+    } else if (!hasServerKey && !hasUserKey) {
+      setError(
+        "服务器未配置 API Key，请输入您自己的 API Key / Server API key not configured, please enter your own API key",
+      );
+    } else {
+      navigate(Path.Chat);
+    }
+  };
 
   useEffect(() => {
     if (getClientConfig()?.isApp) {
@@ -84,6 +120,12 @@ export function AuthPage() {
           />
         </>
       ) : null}
+
+      {error && (
+        <div style={{ color: "red", marginBottom: "2vh", textAlign: "center" }}>
+          {error}
+        </div>
+      )}
 
       <div className={styles["auth-actions"]}>
         <IconButton

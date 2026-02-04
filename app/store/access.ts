@@ -148,6 +148,8 @@ const DEFAULT_ACCESS_STATE = {
   customModels: "",
   defaultModel: "",
   visionModels: "",
+  hasServerApiKey: false,
+  hasCustomBaseUrl: false,
 
   // tts config
   edgeTTSVoiceName: "zh-CN-YunxiNeural",
@@ -229,8 +231,10 @@ export const useAccessStore = createPersistStore(
     isAuthorized() {
       this.fetch();
 
-      // has token or has code or disabled access control
-      return (
+      const state = get();
+
+      // User has their own API key - always authorized
+      if (
         this.isValidOpenAI() ||
         this.isValidAzure() ||
         this.isValidGoogle() ||
@@ -244,10 +248,26 @@ export const useAccessStore = createPersistStore(
         this.isValidDeepSeek() ||
         this.isValidXAI() ||
         this.isValidChatGLM() ||
-        this.isValidSiliconFlow() ||
-        !this.enabledAccessControl() ||
-        (this.enabledAccessControl() && ensure(get(), ["accessCode"]))
-      );
+        this.isValidSiliconFlow()
+      ) {
+        return true;
+      }
+
+      // No access control required and server has API key configured
+      if (!this.enabledAccessControl() && state.hasServerApiKey) {
+        return true;
+      }
+
+      // Access control enabled: need valid access code and server API key
+      if (
+        this.enabledAccessControl() &&
+        ensure(get(), ["accessCode"]) &&
+        state.hasServerApiKey
+      ) {
+        return true;
+      }
+
+      return false;
     },
     fetch() {
       if (fetchState > 0 || getClientConfig()?.buildMode === "export") return;

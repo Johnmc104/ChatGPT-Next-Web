@@ -40,8 +40,7 @@ export async function requestOpenai(req: NextRequest) {
     baseUrl = baseUrl.slice(0, -1);
   }
 
-  // Check if BASE_URL already contains the API endpoint path
-  // If so, don't append the path again
+  // Known API endpoint paths
   const apiEndpoints = [
     "/v1/chat/completions",
     "/v1/completions",
@@ -49,15 +48,35 @@ export async function requestOpenai(req: NextRequest) {
     "/v1/images/generations",
     "/v1/audio/speech",
     "/v1/audio/transcriptions",
+    "/v1/models",
     "/chat/completions",
   ];
-  const baseUrlContainsEndpoint = apiEndpoints.some((endpoint) =>
-    baseUrl.toLowerCase().endsWith(endpoint),
-  );
+
+  // Check if BASE_URL already contains an API endpoint path
+  // If so, we need to handle path replacement intelligently
+  let baseUrlEndpoint = "";
+  for (const endpoint of apiEndpoints) {
+    if (baseUrl.toLowerCase().endsWith(endpoint)) {
+      baseUrlEndpoint = endpoint;
+      break;
+    }
+  }
+
+  // Extract the base URL without the endpoint (if present)
+  const baseUrlWithoutEndpoint = baseUrlEndpoint
+    ? baseUrl.slice(0, -baseUrlEndpoint.length)
+    : baseUrl;
+
+  // Determine if the current request path matches the endpoint in BASE_URL
+  const requestPath = "/" + path;
+  const requestMatchesBaseEndpoint =
+    baseUrlEndpoint && requestPath.toLowerCase() === baseUrlEndpoint;
 
   console.log("[Proxy] ", path);
   console.log("[Base Url]", baseUrl);
-  console.log("[Base URL contains endpoint]", baseUrlContainsEndpoint);
+  console.log("[Base URL endpoint]", baseUrlEndpoint || "none");
+  console.log("[Request path]", requestPath);
+  console.log("[Request matches base endpoint]", requestMatchesBaseEndpoint);
 
   const timeoutId = setTimeout(
     () => {
@@ -104,10 +123,25 @@ export async function requestOpenai(req: NextRequest) {
     }
   }
 
-  // If BASE_URL already contains the endpoint, use it directly; otherwise append path
-  const fetchUrl = baseUrlContainsEndpoint
-    ? baseUrl
-    : cloudflareAIGatewayUrl(`${baseUrl}/${path}`);
+  // Determine the final URL:
+  // 1. If BASE_URL has an endpoint and request matches it -> use BASE_URL directly
+  // 2. If BASE_URL has an endpoint but request is different -> replace endpoint
+  // 3. If BASE_URL has no endpoint -> append path as usual
+  let fetchUrl: string;
+  if (baseUrlEndpoint) {
+    if (requestMatchesBaseEndpoint) {
+      // Request matches the endpoint in BASE_URL, use it directly
+      fetchUrl = baseUrl;
+    } else {
+      // Request is for a different endpoint, replace the endpoint part
+      fetchUrl = cloudflareAIGatewayUrl(
+        `${baseUrlWithoutEndpoint}${requestPath}`,
+      );
+    }
+  } else {
+    // BASE_URL doesn't have an endpoint, append path normally
+    fetchUrl = cloudflareAIGatewayUrl(`${baseUrl}/${path}`);
+  }
   console.log("fetchUrl", fetchUrl);
   const fetchOptions: RequestInit = {
     headers: {
