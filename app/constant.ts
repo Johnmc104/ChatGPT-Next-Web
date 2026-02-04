@@ -524,32 +524,88 @@ const getProviderFromModelName = (
 ): {
   id: string;
   providerName: string;
+  providerType: string;
   sorted: number;
 } => {
   if (name.startsWith("anthropic/")) {
-    return { id: "anthropic", providerName: "Anthropic", sorted: 1 };
+    return {
+      id: "anthropic",
+      providerName: "Anthropic",
+      providerType: "anthropic",
+      sorted: 1,
+    };
   } else if (name.startsWith("openai/")) {
-    return { id: "openai", providerName: "OpenAI", sorted: 2 };
+    return {
+      id: "openai",
+      providerName: "OpenAI",
+      providerType: "openai",
+      sorted: 2,
+    };
   } else if (name.startsWith("google/")) {
-    return { id: "google", providerName: "Google", sorted: 3 };
+    return {
+      id: "google",
+      providerName: "Google",
+      providerType: "google",
+      sorted: 3,
+    };
   } else if (name.startsWith("x-ai/")) {
-    return { id: "xai", providerName: "XAI", sorted: 4 };
+    return { id: "xai", providerName: "XAI", providerType: "xai", sorted: 4 };
   } else if (name.startsWith("deepseek/")) {
-    return { id: "deepseek", providerName: "DeepSeek", sorted: 5 };
+    return {
+      id: "deepseek",
+      providerName: "DeepSeek",
+      providerType: "deepseek",
+      sorted: 5,
+    };
   } else if (name.startsWith("z-ai/") || name.startsWith("zhipu/")) {
-    return { id: "chatglm", providerName: "ChatGLM", sorted: 6 };
+    return {
+      id: "chatglm",
+      providerName: "ChatGLM",
+      providerType: "chatglm",
+      sorted: 6,
+    };
   } else if (name.startsWith("minimax/")) {
-    return { id: "minimax", providerName: "MiniMax", sorted: 7 };
+    return {
+      id: "minimax",
+      providerName: "MiniMax",
+      providerType: "minimax",
+      sorted: 7,
+    };
   } else if (name.startsWith("qwen/") || name.startsWith("alibaba/")) {
-    return { id: "alibaba", providerName: "Alibaba", sorted: 8 };
+    return {
+      id: "alibaba",
+      providerName: "Alibaba",
+      providerType: "alibaba",
+      sorted: 8,
+    };
   } else if (name.startsWith("moonshot/")) {
-    return { id: "moonshot", providerName: "Moonshot", sorted: 9 };
+    return {
+      id: "moonshot",
+      providerName: "Moonshot",
+      providerType: "moonshot",
+      sorted: 9,
+    };
   } else if (name.startsWith("meta-llama/") || name.startsWith("llama/")) {
-    return { id: "meta", providerName: "Meta", sorted: 10 };
+    return {
+      id: "meta",
+      providerName: "Meta",
+      providerType: "meta",
+      sorted: 10,
+    };
   } else if (name.startsWith("mistral/")) {
-    return { id: "mistral", providerName: "Mistral", sorted: 11 };
+    return {
+      id: "mistral",
+      providerName: "Mistral",
+      providerType: "mistral",
+      sorted: 11,
+    };
   }
-  return { id: "openai", providerName: "OpenAI", sorted: 99 };
+  return {
+    id: "openai",
+    providerName: "OpenAI",
+    providerType: "openai",
+    sorted: 99,
+  };
 };
 
 let seq = 1000; // 内置的模型序号生成器从1000开始
