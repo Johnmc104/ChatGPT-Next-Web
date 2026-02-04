@@ -69,19 +69,14 @@ export async function handle(
   if (userApiKey) {
     // User provided their own API key, use it for the upstream call
     headers.set("Authorization", `Bearer ${userApiKey}`);
-    console.log(
-      "[Proxy] Authorization header set with user's own API key (X-User-Api-Key)",
-    );
   } else if (authResult.systemApiKey) {
     // User authenticated with access code, use server's API key
     headers.set("Authorization", `Bearer ${authResult.systemApiKey}`);
-    console.log("[Proxy] Authorization header set with system API key");
   } else {
     // Fallback: try to use original Authorization header (if it's an API key, not access code)
     const authValue = req.headers.get("Authorization") ?? "";
     if (authValue && !authValue.includes("nk-")) {
       headers.set("Authorization", authValue);
-      console.log("[Proxy] Authorization header set with original auth header");
     }
   }
 

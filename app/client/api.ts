@@ -369,12 +369,6 @@ export function getHeaders(
 
   const authHeader = getAuthHeader();
 
-  console.log("[getHeaders] apiKey:", apiKey ? "***" : "empty");
-  console.log(
-    "[getHeaders] accessCode:",
-    accessStore.accessCode ? "***" : "empty",
-  );
-
   // Strategy: Send both access code AND user's API key when both are available
   // - Access code goes in Authorization header (for server-side validation)
   // - User's API key goes in X-User-Api-Key header (for actual API calls)
@@ -384,13 +378,11 @@ export function getHeaders(
     headers["Authorization"] = getBearerToken(
       ACCESS_CODE_PREFIX + accessStore.accessCode,
     );
-    console.log("[getHeaders] set Authorization with access code");
   }
 
   // 2. Send user's API key in custom header if available
   if (validString(apiKey)) {
     headers["X-User-Api-Key"] = apiKey;
-    console.log("[getHeaders] set X-User-Api-Key with user's API key");
   }
 
   // 3. If no access code but has API key, also set Authorization (backward compatibility)
@@ -400,13 +392,6 @@ export function getHeaders(
       isAzure || isAnthropic || isGoogle,
     );
     headers[authHeader] = bearerToken;
-    console.log(
-      "[getHeaders] set Authorization with user API key (no access code)",
-    );
-  }
-
-  if (!validString(accessStore.accessCode) && !validString(apiKey)) {
-    console.log("[getHeaders] WARNING: no apiKey and no accessCode!");
   }
 
   return headers;
@@ -418,30 +403,14 @@ export function getHeaders(
  */
 export function hasCustomBaseUrl(): boolean {
   const accessStore = useAccessStore.getState();
-  console.log("[hasCustomBaseUrl] checking...");
-  console.log(
-    "[hasCustomBaseUrl] accessStore.hasCustomBaseUrl:",
-    accessStore.hasCustomBaseUrl,
-  );
-  console.log(
-    "[hasCustomBaseUrl] accessStore.useCustomConfig:",
-    accessStore.useCustomConfig,
-  );
-  console.log(
-    "[hasCustomBaseUrl] accessStore.openaiUrl:",
-    accessStore.openaiUrl,
-  );
   // Check if server has custom BASE_URL configured (via environment variable)
   if (accessStore.hasCustomBaseUrl) {
-    console.log("[hasCustomBaseUrl] returning true (server config)");
     return true;
   }
   // Check if user enabled custom config with a custom URL (via settings page)
   if (accessStore.useCustomConfig && accessStore.openaiUrl) {
-    console.log("[hasCustomBaseUrl] returning true (user config)");
     return true;
   }
-  console.log("[hasCustomBaseUrl] returning false");
   return false;
 }
 
