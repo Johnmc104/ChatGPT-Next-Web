@@ -14,9 +14,11 @@ export function ModelConfigList(props: {
   updateConfig: (updater: (config: ModelConfig) => void) => void;
 }) {
   const allModels = useAllModels();
+  // Use providerType for display grouping (e.g., "anthropic", "openai")
+  // providerName is used for API client routing
   const groupModels = groupBy(
     allModels.filter((v) => v.available),
-    "provider.providerName",
+    "provider.providerType",
   );
   const value = `${props.modelConfig.model}@${props.modelConfig?.providerName}`;
   const compressModelValue = `${props.modelConfig.compressModel}@${props.modelConfig?.compressProviderName}`;
@@ -263,7 +265,7 @@ export function ModelConfigList(props: {
             .filter((v) => v.available)
             .map((v, i) => (
               <option value={`${v.name}@${v.provider?.providerName}`} key={i}>
-                {v.displayName}({v.provider?.providerName})
+                {v.displayName}({v.provider?.providerType})
               </option>
             ))}
         </Select>
