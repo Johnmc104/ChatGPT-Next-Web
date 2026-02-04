@@ -8,7 +8,7 @@ console.log("[Next] build with chunk: ", !disableChunk);
 
 /** @type {import('next').NextConfig} */
 const nextConfig = {
-  webpack(config) {
+  webpack(config, { isServer }) {
     config.module.rules.push({
       test: /\.svg$/,
       use: ["@svgr/webpack"],
@@ -23,6 +23,16 @@ const nextConfig = {
     config.resolve.fallback = {
       child_process: false,
     };
+
+    // Ignore optional WebSocket native modules (used by rt-client)
+    // These are not needed in browser environment
+    config.externals = config.externals || [];
+    if (!isServer) {
+      config.externals.push({
+        bufferutil: "bufferutil",
+        "utf-8-validate": "utf-8-validate",
+      });
+    }
 
     return config;
   },
