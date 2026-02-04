@@ -34,7 +34,11 @@ import NextImage from "next/image";
 import { toBlob, toPng } from "html-to-image";
 
 import { prettyObject } from "../utils/format";
-import { EXPORT_MESSAGE_CLASS_NAME } from "../constant";
+import {
+  DEFAULT_MODELS,
+  EXPORT_MESSAGE_CLASS_NAME,
+  ServiceProvider,
+} from "../constant";
 import { getClientConfig } from "../config/client";
 import { type ClientApi, getClientApi } from "../client/api";
 import { getMessageTextContent } from "../utils";
@@ -313,7 +317,26 @@ export function PreviewActions(props: {
   const onRenderMsgs = (msgs: ChatMessage[]) => {
     setShouldExport(false);
 
-    const api: ClientApi = getClientApi(config.modelConfig.providerName);
+    // Always use DEFAULT_MODELS providerName to ensure OpenAI-compatible client is used
+    // when custom BASE_URL is configured (e.g., OpenRouter via Cloudflare)
+    const getEffectiveProviderName = (
+      modelName: string,
+      configuredProviderName: string,
+    ): string => {
+      const defaultModel = DEFAULT_MODELS.find((m) => m.name === modelName);
+      if (defaultModel) {
+        return defaultModel.provider.providerName;
+      }
+      return configuredProviderName;
+    };
+
+    const effectiveProviderName = getEffectiveProviderName(
+      config.modelConfig.model,
+      config.modelConfig.providerName as string,
+    );
+    const api: ClientApi = getClientApi(
+      effectiveProviderName as ServiceProvider,
+    );
 
     api
       .share(msgs)
