@@ -108,8 +108,13 @@ export async function requestOpenai(req: NextRequest) {
     signal: controller.signal,
   };
 
+  // Check if using custom BASE_URL (e.g., OpenRouter, other compatible APIs)
+  const isUsingCustomBaseUrl =
+    serverConfig.baseUrl && serverConfig.baseUrl !== OPENAI_BASE_URL;
+
   // #1815 try to refuse gpt4 request
-  if (serverConfig.customModels && req.body) {
+  // Skip model filtering when using custom BASE_URL (OpenRouter compatible APIs)
+  if (serverConfig.customModels && req.body && !isUsingCustomBaseUrl) {
     try {
       const clonedBody = await req.text();
       fetchOptions.body = clonedBody;
