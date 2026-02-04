@@ -24,7 +24,16 @@ function parseApiKey(bearToken: string) {
   };
 }
 
-export function auth(req: NextRequest, modelProvider: ModelProvider) {
+export interface AuthResult {
+  error: boolean;
+  msg?: string;
+  systemApiKey?: string;
+}
+
+export function auth(
+  req: NextRequest,
+  modelProvider: ModelProvider,
+): AuthResult {
   const authToken = req.headers.get("Authorization") ?? "";
 
   // check if it is openai api key or user token
@@ -119,7 +128,11 @@ export function auth(req: NextRequest, modelProvider: ModelProvider) {
         "[Auth] api key prefix:",
         systemApiKey.substring(0, 10) + "...",
       );
-      req.headers.set("Authorization", `Bearer ${systemApiKey}`);
+      // Return systemApiKey so the caller can set the Authorization header
+      return {
+        error: false,
+        systemApiKey,
+      };
     } else {
       console.log("[Auth] admin did not provide an api key");
       console.log("[Auth] modelProvider:", modelProvider);
@@ -132,9 +145,9 @@ export function auth(req: NextRequest, modelProvider: ModelProvider) {
     }
   } else {
     console.log("[Auth] use user api key");
+    // User provided their own API key, pass it through
+    return {
+      error: false,
+    };
   }
-
-  return {
-    error: false,
-  };
 }
