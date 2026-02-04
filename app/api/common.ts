@@ -40,8 +40,24 @@ export async function requestOpenai(req: NextRequest) {
     baseUrl = baseUrl.slice(0, -1);
   }
 
+  // Check if BASE_URL already contains the API endpoint path
+  // If so, don't append the path again
+  const apiEndpoints = [
+    "/v1/chat/completions",
+    "/v1/completions",
+    "/v1/embeddings",
+    "/v1/images/generations",
+    "/v1/audio/speech",
+    "/v1/audio/transcriptions",
+    "/chat/completions",
+  ];
+  const baseUrlContainsEndpoint = apiEndpoints.some((endpoint) =>
+    baseUrl.toLowerCase().endsWith(endpoint),
+  );
+
   console.log("[Proxy] ", path);
   console.log("[Base Url]", baseUrl);
+  console.log("[Base URL contains endpoint]", baseUrlContainsEndpoint);
 
   const timeoutId = setTimeout(
     () => {
@@ -88,7 +104,10 @@ export async function requestOpenai(req: NextRequest) {
     }
   }
 
-  const fetchUrl = cloudflareAIGatewayUrl(`${baseUrl}/${path}`);
+  // If BASE_URL already contains the endpoint, use it directly; otherwise append path
+  const fetchUrl = baseUrlContainsEndpoint
+    ? baseUrl
+    : cloudflareAIGatewayUrl(`${baseUrl}/${path}`);
   console.log("fetchUrl", fetchUrl);
   const fetchOptions: RequestInit = {
     headers: {
