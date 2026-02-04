@@ -490,49 +490,100 @@ const defaultModels = [
   "anthropic/claude-opus-4.5",
   "anthropic/claude-sonnet-4.5",
   "anthropic/claude-haiku-4.5",
-  
+
   // OpenAI GPT - 稳定可靠
   "openai/gpt-5.2-chat",
   "openai/gpt-5.2",
   "openai/gpt-5.2-codex",
   "openai/gpt-4.1",
   "openai/gpt-4o-mini",
-  
+
   // Google Gemini - 编程强
   "google/gemini-3-pro-preview",
   "google/gemini-3-flash-preview",
-  
+
   // xAI Grok - 免费/便宜
   "x-ai/grok-4.1-fast",
   "x-ai/grok-code-fast-1",
   "x-ai/grok-4-fast",
-  
+
   // DeepSeek - 国产性价比
   "deepseek/deepseek-v3.2",
-  
+
   // 国产新秀
   "z-ai/glm-4.7",
   "minimax/minimax-m2.1",
 ];
 
 // Model provider mapping for the simplified model list
-const getProviderFromModelName = (name: string): { id: string; providerName: string; providerType: string; sorted: number } => {
+// Note: All models use OpenAI-compatible API through OpenRouter/custom endpoint
+// providerType is for display/categorization, providerName controls which client to use
+const getProviderFromModelName = (
+  name: string,
+): {
+  id: string;
+  providerName: string;
+  providerType: string;
+  sorted: number;
+} => {
+  // All models use OpenAI-compatible client (providerName: "OpenAI")
+  // providerType is used for UI display/grouping only
   if (name.startsWith("anthropic/")) {
-    return { id: "anthropic", providerName: "Anthropic", providerType: "anthropic", sorted: 1 };
+    return {
+      id: "anthropic",
+      providerName: "OpenAI",
+      providerType: "anthropic",
+      sorted: 1,
+    };
   } else if (name.startsWith("openai/")) {
-    return { id: "openai", providerName: "OpenAI", providerType: "openai", sorted: 2 };
+    return {
+      id: "openai",
+      providerName: "OpenAI",
+      providerType: "openai",
+      sorted: 2,
+    };
   } else if (name.startsWith("google/")) {
-    return { id: "google", providerName: "Google", providerType: "google", sorted: 3 };
+    return {
+      id: "google",
+      providerName: "OpenAI",
+      providerType: "google",
+      sorted: 3,
+    };
   } else if (name.startsWith("x-ai/")) {
-    return { id: "xai", providerName: "xAI", providerType: "xai", sorted: 4 };
+    return {
+      id: "xai",
+      providerName: "OpenAI",
+      providerType: "xai",
+      sorted: 4,
+    };
   } else if (name.startsWith("deepseek/")) {
-    return { id: "deepseek", providerName: "DeepSeek", providerType: "deepseek", sorted: 5 };
+    return {
+      id: "deepseek",
+      providerName: "OpenAI",
+      providerType: "deepseek",
+      sorted: 5,
+    };
   } else if (name.startsWith("z-ai/")) {
-    return { id: "chatglm", providerName: "Z.AI", providerType: "chatglm", sorted: 6 };
+    return {
+      id: "chatglm",
+      providerName: "OpenAI",
+      providerType: "chatglm",
+      sorted: 6,
+    };
   } else if (name.startsWith("minimax/")) {
-    return { id: "minimax", providerName: "MiniMax", providerType: "openai", sorted: 7 };
+    return {
+      id: "minimax",
+      providerName: "OpenAI",
+      providerType: "openai",
+      sorted: 7,
+    };
   }
-  return { id: "openai", providerName: "OpenAI", providerType: "openai", sorted: 99 };
+  return {
+    id: "openai",
+    providerName: "OpenAI",
+    providerType: "openai",
+    sorted: 99,
+  };
 };
 
 let seq = 1000; // 内置的模型序号生成器从1000开始
