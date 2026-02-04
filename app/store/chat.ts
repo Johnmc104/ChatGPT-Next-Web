@@ -41,6 +41,20 @@ import { extractMcpJson, isMcpJson } from "../mcp/utils";
 
 const localStorage = safeLocalStorage();
 
+// Helper function to get the correct providerName from DEFAULT_MODELS
+// This ensures we always use the providerName defined in DEFAULT_MODELS
+// even if the user's saved config has an outdated providerName
+function getEffectiveProviderName(
+  modelName: string,
+  fallbackProvider: ServiceProvider,
+): ServiceProvider {
+  const modelInfo = DEFAULT_MODELS.find((m) => m.name === modelName);
+  if (modelInfo?.provider?.providerName) {
+    return modelInfo.provider.providerName as ServiceProvider;
+  }
+  return fallbackProvider;
+}
+
 export type ChatMessageTool = {
   id: string;
   index?: number;
@@ -456,7 +470,12 @@ export const useChatStore = createPersistStore(
           ]);
         });
 
-        const api: ClientApi = getClientApi(modelConfig.providerName);
+        // Use effective provider from DEFAULT_MODELS to ensure correct API client
+        const effectiveProvider = getEffectiveProviderName(
+          modelConfig.model,
+          modelConfig.providerName,
+        );
+        const api: ClientApi = getClientApi(effectiveProvider);
         // make request
         api.llm.chat({
           messages: sendMessages,
@@ -677,7 +696,12 @@ export const useChatStore = createPersistStore(
               session.mask.modelConfig.model,
               session.mask.modelConfig.providerName,
             );
-        const api: ClientApi = getClientApi(providerName as ServiceProvider);
+        // Use effective provider from DEFAULT_MODELS
+        const effectiveProvider = getEffectiveProviderName(
+          model,
+          providerName as ServiceProvider,
+        );
+        const api: ClientApi = getClientApi(effectiveProvider);
 
         // remove error messages if any
         const messages = session.messages;
