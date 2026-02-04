@@ -241,7 +241,10 @@ export function validString(x: string): boolean {
   return x?.length > 0;
 }
 
-export function getHeaders(ignoreHeaders: boolean = false, customBaseUrl?: string) {
+export function getHeaders(
+  ignoreHeaders: boolean = false,
+  customBaseUrl?: string,
+) {
   const accessStore = useAccessStore.getState();
   const chatStore = useChatStore.getState();
   let headers: Record<string, string> = {};
@@ -361,7 +364,9 @@ export function getHeaders(ignoreHeaders: boolean = false, customBaseUrl?: strin
 
   if (bearerToken) {
     headers[authHeader] = bearerToken;
-  } else if (isEnabledAccessControl && validString(accessStore.accessCode)) {
+  } else if (validString(accessStore.accessCode)) {
+    // Always send access code if available, regardless of access control setting
+    // The server will validate it
     headers["Authorization"] = getBearerToken(
       ACCESS_CODE_PREFIX + accessStore.accessCode,
     );
