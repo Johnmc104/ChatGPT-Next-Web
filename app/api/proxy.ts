@@ -9,6 +9,10 @@ export async function handle(
   { params }: { params: { path: string[] } },
 ) {
   console.log("[Proxy Route] params ", params);
+  console.log(
+    "[Proxy Route] Authorization header:",
+    req.headers.get("Authorization"),
+  );
 
   if (req.method === "OPTIONS") {
     return NextResponse.json({ body: "OK" }, { status: 200 });
