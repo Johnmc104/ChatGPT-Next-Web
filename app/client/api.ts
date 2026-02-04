@@ -262,6 +262,11 @@ export function getHeaders(
 
   const clientConfig = getClientConfig();
 
+  // Check if custom BASE_URL is configured (e.g., OpenRouter, Cloudflare AI Gateway)
+  // When custom URL is set, always use openaiApiKey regardless of provider
+  const useCustomUrl =
+    customBaseUrl || (accessStore.useCustomConfig && accessStore.openaiUrl);
+
   function getConfig() {
     const modelConfig = chatStore.currentSession().mask.modelConfig;
     const isGoogle = modelConfig.providerName === ServiceProvider.Google;
@@ -279,7 +284,12 @@ export function getHeaders(
       modelConfig.providerName === ServiceProvider.SiliconFlow;
     const isAI302 = modelConfig.providerName === ServiceProvider["302.AI"];
     const isEnabledAccessControl = accessStore.enabledAccessControl();
-    const apiKey = isGoogle
+
+    // When using custom BASE_URL (OpenRouter, Cloudflare AI Gateway, etc.),
+    // always use openaiApiKey since all requests go through the same endpoint
+    const apiKey = useCustomUrl
+      ? accessStore.openaiApiKey
+      : isGoogle
       ? accessStore.googleApiKey
       : isAzure
       ? accessStore.azureApiKey
