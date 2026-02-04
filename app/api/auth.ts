@@ -114,10 +114,21 @@ export function auth(req: NextRequest, modelProvider: ModelProvider) {
     }
 
     if (systemApiKey) {
-      console.log("[Auth] use system api key");
+      console.log("[Auth] use system api key, length:", systemApiKey.length);
+      console.log(
+        "[Auth] api key prefix:",
+        systemApiKey.substring(0, 10) + "...",
+      );
       req.headers.set("Authorization", `Bearer ${systemApiKey}`);
     } else {
       console.log("[Auth] admin did not provide an api key");
+      console.log("[Auth] modelProvider:", modelProvider);
+      console.log("[Auth] serverConfig.apiKey exists:", !!serverConfig.apiKey);
+      // Return error if no API key is available
+      return {
+        error: true,
+        msg: "Server API key not configured. Please contact the administrator or provide your own API key.",
+      };
     }
   } else {
     console.log("[Auth] use user api key");

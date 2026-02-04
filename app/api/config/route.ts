@@ -15,6 +15,9 @@ const DANGER_CONFIG = {
   customModels: serverConfig.customModels,
   defaultModel: serverConfig.defaultModel,
   visionModels: serverConfig.visionModels,
+  // Indicate if server has API keys configured (without exposing the actual keys)
+  hasServerApiKey: !!serverConfig.apiKey,
+  hasCustomBaseUrl: !!serverConfig.baseUrl,
 };
 
 declare global {
