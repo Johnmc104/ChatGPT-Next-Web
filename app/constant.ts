@@ -487,6 +487,7 @@ export const EXCLUDE_VISION_MODEL_REGEXES = [
 
 const defaultModels = [
   // Anthropic Claude - 编程最强
+  "anthropic/claude-opus-4.6",
   "anthropic/claude-opus-4.5",
   "anthropic/claude-sonnet-4.5",
   "anthropic/claude-haiku-4.5",
@@ -497,6 +498,7 @@ const defaultModels = [
   "openai/gpt-5.2-codex",
   "openai/gpt-4.1",
   "openai/gpt-4o-mini",
+  "openai/gpt-oss-120b",
 
   // Google Gemini - 编程强
   "google/gemini-3-pro-preview",
@@ -510,7 +512,15 @@ const defaultModels = [
   // DeepSeek - 国产性价比
   "deepseek/deepseek-v3.2",
 
-  // 国产新秀
+  // Moonshot - 国产新秀
+  "moonshotai/kimi-k2.5",
+  "moonshotai/kimi-k2-thinking",
+
+  // Alibaba Qwen - 国产新秀
+  "qwen/qwen3-coder",
+  "qwen/qwen3-235b-a22b-2507",
+
+  // Other
   "z-ai/glm-4.7",
   "minimax/minimax-m2.1",
 ];
@@ -578,7 +588,7 @@ const getProviderFromModelName = (
       providerType: "alibaba",
       sorted: 8,
     };
-  } else if (name.startsWith("moonshot/")) {
+  } else if (name.startsWith("moonshot/") || name.startsWith("moonshotai/")) {
     return {
       id: "moonshot",
       providerName: "Moonshot",
@@ -601,9 +611,9 @@ const getProviderFromModelName = (
     };
   }
   return {
-    id: "openai",
-    providerName: "OpenAI",
-    providerType: "openai",
+    id: "other",
+    providerName: "Other",
+    providerType: "other",
     sorted: 99,
   };
 };
