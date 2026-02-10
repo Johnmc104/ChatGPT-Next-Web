@@ -194,7 +194,16 @@ async function requestProvider(
 
   let path = `${req.nextUrl.pathname}`.replaceAll(config.apiPath, "");
 
-  let baseUrl = config.getBaseUrl();
+  // In unified proxy mode (BASE_URL is set), route through the unified proxy
+  // instead of the provider's own upstream URL.
+  let baseUrl: string;
+  if (serverConfig.baseUrl && !config.allowedPaths) {
+    // Use BASE_URL for generic providers (those without allowedPaths restrictions)
+    baseUrl = serverConfig.baseUrl;
+    console.log(`[${config.name}] using unified proxy (BASE_URL)`);
+  } else {
+    baseUrl = config.getBaseUrl();
+  }
   if (!baseUrl.startsWith("http")) {
     baseUrl = `https://${baseUrl}`;
   }
@@ -207,10 +216,48 @@ async function requestProvider(
 
   const timeoutId = setTimeout(() => controller.abort(), 10 * 60 * 1000);
 
-  const rawUrl = `${baseUrl}${path}`;
-  const fetchUrl = config.useCloudflareGateway
-    ? cloudflareAIGatewayUrl(rawUrl)
-    : rawUrl;
+  // Smart URL construction: if BASE_URL already contains an API endpoint path
+  // (e.g. .../openrouter/v1/chat/completions), avoid duplicating it.
+  const apiEndpoints = [
+    "/v1/chat/completions",
+    "/v1/completions",
+    "/v1/embeddings",
+    "/v1/images/generations",
+    "/v1/audio/speech",
+    "/v1/audio/transcriptions",
+    "/v1/models",
+    "/chat/completions",
+  ];
+
+  let baseUrlEndpoint = "";
+  for (const endpoint of apiEndpoints) {
+    if (baseUrl.toLowerCase().endsWith(endpoint)) {
+      baseUrlEndpoint = endpoint;
+      break;
+    }
+  }
+
+  const requestPath = path.startsWith("/") ? path : `/${path}`;
+  let fetchUrl: string;
+
+  if (baseUrlEndpoint) {
+    const baseUrlWithoutEndpoint = baseUrl.slice(0, -baseUrlEndpoint.length);
+    if (requestPath.toLowerCase() === baseUrlEndpoint) {
+      // Request matches the endpoint already in BASE_URL, use BASE_URL directly
+      fetchUrl = baseUrl;
+    } else {
+      // Request is for a different endpoint, replace the endpoint part
+      fetchUrl = `${baseUrlWithoutEndpoint}${requestPath}`;
+    }
+  } else {
+    fetchUrl = `${baseUrl}${requestPath}`;
+  }
+
+  if (config.useCloudflareGateway) {
+    fetchUrl = cloudflareAIGatewayUrl(fetchUrl);
+  }
+
+  console.log("[fetchUrl]", fetchUrl);
 
   // Build headers
   const authHeaderName = config.authHeaderName ?? "Authorization";

@@ -122,6 +122,16 @@ export function auth(
         }
     }
 
+    // Unified proxy fallback: when a provider-specific key is not configured
+    // but BASE_URL is set (unified proxy mode), fall back to the default apiKey.
+    // This allows all providers to share the same API key through the proxy.
+    if (!systemApiKey && serverConfig.baseUrl) {
+      console.log(
+        "[Auth] provider-specific key not set, falling back to default apiKey (unified proxy mode)",
+      );
+      systemApiKey = serverConfig.apiKey;
+    }
+
     if (systemApiKey) {
       console.log("[Auth] use system api key, length:", systemApiKey.length);
       console.log(
