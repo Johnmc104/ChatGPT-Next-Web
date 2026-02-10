@@ -24,7 +24,7 @@ export async function handle(
   }
 
   try {
-    return await requestOpenai(req);
+    return await requestOpenai(req, authResult);
   } catch (e) {
     console.error("[Azure] ", e);
     return NextResponse.json(prettyObject(e));

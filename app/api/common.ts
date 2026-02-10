@@ -1,12 +1,57 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getServerSideConfig } from "../config/server";
-import { OPENAI_BASE_URL, ServiceProvider } from "../constant";
+import {
+  ACCESS_CODE_PREFIX,
+  OPENAI_BASE_URL,
+  ServiceProvider,
+} from "../constant";
 import { cloudflareAIGatewayUrl } from "../utils/cloudflare";
 import { getModelProvider, isModelNotavailableInServer } from "../utils/model";
+import { type AuthResult } from "./auth";
 
 const serverConfig = getServerSideConfig();
 
-export async function requestOpenai(req: NextRequest) {
+/**
+ * Resolve the correct Authorization value for upstream API calls.
+ * Priority: 1) User's own API key (X-User-Api-Key header)
+ *           2) System API key from authResult
+ *           3) Original request Authorization header (only if it's a real API key)
+ */
+export function resolveAuthHeaderValue(
+  req: NextRequest,
+  authResult?: AuthResult,
+  options?: { isBearer?: boolean; headerName?: string },
+): string {
+  const isBearer = options?.isBearer ?? true;
+  const headerName = options?.headerName ?? "Authorization";
+
+  // 1. User provided their own API key
+  const userApiKey = req.headers.get("X-User-Api-Key");
+  if (userApiKey) {
+    return isBearer ? `Bearer ${userApiKey}` : userApiKey;
+  }
+
+  // 2. User authenticated with access code, use server's API key
+  if (authResult?.systemApiKey) {
+    return isBearer
+      ? `Bearer ${authResult.systemApiKey}`
+      : authResult.systemApiKey;
+  }
+
+  // 3. Fallback to original header value
+  const original =
+    req.headers.get(headerName) ?? req.headers.get("Authorization") ?? "";
+  const rawToken = original.replace("Bearer ", "").trim();
+
+  // Safety: never forward access codes to upstream APIs
+  if (rawToken.startsWith(ACCESS_CODE_PREFIX) || rawToken.startsWith("nk-")) {
+    return "";
+  }
+
+  return original;
+}
+
+export async function requestOpenai(req: NextRequest, authResult?: AuthResult) {
   const controller = new AbortController();
 
   const isAzure = req.nextUrl.pathname.includes("azure/deployments");
@@ -25,6 +70,31 @@ export async function requestOpenai(req: NextRequest) {
   } else {
     authValue = req.headers.get("Authorization") ?? "";
     authHeaderName = "Authorization";
+  }
+
+  // Resolve the correct auth value for upstream API calls:
+  // Priority: 1) User's own API key  2) System API key  3) Original auth header
+  const userApiKey = req.headers.get("X-User-Api-Key");
+  if (userApiKey) {
+    // User provided their own API key
+    authValue = isAzure ? userApiKey : `Bearer ${userApiKey}`;
+  } else if (authResult?.systemApiKey) {
+    // User authenticated with access code, use server's API key
+    authValue = isAzure
+      ? authResult.systemApiKey
+      : `Bearer ${authResult.systemApiKey}`;
+  } else if (
+    authValue.includes(ACCESS_CODE_PREFIX) ||
+    authValue.replace("Bearer ", "").trim().startsWith("nk-")
+  ) {
+    // Fallback safety: if the auth header still contains an access code prefix,
+    // try to use the server's API key to prevent forwarding access codes upstream
+    const fallbackKey = isAzure
+      ? serverConfig.azureApiKey
+      : serverConfig.apiKey;
+    if (fallbackKey) {
+      authValue = isAzure ? fallbackKey : `Bearer ${fallbackKey}`;
+    }
   }
 
   let path = `${req.nextUrl.pathname}`.replaceAll("/api/openai/", "");

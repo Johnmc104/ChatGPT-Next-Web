@@ -1,6 +1,10 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getServerSideConfig } from "@/app/config/server";
-import { ModelProvider, STABILITY_BASE_URL } from "@/app/constant";
+import {
+  ACCESS_CODE_PREFIX,
+  ModelProvider,
+  STABILITY_BASE_URL,
+} from "@/app/constant";
 import { auth } from "@/app/api/auth";
 
 export async function handle(
@@ -47,10 +51,18 @@ export async function handle(
     });
   }
 
+  // Resolve the API key: prefer user's own key, then system key from auth, then server config
+  const userApiKey = req.headers.get("X-User-Api-Key");
   const bearToken = req.headers.get("Authorization") ?? "";
   const token = bearToken.trim().replaceAll("Bearer ", "").trim();
+  const isAccessCode =
+    token.startsWith(ACCESS_CODE_PREFIX) || token.startsWith("nk-");
 
-  const key = token ? token : serverConfig.stabilityApiKey;
+  const key = userApiKey
+    ? userApiKey
+    : token && !isAccessCode
+    ? token
+    : authResult.systemApiKey || serverConfig.stabilityApiKey;
 
   if (!key) {
     return NextResponse.json(

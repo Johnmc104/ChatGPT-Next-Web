@@ -59,7 +59,7 @@ export async function handle(
   }
 
   try {
-    const response = await requestOpenai(req);
+    const response = await requestOpenai(req, authResult);
 
     // list models
     if (subpath === OpenaiPath.ListModelPath && response.status === 200) {
