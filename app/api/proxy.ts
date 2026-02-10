@@ -33,11 +33,49 @@ export async function handle(
   req.nextUrl.searchParams.delete("provider");
 
   const subpath = params.path.join("/");
-  const baseUrl = req.headers.get("x-base-url") || serverConfig.baseUrl || "";
+  let baseUrl = req.headers.get("x-base-url") || serverConfig.baseUrl || "";
+  if (baseUrl.endsWith("/")) {
+    baseUrl = baseUrl.slice(0, -1);
+  }
   const queryString = req.nextUrl.searchParams.toString();
 
-  // Build the fetch URL, apply cloudflare AI gateway URL transformation
-  let fetchUrl = `${baseUrl}/${subpath}`;
+  // Smart URL construction: if BASE_URL already contains an API endpoint path
+  // (e.g. .../openrouter/v1/chat/completions), avoid duplicating it.
+  const apiEndpoints = [
+    "/v1/chat/completions",
+    "/v1/completions",
+    "/v1/embeddings",
+    "/v1/images/generations",
+    "/v1/audio/speech",
+    "/v1/audio/transcriptions",
+    "/v1/models",
+    "/chat/completions",
+  ];
+
+  let baseUrlEndpoint = "";
+  for (const endpoint of apiEndpoints) {
+    if (baseUrl.toLowerCase().endsWith(endpoint)) {
+      baseUrlEndpoint = endpoint;
+      break;
+    }
+  }
+
+  const requestPath = subpath.startsWith("/") ? subpath : `/${subpath}`;
+  let fetchUrl: string;
+
+  if (baseUrlEndpoint) {
+    const baseUrlWithoutEndpoint = baseUrl.slice(0, -baseUrlEndpoint.length);
+    if (requestPath.toLowerCase() === baseUrlEndpoint) {
+      // Request matches the endpoint already in BASE_URL, use BASE_URL directly
+      fetchUrl = baseUrl;
+    } else {
+      // Request is for a different endpoint, replace the endpoint part
+      fetchUrl = `${baseUrlWithoutEndpoint}${requestPath}`;
+    }
+  } else {
+    fetchUrl = `${baseUrl}${requestPath}`;
+  }
+
   if (queryString) {
     fetchUrl += `?${queryString}`;
   }
