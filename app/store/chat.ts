@@ -724,6 +724,9 @@ export const useChatStore = createPersistStore(
                 );
               }
             },
+            onError(error) {
+              console.error("[Title] error generating title:", error);
+            },
           });
         }
         const summarizeIndex = Math.max(
