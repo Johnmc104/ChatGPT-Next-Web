@@ -406,9 +406,9 @@ function ClearContextDivider() {
   );
 }
 
-function TokenUsageIndicator() {
+function TokenUsageIndicator({ userInput }: { userInput?: string }) {
   const { usedTokens, contextLimit, usageRatio, display, ready } =
-    useTokenCount();
+    useTokenCount(userInput);
 
   // Color gradient: green → yellow → orange → red
   const getColor = (ratio: number) => {
@@ -549,6 +549,7 @@ export function ChatActions(props: {
   setShowShortcutKeyModal: React.Dispatch<React.SetStateAction<boolean>>;
   setUserInput: (input: string) => void;
   setShowChatSidePanel: React.Dispatch<React.SetStateAction<boolean>>;
+  userInput?: string;
 }) {
   const config = useAppConfig();
   const navigate = useNavigate();
@@ -870,7 +871,7 @@ export function ChatActions(props: {
         {!isMobileScreen && <MCPAction />}
       </>
       <div className={styles["chat-input-actions-end"]}>
-        <TokenUsageIndicator />
+        <TokenUsageIndicator userInput={props.userInput} />
         {config.realtimeConfig.enable && (
           <ChatAction
             onClick={() => props.setShowChatSidePanel(true)}
@@ -2107,6 +2108,7 @@ function _Chat() {
                 setShowShortcutKeyModal={setShowShortcutKeyModal}
                 setUserInput={setUserInput}
                 setShowChatSidePanel={setShowChatSidePanel}
+                userInput={userInput}
               />
               <label
                 className={clsx(styles["chat-input-panel-inner"], {

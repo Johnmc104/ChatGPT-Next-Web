@@ -1,16 +1,15 @@
 import { useMemo } from "react";
 import { useChatStore } from "../store";
-import { countTokens } from "../utils/tiktoken";
 import { useModelInfo, getContextLength } from "./useModelInfo";
-import { getMessageTextContent } from "../utils";
+import { computeEffectiveTokens } from "../utils/token-calc";
 
 /**
  * Estimate the cost of sending the next message.
  *
  * Cost = inputTokens × pricing.input  +  estimatedOutputTokens × pricing.output
  *
- * - inputTokens: all tokens that will be sent (context + new user input)
- * - estimatedOutputTokens: uses max_output capped at 4096, or 1024 as fallback
+ * Mirrors getMessagesWithMemory() logic via computeEffectiveTokens:
+ *  - Respects historyMessageCount, max_tokens cap, sendMemory, clearContextIndex
  *
  * @param userInput  Current text in the input box (not yet sent)
  */
@@ -19,7 +18,8 @@ export function useCostEstimate(userInput: string) {
   const session = chatStore.currentSession();
   const { getModelInfo } = useModelInfo();
 
-  const modelId = session.mask.modelConfig.model;
+  const modelConfig = session.mask.modelConfig;
+  const modelId = modelConfig.model;
   const modelInfo = getModelInfo(modelId);
 
   return useMemo(() => {
@@ -29,43 +29,21 @@ export function useCostEstimate(userInput: string) {
 
     const { input: inputPrice, output: outputPrice } = modelInfo.pricing;
 
-    // If pricing is zero (free model), show $0.00
-    // If pricing is not available, return null
-
-    // ── Input tokens: context + user's new message ──
-    const messages = session.messages;
-    const clearIdx = session.clearContextIndex ?? 0;
-    const activeMessages = messages.slice(clearIdx);
-
-    let inputTokens = 0;
-    for (const msg of activeMessages) {
-      if (msg.isError) continue;
-      inputTokens += countTokens(getMessageTextContent(msg));
-    }
-    // Per-message overhead (~4 tokens each) + priming
-    inputTokens += activeMessages.filter((m) => !m.isError).length * 4 + 3;
-
-    // System / memory prompts
-    if (session.memoryPrompt) {
-      inputTokens += countTokens(session.memoryPrompt);
-    }
-    if (session.mask?.context) {
-      for (const ctx of session.mask.context) {
-        inputTokens += countTokens(
-          typeof ctx.content === "string" ? ctx.content : "",
-        );
-        inputTokens += 4;
-      }
-    }
-
-    // Add the user's current input
-    if (userInput) {
-      inputTokens += countTokens(userInput) + 4;
-    }
+    // ── Input tokens: mirrors actual send logic ──
+    const inputTokens = computeEffectiveTokens({
+      messages: session.messages,
+      clearContextIndex: session.clearContextIndex ?? 0,
+      historyMessageCount: modelConfig.historyMessageCount,
+      maxTokens: modelConfig.max_tokens,
+      sendMemory: modelConfig.sendMemory,
+      memoryPrompt: session.memoryPrompt ?? "",
+      lastSummarizeIndex: session.lastSummarizeIndex ?? 0,
+      maskContext: session.mask?.context ?? [],
+      userInput,
+    });
 
     // ── Output tokens: estimate ──
     // Use a conservative estimate: min(max_output, 1024)
-    // Most responses are well under max_output
     const estimatedOutput = Math.min(modelInfo.max_output ?? 4096, 1024);
 
     // ── Cost calculation ──
@@ -84,7 +62,11 @@ export function useCostEstimate(userInput: string) {
     session.messages,
     session.clearContextIndex,
     session.memoryPrompt,
+    session.lastSummarizeIndex,
     session.mask?.context,
+    modelConfig.historyMessageCount,
+    modelConfig.max_tokens,
+    modelConfig.sendMemory,
     userInput,
   ]);
 }
