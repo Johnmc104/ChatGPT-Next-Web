@@ -615,12 +615,13 @@ export function ChatActions(props: {
 
   const isMobileScreen = useMobileScreen();
 
+  const { setAttachImages, setUploading } = props;
   useEffect(() => {
     const show = isVisionModel(currentModel);
     setShowUploadImage(show);
     if (!show) {
-      props.setAttachImages([]);
-      props.setUploading(false);
+      setAttachImages([]);
+      setUploading(false);
     }
 
     // if current model is not available
@@ -640,7 +641,7 @@ export function ChatActions(props: {
           : nextModel.name,
       );
     }
-  }, [chatStore, currentModel, models, session]);
+  }, [chatStore, currentModel, models, session, setAttachImages, setUploading]);
 
   return (
     <div className={styles["chat-input-actions"]}>
@@ -1053,6 +1054,7 @@ function _Chat() {
       scrollRef.current.getBoundingClientRect().top;
     // leave some space for user question
     return topDistance < 100;
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [scrollRef?.current?.scrollHeight]);
 
   const isTyping = userInput !== "";
@@ -2022,6 +2024,7 @@ function _Chat() {
                               defaultShow={i >= messages.length - 6}
                             />
                             {getMessageImages(message).length == 1 && (
+                              // eslint-disable-next-line @next/next/no-img-element
                               <img
                                 className={styles["chat-message-item-image"]}
                                 src={getMessageImages(message)[0]}
@@ -2041,6 +2044,7 @@ function _Chat() {
                                 {getMessageImages(message).map(
                                   (image, index) => {
                                     return (
+                                      // eslint-disable-next-line @next/next/no-img-element
                                       <img
                                         className={
                                           styles[

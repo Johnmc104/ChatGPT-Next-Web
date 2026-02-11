@@ -101,7 +101,7 @@ export function Sd() {
 
   useEffect(() => {
     setSdImages(sdStore.draw);
-  }, [sdStore.currentId]);
+  }, [sdStore.currentId, sdStore.draw]);
 
   return (
     <>
@@ -162,6 +162,7 @@ export function Sd() {
                       className={styles["sd-img-item"]}
                     >
                       {item.status === "success" ? (
+                        // eslint-disable-next-line @next/next/no-img-element
                         <img
                           className={styles["img"]}
                           src={item.img_data}
