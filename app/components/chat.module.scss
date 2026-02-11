@@ -100,6 +100,62 @@
   }
 }
 
+.token-usage {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  border-radius: 20px;
+  font-size: 11px;
+  background-color: var(--white);
+  color: var(--token-text);
+  border: var(--border-in-light);
+  padding: 4px 10px;
+  box-shadow: var(--card-shadow);
+  height: 16px;
+  animation: slide-in ease 0.3s;
+  user-select: none;
+  white-space: nowrap;
+  flex-shrink: 0;
+
+  .token-usage-icon {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 16px;
+    height: 16px;
+    flex-shrink: 0;
+
+    svg {
+      width: 14px;
+      height: 14px;
+      opacity: 0.6;
+    }
+  }
+
+  .token-usage-bar {
+    width: 40px;
+    height: 4px;
+    border-radius: 2px;
+    background-color: var(--token-bar-bg);
+    overflow: hidden;
+    flex-shrink: 0;
+
+    .token-usage-fill {
+      height: 100%;
+      border-radius: 2px;
+      transition: width 0.3s ease, background-color 0.3s ease;
+      min-width: 1px;
+    }
+  }
+
+  .token-usage-text {
+    font-size: 11px;
+    font-weight: 500;
+    font-variant-numeric: tabular-nums;
+    letter-spacing: -0.3px;
+  }
+}
+
 .prompt-toast {
   position: absolute;
   bottom: -50px;

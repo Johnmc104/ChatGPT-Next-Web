@@ -48,6 +48,9 @@ import PluginIcon from "../icons/plugin.svg";
 import ShortcutkeyIcon from "../icons/shortcutkey.svg";
 import McpToolIcon from "../icons/tool.svg";
 import HeadphoneIcon from "../icons/headphone.svg";
+import LightningIcon from "../icons/lightning.svg";
+
+import { useTokenCount } from "../hooks/useTokenCount";
 import {
   BOT_HELLO,
   ChatMessage,
@@ -397,6 +400,47 @@ function ClearContextDivider() {
       <div className={styles["clear-context-tips"]}>{Locale.Context.Clear}</div>
       <div className={styles["clear-context-revert-btn"]}>
         {Locale.Context.Revert}
+      </div>
+    </div>
+  );
+}
+
+function TokenUsageIndicator() {
+  const { usedTokens, contextLimit, usageRatio, display, ready } =
+    useTokenCount();
+
+  // Color gradient: green → yellow → orange → red
+  const getColor = (ratio: number) => {
+    if (ratio < 0.5) return "var(--token-safe)";
+    if (ratio < 0.75) return "var(--token-warn)";
+    if (ratio < 0.9) return "var(--token-danger)";
+    return "var(--token-critical)";
+  };
+
+  return (
+    <div
+      className={styles["token-usage"]}
+      title={`Tokens: ${usedTokens.toLocaleString()} / ${contextLimit.toLocaleString()}${
+        !ready ? " (estimate)" : ""
+      }`}
+    >
+      <div className={styles["token-usage-icon"]}>
+        <LightningIcon />
+      </div>
+      <div className={styles["token-usage-bar"]}>
+        <div
+          className={styles["token-usage-fill"]}
+          style={{
+            width: `${Math.min(usageRatio * 100, 100)}%`,
+            backgroundColor: getColor(usageRatio),
+          }}
+        />
+      </div>
+      <div
+        className={styles["token-usage-text"]}
+        style={{ color: getColor(usageRatio) }}
+      >
+        {display}
       </div>
     </div>
   );
@@ -824,6 +868,7 @@ export function ChatActions(props: {
         {!isMobileScreen && <MCPAction />}
       </>
       <div className={styles["chat-input-actions-end"]}>
+        <TokenUsageIndicator />
         {config.realtimeConfig.enable && (
           <ChatAction
             onClick={() => props.setShowChatSidePanel(true)}

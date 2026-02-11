@@ -31,7 +31,7 @@ import {
 import Locale, { getLang } from "../locales";
 import { prettyObject } from "../utils/format";
 import { createPersistStore } from "../utils/store";
-import { estimateTokenLength } from "../utils/token";
+import { countTokens, preloadEncoder } from "../utils/tiktoken";
 import { ModelConfig, ModelType, useAppConfig } from "./config";
 import { useAccessStore } from "./access";
 import { collectModelsWithDefaultModel } from "../utils/model";
@@ -153,7 +153,7 @@ function getSummarizeModel(
 
 function countMessages(msgs: ChatMessage[]) {
   return msgs.reduce(
-    (pre, cur) => pre + estimateTokenLength(getMessageTextContent(cur)),
+    (pre, cur) => pre + countTokens(getMessageTextContent(cur)),
     0,
   );
 }
@@ -626,7 +626,7 @@ export const useChatStore = createPersistStore(
         ) {
           const msg = messages[i];
           if (!msg || msg.isError) continue;
-          tokenCount += estimateTokenLength(getMessageTextContent(msg));
+          tokenCount += countTokens(getMessageTextContent(msg));
           reversedRecentMessages.push(msg);
         }
         // concat all messages

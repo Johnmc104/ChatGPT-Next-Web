@@ -10,6 +10,12 @@ declare module "*.scss" {
 
 declare module "*.svg";
 
+declare module "js-tiktoken/ranks/o200k_base" {
+  import type { TiktokenBPE } from "js-tiktoken/lite";
+  const ranks: TiktokenBPE;
+  export default ranks;
+}
+
 declare interface Window {
   __TAURI__?: {
     writeText(text: string): Promise<void>;

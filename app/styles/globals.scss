@@ -14,6 +14,14 @@
   --bar-color: rgba(0, 0, 0, 0.1);
   --theme-color: var(--gray);
 
+  /* token usage */
+  --token-safe: #22c55e;
+  --token-warn: #eab308;
+  --token-danger: #f97316;
+  --token-critical: #ef4444;
+  --token-bar-bg: rgba(0, 0, 0, 0.06);
+  --token-text: rgb(100, 100, 100);
+
   /* shadow */
   --shadow: 50px 50px 100px 10px rgb(0, 0, 0, 0.1);
   --card-shadow: 0px 2px 4px 0px rgb(0, 0, 0, 0.05);
@@ -34,6 +42,14 @@
   --hover-color: #323232;
 
   --bar-color: rgba(255, 255, 255, 0.1);
+
+  /* token usage */
+  --token-safe: #4ade80;
+  --token-warn: #facc15;
+  --token-danger: #fb923c;
+  --token-critical: #f87171;
+  --token-bar-bg: rgba(255, 255, 255, 0.1);
+  --token-text: rgb(160, 160, 160);
 
   --border-in-light: 1px solid rgba(255, 255, 255, 0.192);
 

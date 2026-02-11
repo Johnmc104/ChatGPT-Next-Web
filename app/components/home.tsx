@@ -31,6 +31,7 @@ import { useAccessStore } from "../store";
 import clsx from "clsx";
 import { initializeMcpSystem, isMcpEnabled } from "../mcp/actions";
 import { ServiceProvider } from "../constant";
+import { preloadEncoder } from "../utils/tiktoken";
 
 export function Loading(props: { noLogo?: boolean }) {
   return (
@@ -173,6 +174,7 @@ function Screen() {
 
   useEffect(() => {
     loadAsyncGoogleFont();
+    preloadEncoder(); // start loading tiktoken BPE data in background
   }, []);
 
   if (isArtifact) {
