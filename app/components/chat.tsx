@@ -51,6 +51,7 @@ import HeadphoneIcon from "../icons/headphone.svg";
 import LightningIcon from "../icons/lightning.svg";
 
 import { useTokenCount } from "../hooks/useTokenCount";
+import { useCostEstimate } from "../hooks/useCostEstimate";
 import {
   BOT_HELLO,
   ChatMessage,
@@ -1034,6 +1035,7 @@ function _Chat() {
   const inputRef = useRef<HTMLTextAreaElement>(null);
   const [userInput, setUserInput] = useState("");
   const [isLoading, setIsLoading] = useState(false);
+  const { display: costDisplay } = useCostEstimate(userInput);
   const { submitKey, shouldSubmit } = useSubmitHandler();
   const scrollRef = useRef<HTMLDivElement>(null);
   const isScrolledToBottom = scrollRef?.current
@@ -2152,7 +2154,11 @@ function _Chat() {
                 )}
                 <IconButton
                   icon={<SendWhiteIcon />}
-                  text={Locale.Chat.Send}
+                  text={
+                    costDisplay
+                      ? `${Locale.Chat.Send} ${costDisplay}`
+                      : Locale.Chat.Send
+                  }
                   className={styles["chat-input-send"]}
                   type="primary"
                   onClick={() => doSubmit(userInput)}
