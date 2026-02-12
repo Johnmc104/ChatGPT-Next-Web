@@ -54,6 +54,13 @@ export type ChatMessageTool = {
   errorMsg?: string;
 };
 
+export interface TokenUsage {
+  promptTokens: number;
+  completionTokens: number;
+  totalTokens: number;
+  cost?: number; // calculated dollar cost, if pricing available
+}
+
 export type ChatMessage = RequestMessage & {
   date: string;
   streaming?: boolean;
@@ -63,6 +70,7 @@ export type ChatMessage = RequestMessage & {
   tools?: ChatMessageTool[];
   audio_url?: string;
   isMcpResponse?: boolean;
+  usage?: TokenUsage;
 };
 
 export function createMessage(override: Partial<ChatMessage>): ChatMessage {
@@ -471,11 +479,18 @@ export const useChatStore = createPersistStore(
               session.messages = session.messages.concat();
             });
           },
-          async onFinish(message) {
+          async onFinish(message, _responseRes, usage) {
             botMessage.streaming = false;
             if (message) {
               botMessage.content = message;
               botMessage.date = new Date().toLocaleString();
+              if (usage) {
+                botMessage.usage = {
+                  promptTokens: usage.promptTokens,
+                  completionTokens: usage.completionTokens,
+                  totalTokens: usage.totalTokens,
+                };
+              }
               get().onNewMessage(botMessage, session);
             }
             ChatControllerPool.remove(session.id, botMessage.id);

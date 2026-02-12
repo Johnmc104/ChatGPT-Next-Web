@@ -51,7 +51,9 @@ import HeadphoneIcon from "../icons/headphone.svg";
 import LightningIcon from "../icons/lightning.svg";
 
 import { useTokenCount } from "../hooks/useTokenCount";
-import { useCostEstimate } from "../hooks/useCostEstimate";
+import { useCostEstimate, formatCost } from "../hooks/useCostEstimate";
+import { useModelInfo } from "../hooks/useModelInfo";
+import { TokenUsage } from "../store/chat";
 import {
   BOT_HELLO,
   ChatMessage,
@@ -1038,6 +1040,26 @@ function _Chat() {
   const [userInput, setUserInput] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const { display: costDisplay } = useCostEstimate(userInput);
+  const { getModelInfo: getModelPricing } = useModelInfo();
+
+  // Helper: compute cost display for a response message with usage data
+  const getMessageCostDisplay = useCallback(
+    (message: ChatMessage): string => {
+      if (!message.usage) return "";
+      const modelId = message.model || session.mask.modelConfig.model;
+      const info = getModelPricing(modelId);
+      if (!info?.pricing) {
+        // No pricing info, show token counts only
+        return `${message.usage.promptTokens}+${message.usage.completionTokens} tokens`;
+      }
+      const cost =
+        message.usage.promptTokens * info.pricing.input +
+        message.usage.completionTokens * info.pricing.output;
+      return formatCost(cost);
+    },
+    [getModelPricing, session.mask.modelConfig.model],
+  );
+
   const { submitKey, shouldSubmit } = useSubmitHandler();
   const scrollRef = useRef<HTMLDivElement>(null);
   const isScrolledToBottom = scrollRef?.current
@@ -1908,6 +1930,14 @@ function _Chat() {
                             {!isUser && (
                               <div className={styles["chat-model-name"]}>
                                 {message.model}
+                                {message.usage && (
+                                  <span
+                                    className={styles["chat-message-cost"]}
+                                    title={`Prompt: ${message.usage.promptTokens.toLocaleString()} tokens\nCompletion: ${message.usage.completionTokens.toLocaleString()} tokens\nTotal: ${message.usage.totalTokens.toLocaleString()} tokens`}
+                                  >
+                                    {getMessageCostDisplay(message)}
+                                  </span>
+                                )}
                               </div>
                             )}
 

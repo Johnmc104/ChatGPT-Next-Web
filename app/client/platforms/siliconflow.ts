@@ -108,6 +108,9 @@ export class SiliconflowApi implements LLMApi {
     const requestPayload: RequestPayload = {
       messages,
       stream: options.config.stream,
+      ...(options.config.stream
+        ? { stream_options: { include_usage: true } }
+        : {}),
       model: modelConfig.model,
       temperature: modelConfig.temperature,
       presence_penalty: modelConfig.presence_penalty,

@@ -413,6 +413,17 @@
     font-size: 12px;
     color: var(--black);
     margin-left: 6px;
+
+    .chat-message-cost {
+      margin-left: 6px;
+      color: #999;
+      font-variant-numeric: tabular-nums;
+
+      &::before {
+        content: "·";
+        margin-right: 4px;
+      }
+    }
   }
 }
 

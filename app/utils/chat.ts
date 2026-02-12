@@ -193,6 +193,9 @@ export function stream(
   let running = false;
   let runTools: any[] = [];
   let responseRes: Response;
+  let usageData:
+    | { promptTokens: number; completionTokens: number; totalTokens: number }
+    | undefined;
 
   // animate response to make it looks smooth
   function animateResponseText() {
@@ -291,7 +294,7 @@ export function stream(
       }
       console.debug("[ChatAPI] end");
       finished = true;
-      options.onFinish(responseText + remainText, responseRes); // 将res传递给onFinish
+      options.onFinish(responseText + remainText, responseRes, usageData); // 将res传递给onFinish
     }
   };
 
@@ -367,6 +370,18 @@ export function stream(
           return;
         }
         try {
+          // Try to extract usage data from SSE chunk
+          try {
+            const json = JSON.parse(text);
+            if (json.usage) {
+              usageData = {
+                promptTokens: json.usage.prompt_tokens ?? 0,
+                completionTokens: json.usage.completion_tokens ?? 0,
+                totalTokens: json.usage.total_tokens ?? 0,
+              };
+            }
+          } catch {}
+
           const chunk = parseSSE(text, runTools);
           if (chunk) {
             remainText += chunk;
@@ -419,6 +434,9 @@ export function streamWithThink(
   let isInThinkingMode = false;
   let lastIsThinking = false;
   let lastIsThinkingTagged = false; //between <think> and </think> tags
+  let usageData:
+    | { promptTokens: number; completionTokens: number; totalTokens: number }
+    | undefined;
 
   // animate response to make it looks smooth
   function animateResponseText() {
@@ -517,7 +535,7 @@ export function streamWithThink(
       }
       console.debug("[ChatAPI] end");
       finished = true;
-      options.onFinish(responseText + remainText, responseRes);
+      options.onFinish(responseText + remainText, responseRes, usageData);
     }
   };
 
@@ -593,6 +611,18 @@ export function streamWithThink(
           return;
         }
         try {
+          // Try to extract usage data from SSE chunk
+          try {
+            const json = JSON.parse(text);
+            if (json.usage) {
+              usageData = {
+                promptTokens: json.usage.prompt_tokens ?? 0,
+                completionTokens: json.usage.completion_tokens ?? 0,
+                totalTokens: json.usage.total_tokens ?? 0,
+              };
+            }
+          } catch {}
+
           const chunk = parseSSE(text, runTools);
           // Skip if content is empty
           if (!chunk?.content || chunk.content.length === 0) {

@@ -106,6 +106,7 @@ export class DoubaoApi implements LLMApi {
     const requestPayload: RequestPayloadForByteDance = {
       messages,
       stream: shouldStream,
+      ...(shouldStream ? { stream_options: { include_usage: true } } : {}),
       model: modelConfig.model,
       temperature: modelConfig.temperature,
       presence_penalty: modelConfig.presence_penalty,
