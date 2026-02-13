@@ -535,6 +535,10 @@ export function streamWithThink(
       }
       console.debug("[ChatAPI] end");
       finished = true;
+      // Close thinking marker if stream ends while still in thinking mode
+      if (isInThinkingMode) {
+        remainText += "\n<!--/THINKING-->";
+      }
       options.onFinish(responseText + remainText, responseRes, usageData);
     }
   };
@@ -657,7 +661,7 @@ export function streamWithThink(
               if (remainText.length > 0) {
                 remainText += "\n";
               }
-              remainText += "> " + chunk.content;
+              remainText += "<!--THINKING-->\n> " + chunk.content;
             } else {
               // Handle newlines in thinking content
               if (chunk.content.includes("\n\n")) {
@@ -672,7 +676,7 @@ export function streamWithThink(
             if (isInThinkingMode || isThinkingChanged) {
               // If switching from thinking mode to normal mode
               isInThinkingMode = false;
-              remainText += "\n\n" + chunk.content;
+              remainText += "\n<!--/THINKING-->\n\n" + chunk.content;
             } else {
               remainText += chunk.content;
             }

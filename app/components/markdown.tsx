@@ -259,16 +259,15 @@ function CustomCode(props: { children: any; className?: string }) {
 }
 
 function escapeBrackets(text: string) {
-  const pattern =
-    /(```[\s\S]*?```|`.*?`)|\\\[([\s\S]*?[^\\])\\\]|\\\((.*?)\\\)/g;
+  const pattern = /(```[\s\S]*?```|`.*?`)|\\\[([\s\S]*?)\\\]|\\\((.*?)\\\)/g;
   return text.replace(
     pattern,
     (match, codeBlock, squareBracket, roundBracket) => {
       if (codeBlock) {
         return codeBlock;
-      } else if (squareBracket) {
+      } else if (squareBracket != null) {
         return `$$${squareBracket}$$`;
-      } else if (roundBracket) {
+      } else if (roundBracket != null) {
         return `$${roundBracket}$`;
       }
       return match;
@@ -306,7 +305,13 @@ function _MarkDownContent(props: { content: string }) {
     <ReactMarkdown
       remarkPlugins={[RemarkMath, RemarkGfm, RemarkBreaks]}
       rehypePlugins={[
-        RehypeKatex,
+        [
+          RehypeKatex,
+          {
+            strict: "ignore",
+            throwOnError: false,
+          },
+        ],
         [
           RehypeHighlight,
           {

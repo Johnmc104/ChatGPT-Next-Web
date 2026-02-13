@@ -259,12 +259,40 @@ export function getMessageTextContentWithoutThinking(message: RequestMessage) {
     }
   }
 
-  // Filter out thinking lines (starting with "> ")
-  return content
-    .split("\n")
-    .filter((line) => !line.startsWith("> ") && line.trim() !== "")
-    .join("\n")
-    .trim();
+  // New format: strip content between <!--THINKING--> and <!--/THINKING--> markers
+  if (content.includes("<!--THINKING-->")) {
+    return content
+      .replace(/<!--THINKING-->[\s\S]*?<!--\/THINKING-->/g, "")
+      .replace(/\n{3,}/g, "\n\n")
+      .trim();
+  }
+
+  // Backward compatibility: strip leading blockquote lines (old thinking format)
+  // Old format used "> " prefix for thinking content, always at the start of the message.
+  // Only strips consecutive "> " / empty lines from the beginning, preserving blockquotes
+  // that appear later in the response.
+  const lines = content.split("\n");
+  let thinkingEndIndex = 0;
+  for (let i = 0; i < lines.length; i++) {
+    const line = lines[i];
+    if (line.startsWith("> ") || line.trim() === "") {
+      thinkingEndIndex = i + 1;
+    } else {
+      break;
+    }
+  }
+
+  // Only strip if we found leading blockquote lines (not just empty lines)
+  if (thinkingEndIndex > 0) {
+    const hasBlockquote = lines
+      .slice(0, thinkingEndIndex)
+      .some((l) => l.startsWith("> "));
+    if (hasBlockquote) {
+      return lines.slice(thinkingEndIndex).join("\n").trim();
+    }
+  }
+
+  return content.trim();
 }
 
 export function getMessageImages(message: RequestMessage): string[] {

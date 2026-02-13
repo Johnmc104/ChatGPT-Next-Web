@@ -14,8 +14,10 @@ const config: Config = {
   setupFilesAfterEnv: ["<rootDir>/jest.setup.ts"],
   moduleNameMapper: {
     "^@/(.*)$": "<rootDir>/$1",
+    "^nanoid$": "<rootDir>/test/__mocks__/nanoid",
   },
-  extensionsToTreatAsEsm: [".ts", ".tsx"],
+  // Allow Jest to transform ESM-only packages
+  transformIgnorePatterns: ["/node_modules/(?!(nanoid)/)"],
   injectGlobals: true,
   collectCoverageFrom: [
     "app/api/auth.ts",

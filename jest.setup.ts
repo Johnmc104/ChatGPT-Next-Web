@@ -1,7 +1,8 @@
 // Learn more: https://github.com/testing-library/jest-dom
 import "@testing-library/jest-dom";
-import { jest } from "@jest/globals";
 
+// jest is available globally via injectGlobals: true in jest.config.ts
+/* eslint-disable no-undef */
 global.fetch = jest.fn(() =>
   Promise.resolve({
     ok: true,
