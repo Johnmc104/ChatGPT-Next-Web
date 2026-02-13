@@ -163,3 +163,100 @@ export function cleanResponseHeaders(resHeaders: Headers): Headers {
   newHeaders.delete("content-encoding");
   return newHeaders;
 }
+
+// ── Retry with exponential backoff ─────────────────────────────────────────
+
+export interface RetryOptions {
+  /** Maximum number of attempts (default: 3). First attempt is not a "retry". */
+  maxAttempts?: number;
+  /** Initial delay in ms before the first retry (default: 500). */
+  baseDelayMs?: number;
+  /** Maximum delay in ms (default: 5000). */
+  maxDelayMs?: number;
+  /** HTTP status codes that should trigger a retry (default: [429, 502, 503, 504]). */
+  retryableStatuses?: number[];
+}
+
+const DEFAULT_RETRYABLE_STATUSES = [429, 502, 503, 504];
+
+/**
+ * Execute a fetch with automatic retry and exponential backoff.
+ *
+ * Only retries on:
+ * - Network errors (fetch throws)
+ * - Retryable HTTP status codes (429, 502, 503, 504 by default)
+ *
+ * Does NOT retry on:
+ * - Successful responses (2xx, 3xx)
+ * - Client errors (4xx except 429)
+ * - Abort/timeout signals
+ * - Streaming responses (content-type contains "stream") — to avoid partial re-sends
+ *
+ * @param url     The URL to fetch
+ * @param init    Standard RequestInit options
+ * @param options Retry configuration
+ * @returns       The Response from the final attempt
+ */
+export async function fetchWithRetry(
+  url: string,
+  init: RequestInit,
+  options?: RetryOptions,
+): Promise<Response> {
+  const maxAttempts = options?.maxAttempts ?? 3;
+  const baseDelayMs = options?.baseDelayMs ?? 500;
+  const maxDelayMs = options?.maxDelayMs ?? 5000;
+  const retryableStatuses =
+    options?.retryableStatuses ?? DEFAULT_RETRYABLE_STATUSES;
+
+  let lastError: Error | undefined;
+
+  for (let attempt = 1; attempt <= maxAttempts; attempt++) {
+    try {
+      const response = await fetch(url, init);
+
+      // Don't retry streaming responses to avoid partial data issues
+      const contentType = response.headers.get("content-type") ?? "";
+      if (contentType.includes("stream")) {
+        return response;
+      }
+
+      // Success or non-retryable error
+      if (!retryableStatuses.includes(response.status)) {
+        return response;
+      }
+
+      // Retryable status — if we have attempts left, wait and retry
+      if (attempt < maxAttempts) {
+        const delay = Math.min(
+          baseDelayMs * Math.pow(2, attempt - 1) + Math.random() * 200,
+          maxDelayMs,
+        );
+        await new Promise((resolve) => setTimeout(resolve, delay));
+        continue;
+      }
+
+      // Last attempt — return whatever we got
+      return response;
+    } catch (err: any) {
+      lastError = err;
+
+      // Don't retry on abort (timeout or manual cancellation)
+      if (err?.name === "AbortError") {
+        throw err;
+      }
+
+      // Network error — retry if we have attempts left
+      if (attempt < maxAttempts) {
+        const delay = Math.min(
+          baseDelayMs * Math.pow(2, attempt - 1) + Math.random() * 200,
+          maxDelayMs,
+        );
+        await new Promise((resolve) => setTimeout(resolve, delay));
+        continue;
+      }
+    }
+  }
+
+  // All attempts failed
+  throw lastError ?? new Error("fetchWithRetry: all attempts exhausted");
+}

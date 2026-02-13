@@ -2,23 +2,24 @@
  * Accurate token counting using js-tiktoken (BPE tokenizer).
  *
  * Uses the `o200k_base` encoding (GPT-4o family) as a universal approximation.
- * The encoding data (~2MB) is lazy-loaded from CDN on first use to avoid
- * bloating the main bundle. Falls back to the heuristic `estimateTokenLength`
- * while loading or if loading fails.
+ * Both the Tiktoken class and the encoding data (~2MB) are lazy-loaded via
+ * dynamic import to avoid bloating the main bundle. Falls back to the heuristic
+ * `estimateTokenLength` while loading or if loading fails.
  */
 
-import { Tiktoken } from "js-tiktoken/lite";
 import { estimateTokenLength } from "./token";
 
 // ── singleton encoder (lazy via dynamic import) ─────────────────────────────
-let encoder: Tiktoken | null = null;
+// Both the Tiktoken class and the BPE rank data are loaded dynamically.
+// This ensures zero bytes from js-tiktoken enter the initial JavaScript bundle.
+let encoder: { encode: (text: string) => number[] } | null = null;
 let loadingPromise: Promise<void> | null = null;
 let loadFailed = false;
 
 /**
  * Start loading the BPE ranks in the background.
- * The ~2MB o200k_base data is loaded via dynamic import (code-split by
- * bundler) so it doesn't bloat the initial JS bundle.
+ * The Tiktoken class (~15KB) and o200k_base data (~2MB) are loaded via
+ * dynamic import (code-split by bundler) so they don't bloat the initial JS bundle.
  * Safe to call multiple times – only one import will be triggered.
  */
 export function preloadEncoder(): void {
@@ -28,9 +29,10 @@ export function preloadEncoder(): void {
 
 async function loadEncoderInternal(): Promise<void> {
   try {
-    const { default: o200k_base } = await import(
-      "js-tiktoken/ranks/o200k_base"
-    );
+    const [{ Tiktoken }, { default: o200k_base }] = await Promise.all([
+      import("js-tiktoken/lite"),
+      import("js-tiktoken/ranks/o200k_base"),
+    ]);
     encoder = new Tiktoken(o200k_base);
     console.log("[tiktoken] o200k_base encoder loaded successfully");
   } catch (err) {

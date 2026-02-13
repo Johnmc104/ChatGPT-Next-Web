@@ -8,6 +8,7 @@ import {
   buildUpstreamHeaders,
   cleanResponseHeaders,
   createTimeoutController,
+  fetchWithRetry,
 } from "./url-builder";
 import { logger } from "@/app/utils/logger";
 
@@ -67,7 +68,7 @@ export async function handle(
   };
 
   try {
-    const res = await fetch(fetchUrl, fetchOptions);
+    const res = await fetchWithRetry(fetchUrl, fetchOptions);
     return new Response(res.body, {
       status: res.status,
       statusText: res.statusText,

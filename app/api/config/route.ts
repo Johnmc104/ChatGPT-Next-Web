@@ -25,7 +25,13 @@ declare global {
 }
 
 async function handle() {
-  return NextResponse.json(DANGER_CONFIG);
+  return NextResponse.json(DANGER_CONFIG, {
+    headers: {
+      // Config rarely changes — cache for 5 min, serve stale for 1 hour while revalidating
+      "Cache-Control":
+        "public, max-age=300, s-maxage=300, stale-while-revalidate=3600",
+    },
+  });
 }
 
 export const GET = handle;

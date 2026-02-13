@@ -98,7 +98,7 @@ import { ClientApi, MultimodalContent } from "../client/api";
 import { createTTSPlayer } from "../utils/audio";
 import { MsEdgeTTS, OUTPUT_FORMAT } from "../utils/ms_edge_tts";
 
-import { isEmpty } from "lodash-es";
+import isEmpty from "lodash-es/isEmpty";
 import { RealtimeChat } from "@/app/components/realtime-chat";
 import clsx from "clsx";
 
@@ -301,9 +301,12 @@ function _Chat() {
     }, 30);
   };
 
-  const onUserStop = (messageId: string) => {
-    ChatControllerPool.stop(session.id, messageId);
-  };
+  const onUserStop = useCallback(
+    (messageId: string) => {
+      ChatControllerPool.stop(session.id, messageId);
+    },
+    [session.id],
+  );
 
   useEffect(() => {
     chatStore.updateTargetSession(session, (session) => {
@@ -356,76 +359,90 @@ function _Chat() {
     }
   };
 
-  const deleteMessage = (msgId?: string) => {
-    chatStore.updateTargetSession(
-      session,
-      (session) =>
-        (session.messages = session.messages.filter((m) => m.id !== msgId)),
-    );
-  };
+  const deleteMessage = useCallback(
+    (msgId?: string) => {
+      chatStore.updateTargetSession(
+        session,
+        (session) =>
+          (session.messages = session.messages.filter((m) => m.id !== msgId)),
+      );
+    },
+    [chatStore, session],
+  );
 
-  const onDelete = (msgId: string) => {
-    deleteMessage(msgId);
-  };
+  const onDelete = useCallback(
+    (msgId: string) => {
+      deleteMessage(msgId);
+    },
+    [deleteMessage],
+  );
 
-  const onResend = (message: ChatMessage) => {
-    const resendingIndex = session.messages.findIndex(
-      (m) => m.id === message.id,
-    );
+  const onResend = useCallback(
+    (message: ChatMessage) => {
+      const resendingIndex = session.messages.findIndex(
+        (m) => m.id === message.id,
+      );
 
-    if (resendingIndex < 0 || resendingIndex >= session.messages.length) {
-      console.error("[Chat] failed to find resending message", message);
-      return;
-    }
+      if (resendingIndex < 0 || resendingIndex >= session.messages.length) {
+        console.error("[Chat] failed to find resending message", message);
+        return;
+      }
 
-    let userMessage: ChatMessage | undefined;
-    let botMessage: ChatMessage | undefined;
+      let userMessage: ChatMessage | undefined;
+      let botMessage: ChatMessage | undefined;
 
-    if (message.role === "assistant") {
-      botMessage = message;
-      for (let i = resendingIndex; i >= 0; i -= 1) {
-        if (session.messages[i].role === "user") {
-          userMessage = session.messages[i];
-          break;
+      if (message.role === "assistant") {
+        botMessage = message;
+        for (let i = resendingIndex; i >= 0; i -= 1) {
+          if (session.messages[i].role === "user") {
+            userMessage = session.messages[i];
+            break;
+          }
+        }
+      } else if (message.role === "user") {
+        userMessage = message;
+        for (let i = resendingIndex; i < session.messages.length; i += 1) {
+          if (session.messages[i].role === "assistant") {
+            botMessage = session.messages[i];
+            break;
+          }
         }
       }
-    } else if (message.role === "user") {
-      userMessage = message;
-      for (let i = resendingIndex; i < session.messages.length; i += 1) {
-        if (session.messages[i].role === "assistant") {
-          botMessage = session.messages[i];
-          break;
-        }
+
+      if (userMessage === undefined) {
+        console.error("[Chat] failed to resend", message);
+        return;
       }
-    }
 
-    if (userMessage === undefined) {
-      console.error("[Chat] failed to resend", message);
-      return;
-    }
+      deleteMessage(userMessage.id);
+      deleteMessage(botMessage?.id);
 
-    deleteMessage(userMessage.id);
-    deleteMessage(botMessage?.id);
+      setIsLoading(true);
+      const textContent = getMessageTextContent(userMessage);
+      const images = getMessageImages(userMessage);
+      chatStore
+        .onUserInput(textContent, images)
+        .then(() => setIsLoading(false));
+      inputRef.current?.focus();
+    },
+    [chatStore, session.messages, deleteMessage],
+  );
 
-    setIsLoading(true);
-    const textContent = getMessageTextContent(userMessage);
-    const images = getMessageImages(userMessage);
-    chatStore.onUserInput(textContent, images).then(() => setIsLoading(false));
-    inputRef.current?.focus();
-  };
+  const onPinMessage = useCallback(
+    (message: ChatMessage) => {
+      chatStore.updateTargetSession(session, (session) =>
+        session.mask.context.push(message),
+      );
 
-  const onPinMessage = (message: ChatMessage) => {
-    chatStore.updateTargetSession(session, (session) =>
-      session.mask.context.push(message),
-    );
-
-    showToast(Locale.Chat.Actions.PinToastContent, {
-      text: Locale.Chat.Actions.PinToastAction,
-      onClick: () => {
-        setShowPromptModal(true);
-      },
-    });
-  };
+      showToast(Locale.Chat.Actions.PinToastContent, {
+        text: Locale.Chat.Actions.PinToastAction,
+        onClick: () => {
+          setShowPromptModal(true);
+        },
+      });
+    },
+    [chatStore, session],
+  );
 
   const accessStore = useAccessStore();
   const [speechStatus, setSpeechStatus] = useState(false);
@@ -1117,6 +1134,7 @@ function _Chat() {
                               className={styles["chat-message-item-image"]}
                               src={getMessageImages(message)[0]}
                               alt=""
+                              loading="lazy"
                             />
                           )}
                           {getMessageImages(message).length > 1 && (
@@ -1139,6 +1157,7 @@ function _Chat() {
                                     key={index}
                                     src={image}
                                     alt=""
+                                    loading="lazy"
                                   />
                                 );
                               })}

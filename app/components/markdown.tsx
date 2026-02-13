@@ -5,9 +5,15 @@ import RemarkBreaks from "remark-breaks";
 import RehypeKatex from "rehype-katex";
 import RemarkGfm from "remark-gfm";
 import RehypeHighlight from "rehype-highlight";
-import { useRef, useState, RefObject, useEffect, useMemo } from "react";
+import {
+  useRef,
+  useState,
+  RefObject,
+  useEffect,
+  useMemo,
+  useCallback,
+} from "react";
 import { copyToClipboard, useWindowSize } from "../utils";
-import mermaid from "mermaid";
 import Locale from "../locales";
 import LoadingIcon from "../icons/three-dots.svg";
 import ReloadButtonIcon from "../icons/reload.svg";
@@ -25,19 +31,42 @@ import { IconButton } from "./button";
 import { useAppConfig } from "../store/config";
 import clsx from "clsx";
 
-export function Mermaid(props: { code: string }) {
+// Lazy-load mermaid only when a mermaid code block is detected.
+// The mermaid library is ~304KB (5 chunks) — no need to load it for every chat.
+let mermaidModule: (typeof import("mermaid"))["default"] | null = null;
+let mermaidLoadPromise: Promise<(typeof import("mermaid"))["default"]> | null =
+  null;
+
+function loadMermaid() {
+  if (mermaidModule) return Promise.resolve(mermaidModule);
+  if (!mermaidLoadPromise) {
+    mermaidLoadPromise = import("mermaid").then((mod) => {
+      mermaidModule = mod.default;
+      return mermaidModule;
+    });
+  }
+  return mermaidLoadPromise;
+}
+
+export const Mermaid = React.memo(function Mermaid(props: { code: string }) {
   const ref = useRef<HTMLDivElement>(null);
   const [hasError, setHasError] = useState(false);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     if (props.code && ref.current) {
-      mermaid
-        .run({
-          nodes: [ref.current],
-          suppressErrors: true,
-        })
+      setLoading(true);
+      loadMermaid()
+        .then((m) =>
+          m.run({
+            nodes: [ref.current!],
+            suppressErrors: true,
+          }),
+        )
+        .then(() => setLoading(false))
         .catch((e) => {
           setHasError(true);
+          setLoading(false);
           console.error("[Mermaid] ", e.message);
         });
     }
@@ -69,7 +98,7 @@ export function Mermaid(props: { code: string }) {
       {props.code}
     </div>
   );
-}
+});
 
 export function PreCode(props: { children: any }) {
   const ref = useRef<HTMLPreElement>(null);

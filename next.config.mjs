@@ -1,4 +1,9 @@
 import webpack from "webpack";
+import bundleAnalyzer from "@next/bundle-analyzer";
+
+const withBundleAnalyzer = bundleAnalyzer({
+  enabled: process.env.ANALYZE === "true",
+});
 
 const mode = process.env.BUILD_MODE ?? "standalone";
 console.log("[Next] build mode", mode);
@@ -42,6 +47,13 @@ const nextConfig = {
   },
   experimental: {
     forceSwcTransforms: true,
+    // Optimize barrel re-exports for these packages to reduce bundle size.
+    // Next.js SWC will tree-shake unused exports at the module level.
+    optimizePackageImports: [
+      "lodash-es",
+      "emoji-picker-react",
+      "react-router-dom",
+    ],
   },
 };
 
@@ -120,4 +132,4 @@ if (mode !== "export") {
   };
 }
 
-export default nextConfig;
+export default withBundleAnalyzer(nextConfig);

@@ -13,6 +13,7 @@ import {
   normalizeBaseUrl,
   cleanResponseHeaders,
   createTimeoutController,
+  fetchWithRetry,
 } from "./url-builder";
 import { logger } from "@/app/utils/logger";
 
@@ -188,7 +189,7 @@ export async function requestOpenai(req: NextRequest, authResult?: AuthResult) {
   }
 
   try {
-    const res = await fetch(fetchUrl, fetchOptions);
+    const res = await fetchWithRetry(fetchUrl, fetchOptions);
 
     const newHeaders = cleanResponseHeaders(res.headers);
 

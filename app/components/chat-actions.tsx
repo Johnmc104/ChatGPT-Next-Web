@@ -58,7 +58,7 @@ import styles from "./chat.module.scss";
 // TokenUsageIndicator — shows context window usage bar
 // ---------------------------------------------------------------------------
 
-export function TokenUsageIndicator({ userInput }: { userInput?: string }) {
+function _TokenUsageIndicator({ userInput }: { userInput?: string }) {
   const { usedTokens, contextLimit, usageRatio, display, ready } =
     useTokenCount(userInput);
 
@@ -98,11 +98,13 @@ export function TokenUsageIndicator({ userInput }: { userInput?: string }) {
   );
 }
 
+export const TokenUsageIndicator = React.memo(_TokenUsageIndicator);
+
 // ---------------------------------------------------------------------------
 // ChatAction — a single action button (icon + expanding label)
 // ---------------------------------------------------------------------------
 
-export function ChatAction(props: {
+function _ChatAction(props: {
   text: string;
   icon: JSX.Element;
   onClick: () => void;
@@ -144,6 +146,8 @@ export function ChatAction(props: {
     </div>
   );
 }
+
+export const ChatAction = React.memo(_ChatAction);
 
 // ---------------------------------------------------------------------------
 // MCPAction — MCP tool market shortcut

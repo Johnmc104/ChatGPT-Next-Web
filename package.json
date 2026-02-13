@@ -60,6 +60,7 @@
     "zustand": "^4.3.8"
   },
   "devDependencies": {
+    "@next/bundle-analyzer": "^16.1.6",
     "@tauri-apps/api": "^2.1.1",
     "@tauri-apps/cli": "1.5.11",
     "@testing-library/dom": "^10.4.0",

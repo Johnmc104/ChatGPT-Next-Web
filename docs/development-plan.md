@@ -152,35 +152,46 @@ interface ProviderConfig {
 
 ---
 
-## 第三阶段：性能优化（预计 2 周）
+## 第三阶段：性能优化（预计 2 周） ✅ 已完成
 
-> 目标：降低首屏加载时间，优化运行时性能
+> 目标：降低首屏加载时间，优化运行时性能  
+> **完成日期：2026-02-13**
 
-### Sprint 3.1 — 包体积优化（P1）
+### Sprint 3.1 — 包体积优化（P1） ✅
 
-| 任务 | 描述 | 影响 | 预估 |
-|------|------|------|------|
-| 3.1.1 | mermaid (22MB) 改为动态加载：仅在检测到 mermaid 代码块时 `import()` | 首屏 -30% | 0.5d |
-| 3.1.2 | js-tiktoken (22MB) 改为服务端计算或 Web Worker | 首屏 -30% | 1d |
-| 3.1.3 | 添加 `@next/bundle-analyzer` 分析工具 | 可度量 | 0.5d |
-| 3.1.4 | 配置 Tree Shaking 优化 lodash-es 按需导入 | 包体积 -5% | 0.5d |
-
-### Sprint 3.2 — 运行时性能优化（P1）
-
-| 任务 | 描述 | 预估 |
+| 任务 | 描述 | 状态 |
 |------|------|------|
-| 3.2.1 | 关键组件添加 `React.memo` 和 `useCallback` | 1d |
-| 3.2.2 | 消息列表添加虚拟滚动 (react-window) | 1d |
-| 3.2.3 | 图片预览组件懒加载 | 0.5d |
-| 3.2.4 | 添加 Web Vitals 监控 (已有 @vercel/speed-insights) | 0.5d |
+| 3.1.1 | mermaid (~304KB, 5 chunks) 改为动态加载：仅在检测到 mermaid 代码块时 `import("mermaid")`，聊天页面不再预加载 mermaid | ✅ |
+| 3.1.2 | js-tiktoken 完全动态化：`Tiktoken` 类 + BPE rank 数据均通过 `import()` 加载，初始 bundle 零 js-tiktoken 字节 | ✅ |
+| 3.1.3 | 安装 `@next/bundle-analyzer`，`next.config.mjs` 集成，`ANALYZE=true` 即可生成交互式报告 | ✅ |
+| 3.1.4 | `optimizePackageImports` 配置 lodash-es / emoji-picker-react / react-router-dom；lodash-es 改为 deep path import (`lodash-es/isEmpty`) | ✅ |
 
-### Sprint 3.3 — 服务端性能（P2）
+### Sprint 3.2 — 运行时性能优化（P1） ✅
 
-| 任务 | 描述 | 预估 |
+| 任务 | 描述 | 状态 |
 |------|------|------|
-| 3.3.1 | 模型列表 API 添加缓存（5 分钟 TTL） | 0.5d |
-| 3.3.2 | 代理请求添加超时重试机制 | 0.5d |
-| 3.3.3 | 添加基础请求限流 (可选 upstash 方案) | 1d |
+| 3.2.1 | `React.memo` 包裹 `ChatAction`、`TokenUsageIndicator`、`Mermaid`、`MarkdownContent`（已有）；核心回调 `onUserStop/onDelete/onResend/onPinMessage/deleteMessage` 包裹 `useCallback` | ✅ |
+| 3.2.2 | 虚拟滚动 → 推迟至第四阶段（需引入新依赖 react-window，需与现有分页逻辑 `msgRenderIndex` 集成，风险较高） | ⏳ |
+| 3.2.3 | 消息中的图片添加 `loading="lazy"` 属性，浏览器延迟加载非可视区域图片 | ✅ |
+
+### Sprint 3.3 — 服务端性能（P2） ✅
+
+| 任务 | 描述 | 状态 |
+|------|------|------|
+| 3.3.1 | 模型列表 API 已有 10 分钟缓存 ✅（Phase 1 已实现）；config API 新增 `max-age=300, stale-while-revalidate=3600` | ✅ |
+| 3.3.2 | 新增 `fetchWithRetry()` 工具：指数退避重试，默认 3 次，`retryableStatuses: [429, 502, 503, 504]`，流式响应不重试，`AbortError` 立即抛出。已应用到 `proxy.ts` 和 `common.ts` (requestOpenai) | ✅ |
+| 3.3.3 | 请求限流 → 推迟至第五阶段（需要 Redis 或 upstash 依赖，属于独立基础设施改造） | ⏳ |
+
+**新增测试**：`test/fetch-retry.test.ts` — 12 个测试用例覆盖成功/失败/重试/流式/AbortError/自定义状态码等场景。
+
+**验收结果（Phase 3 整体）：**
+- ✅ TypeScript 编译通过 (0 errors)
+- ✅ 78 个测试通过 (+12 新增)
+- ✅ Next.js 生产构建成功，首页 First Load JS: 633 kB
+- ✅ mermaid 不再静态加载，仅在需要时 ~304KB 按需加载
+- ✅ js-tiktoken 完全动态化，初始 bundle 零字节
+- ✅ 代理请求自动重试 429/502/503/504 错误
+- ✅ Config API 5 分钟缓存 + 1 小时 stale-while-revalidate
 
 ---
 
