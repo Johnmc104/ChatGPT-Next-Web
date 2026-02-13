@@ -195,86 +195,189 @@ interface ProviderConfig {
 
 ---
 
-## 第四阶段：社区高需求功能（预计 4 周）
+## 阶段间评审记录
 
-> 目标：实现 PRD 中高价值低难度的功能需求
+> 2026-02-14：Phase 1-3 全部完成并通过上线测试，进行全面代码审查后更新计划。
 
-### Sprint 4.1 — DeepSeek 思考过程优化 (#6137/#6183)
+### 代码健康度快照（Phase 3 完成时）
 
-| 任务 | 描述 | 预估 |
+| 指标 | 数值 | 备注 |
 |------|------|------|
-| 4.1.1 | 实现 `<think>` 标签内容的折叠/展开 UI 组件 | 1d |
-| 4.1.2 | 适配阿里云 DeepSeek 的 think 内容格式 | 0.5d |
-| 4.1.3 | 适配其他平台的 reasoning 输出格式 | 0.5d |
+| 总代码行数 (app/) | 29,058 | .ts/.tsx 文件 |
+| 测试数量 | 85 个 (8 个文件) | 覆盖集中在 auth/url-builder/logger |
+| 最大组件文件 | chat.tsx 1,323 行 | Phase 2 已从 2,247 行拆分 |
+| 最大 Store | chat.ts 951 行 | 未拆分，含状态+副作用+业务逻辑 |
+| 平台客户端未迁移 | 8 个 (2,700+ 行) | openai/anthropic/google/glm/baidu/tencent/alibaba/iflytek |
+| 首页 First Load JS | 633 kB | mermaid + tiktoken 已动态化 |
+| 依赖 | React 18.2 / Next.js 14.1 / TS 5.2 | 均有主版本升级可用 |
 
-### Sprint 4.2 — 自定义模型增强 (#4663/#5050/#5646)
+### 已完成但未在原计划中的功能
 
-| 任务 | 描述 | 预估 |
+| 功能 | 来源 | 状态 |
 |------|------|------|
-| 4.2.1 | 自定义模型支持图片输入配置 (#4663) | 0.5d |
-| 4.2.2 | CUSTOM_MODELS 支持通配符/正则 (#5050) | 0.5d |
-| 4.2.3 | 允许自定义生成聊天标题的模型 (#5646) | 0.5d |
+| Token 用量追踪 (`TokenUsage` 接口 + UI 进度条) | 近期提交 c63f9bce | ✅ |
+| 发送前成本估算 (`useCostEstimate` hook) | 近期提交 875011ab | ✅ |
+| 模型信息缓存 (`/api/model-info/` + 10min cache) | 近期提交 e32fc50f | ✅ |
+| 快捷键基础框架 (6 个快捷键 + 提示面板) | 已存在于 chat.tsx | ✅ |
 
-### Sprint 4.3 — WebDAV 同步增强 (#4532/#2837/#4821)
+### 发现的新问题
 
-| 任务 | 描述 | 预估 |
-|------|------|------|
-| 4.3.1 | 修复 WebDAV 同步后删除的对话恢复问题 (#2837) | 1d |
-| 4.3.2 | 实现基于时间戳的增量同步 | 2d |
-| 4.3.3 | 添加自动同步选项（可配置间隔） (#4821) | 1d |
-
-### Sprint 4.4 — 快捷键与 UX 提升 (#5135)
-
-| 任务 | 描述 | 预估 |
-|------|------|------|
-| 4.4.1 | 实现快捷键框架 (`useHotkeys` hook) | 0.5d |
-| 4.4.2 | Ctrl+N 新对话、Ctrl+K 搜索、Ctrl+/ 切换侧栏等 | 1d |
-| 4.4.3 | 快捷键提示面板 | 0.5d |
-
-### Sprint 4.5 — LaTeX 渲染修复 (#3239)
-
-| 任务 | 描述 | 预估 |
-|------|------|------|
-| 4.5.1 | 排查 markdown 渲染流水线中 LaTeX 被错误转义的问题 | 1d |
-| 4.5.2 | 添加 LaTeX 渲染测试用例 | 0.5d |
+| 问题 | 位置 | 严重度 |
+|------|------|--------|
+| `getMessageTextContentWithoutThinking()` 使用 `> ` 前缀判断 think 内容，会误删合法 blockquote | `app/utils.ts:248-269` | P1 |
+| WebDAV `sync()` 中 `client.get()` 被调用两次（double-fetch） | `app/store/sync.ts:100,107` | P2 |
+| `escapeBrackets()` 正则不匹配 `\[x\\]` 格式的 LaTeX | `app/components/markdown.tsx:262-277` | P2 |
+| `RehypeKatex` 无 `strict`/`throwOnError` 配置，错误 LaTeX 显示红色报错 | `app/components/markdown.tsx` | P2 |
+| `@vercel/analytics` 版本极旧 (0.1.11)，当前稳定版 1.x | `package.json` | P3 |
+| `eslint-config-next` 13.4.19 与 Next.js 14.x 不匹配 | `package.json` | P3 |
+| `rt-client` 通过 GitHub tarball 安装，非 npm 常规依赖 | `package.json` | P3 |
 
 ---
 
-## 第五阶段：高级功能（预计 6+ 周）
+## 第四阶段：社区功能 + 代码健康（预计 4 周）
 
-> 目标：实现高价值高难度的进阶功能
+> 目标：实现 PRD 高价值需求 + 继续提升代码质量  
+> 策略调整：将 "架构补全" 与 "社区功能" 交替进行，避免长周期无功能交付
 
-### Sprint 5.1 — 联网搜索 (#6165)
+### Sprint 4.1 — DeepSeek 思考过程 UI 优化 (#6137/#6183)（P0）
+
+**现状分析**：思考内容通过 `streamWithThink()` 以 `> ` blockquote 格式渲染，无折叠/展开功能。`getMessageTextContentWithoutThinking()` 通过检测 `> ` 前缀过滤 think 内容，会误删合法 blockquote。
 
 | 任务 | 描述 | 预估 |
 |------|------|------|
-| 5.1.1 | 基于 MCP 框架实现搜索工具 | 2d |
-| 5.1.2 | 搜索结果引用显示 UI | 1d |
-| 5.1.3 | 可配置搜索引擎 (Google, Bing, DuckDuckGo) | 1d |
+| 4.1.1 | 实现 `ThinkBlock` 折叠/展开组件：默认折叠显示 "💭 思考过程"，点击展开，流式传输中自动展开 | 1d |
+| 4.1.2 | 改造 think 内容标记机制：从 `> ` blockquote 改为专用标记（如 `<!--think-start-->` / `<!--think-end-->`），避免与合法 blockquote 冲突 | 1d |
+| 4.1.3 | 修复 `getMessageTextContentWithoutThinking()`：基于新标记精确过滤，添加迁移逻辑兼容旧格式 | 0.5d |
+| 4.1.4 | 适配所有 thinking 平台输出格式（DeepSeek、阿里云、OpenAI、Google `-thinking` 模型） | 0.5d |
+| 4.1.5 | 补充思考过程相关测试（标记/过滤/折叠状态） | 0.5d |
+
+### Sprint 4.2 — 自定义模型增强 (#4663/#5050/#5646)（P0）
+
+**现状分析**：`CUSTOM_MODELS` 仅支持精确匹配和 `@provider` 语法，不支持通配符。Vision 能力仅通过内置正则列表 (`VISION_MODEL_REGEXES`) 判断，自定义模型无法声明 vision。
+
+| 任务 | 描述 | 预估 |
+|------|------|------|
+| 4.2.1 | CUSTOM_MODELS 通配符支持 (#5050)：`-openai/*` 批量禁用、`+gpt-*@openai` 批量启用 | 1d |
+| 4.2.2 | 自定义模型 vision 声明 (#4663)：`+mymodel[vision]@provider` 语法 + 图片输入按钮联动 | 0.5d |
+| 4.2.3 | 自定义摘要模型 (#5646)：新增 `SUMMARIZE_MODEL` 配置项（环境变量 + UI），覆盖默认的标题/摘要生成模型 | 0.5d |
+| 4.2.4 | 补充 `collectModelTable()` 通配符/vision 解析测试用例 | 0.5d |
+
+### Sprint 4.3 — LaTeX 渲染修复 (#3239)（P1）
+
+**现状分析**：`escapeBrackets()` 正则有边界条件 bug，`RehypeKatex` 无错误处理配置。
+
+| 任务 | 描述 | 预估 |
+|------|------|------|
+| 4.3.1 | 修复 `escapeBrackets()` 正则：处理 `\[x\\]`、嵌套 `\(...\)` 边界情况 | 0.5d |
+| 4.3.2 | 配置 `RehypeKatex`：`strict: false`, `throwOnError: false`，优雅降级而非红色报错 | 0.5d |
+| 4.3.3 | 添加 LaTeX 渲染测试：常见公式、边界情况、行内/块级混合 | 0.5d |
+
+### Sprint 4.4 — WebDAV 同步修复 (#4532/#2837/#4821)（P1）
+
+**现状分析**：`sync()` 存在 double-fetch bug，无增量同步，无自动同步。
+
+| 任务 | 描述 | 预估 |
+|------|------|------|
+| 4.4.1 | 修复 `sync()` double-fetch：合并两次 `client.get()` 为一次 | 0.5d |
+| 4.4.2 | 修复删除对话恢复问题 (#2837)：添加 tombstone 标记，合并时尊重删除操作 | 1d |
+| 4.4.3 | 实现基于时间戳的增量同步：对比 `lastSyncTime`，仅传输变更的对话 | 2d |
+| 4.4.4 | 添加自动同步 (#4821)：可配置间隔（默认关闭），`visibilitychange` 事件触发 | 1d |
+| 4.4.5 | WebDAV 同步测试（合并逻辑、增量检测、tombstone 处理） | 1d |
+
+### Sprint 4.5 — 平台客户端迁移第二波（P1）
+
+**现状分析**：8 个平台仍为独立实现（共 2,700+ 行），与 base.ts 存在大量重复代码。评估后 4 个可迁移（协议接近 OpenAI 兼容），4 个保持独立（协议差异大）。
+
+| 任务 | 描述 | 预估 |
+|------|------|------|
+| 4.5.1 | 迁移 Alibaba（277 行）→ base.ts：需处理自定义 thinking 格式 | 0.5d |
+| 4.5.2 | 迁移 GLM（292 行）→ base.ts：需适配本地 BasePayload 差异 | 0.5d |
+| 4.5.3 | 迁移 iFlytek（253 行）→ base.ts 或 thin wrapper | 0.5d |
+| 4.5.4 | 迁移 Tencent（278 行）→ base.ts 或 thin wrapper | 0.5d |
+| 4.5.5 | 保留独立实现：OpenAI（587 行，代表性实现）、Anthropic（424 行，非 OpenAI 协议）、Google（317 行，Gemini 协议）、Baidu（284 行，认证签名特殊） | — |
+| 4.5.6 | 平台客户端集成测试（至少覆盖 chat/models 方法的请求构建） | 1d |
+
+**预期效果**：平台客户端从 3,371 → ~2,300 行（-30%）
+
+### Sprint 4.6 — 测试覆盖扩展（P1）
+
+**现状分析**：85 个测试覆盖 29,058 行代码，测试比不足 0.3%。核心业务逻辑（chat store、组件交互、平台客户端）零测试覆盖。
+
+| 任务 | 描述 | 预估 |
+|------|------|------|
+| 4.6.1 | chat.ts store 测试：消息管理（增删改）、上下文裁剪、记忆生成 | 1d |
+| 4.6.2 | model.ts 工具测试：`collectModelTable()`、`isVisionModel()`、模型过滤逻辑 | 0.5d |
+| 4.6.3 | 修复已有的 2 个失败测试（model-available 逻辑错误、nanoid ESM 兼容） | 0.5d |
+
+**目标**：测试数量从 85 → 120+（40% 增长），chat store 覆盖率 > 60%
+
+---
+
+## 第五阶段：高级功能 + 技术升级（预计 6+ 周）
+
+> 目标：实现高价值进阶功能，同步进行技术栈现代化
+
+### Sprint 5.1 — 联网搜索 (#6165)
+
+**现状分析**：MCP 基础设施已存在（`app/mcp/` 699 行），支持 Server Actions + stdio transport。但 MCP 仅限服务端环境，纯静态部署不可用。
+
+| 任务 | 描述 | 预估 |
+|------|------|------|
+| 5.1.1 | 基于现有 MCP 框架实现 web-search tool（复用 `actions.ts` 调度） | 1d |
+| 5.1.2 | 搜索结果引用显示 UI（行内引用编号 + 底部来源卡片） | 1d |
+| 5.1.3 | 可配置搜索引擎（Google、Bing、DuckDuckGo；环境变量 + UI 选择） | 1d |
+| 5.1.4 | 非 MCP 环境降级方案（通过 API 端点代理搜索请求） | 1d |
 
 ### Sprint 5.2 — 文档问答 (#5096)
 
 | 任务 | 描述 | 预估 |
 |------|------|------|
-| 5.2.1 | 文件上传组件 (支持 PDF, TXT, DOCX) | 2d |
-| 5.2.2 | 文件内容提取和分块 | 2d |
+| 5.2.1 | 文件上传组件（支持 PDF、TXT、DOCX、Markdown） | 2d |
+| 5.2.2 | 文件内容提取和分块（客户端处理，无需额外后端） | 2d |
 | 5.2.3 | 上下文注入与引用显示 | 2d |
 
-### Sprint 5.3 — 多模态增强 (#3110)
+### Sprint 5.3 — 实时语音对话增强 (#5672/#3110)
+
+**现状分析**：`realtime-chat/` 已有基础实现（361 行），支持 OpenAI 和 Azure Realtime API，但功能有限 — 无文本显示、无错误恢复、TODO 较多。
 
 | 任务 | 描述 | 预估 |
 |------|------|------|
-| 5.3.1 | 统一多模态消息格式 | 2d |
-| 5.3.2 | 音频输入/输出支持 | 3d |
-| 5.3.3 | 实时语音对话 (OpenAI Realtime API) (#5672) | 5d |
+| 5.3.1 | 补全实时对话功能：上下文消息发送（已有 TODO）、文本实时显示、错误恢复 | 2d |
+| 5.3.2 | 统一多模态消息格式：文本 + 图片 + 音频统一的 `MultimodalContent` 处理 | 2d |
+| 5.3.3 | 音频输入/输出增强：非 Realtime API 的标准音频消息支持 | 3d |
 
-### Sprint 5.4 — 国际化恢复
+### Sprint 5.4 — 依赖升级路线图
+
+**现状分析**：核心依赖落后主版本。
+
+| 任务 | 描述 | 预估 | 风险 |
+|------|------|------|------|
+| 5.4.1 | TypeScript 5.2 → 5.7+：解锁 `satisfies`、NoInfer 等新特性 | 0.5d | 低 |
+| 5.4.2 | ESLint 8 → 9 + flat config + eslint-config-next 14.x 对齐 | 1d | 中 |
+| 5.4.3 | Next.js 14 → 15：App Router 稳定、React 19 支持（需单独分支） | 2d | 高 |
+| 5.4.4 | React 18 → 19：Server Components 增强、useFormStatus 等（依赖 Next.js 15） | 1d | 高 |
+| 5.4.5 | 清理问题依赖：`@vercel/analytics` 0.1→1.x、`node-fetch` 移除（Next.js 内置）、`rt-client` 改用 npm 发布版本 | 0.5d | 低 |
+
+**策略**：5.4.1-5.4.2 可独立进行；5.4.3-5.4.4 必须在单独分支完整测试。
+
+### Sprint 5.5 — 国际化恢复
 
 | 任务 | 描述 | 预估 |
 |------|------|------|
-| 5.4.1 | 从原项目恢复主要语言包 (ja, ko, es, de, fr 等) | 1d |
-| 5.4.2 | 建立翻译贡献流程 | 0.5d |
-| 5.4.3 | 添加语言完整性检查脚本 | 0.5d |
+| 5.5.1 | 从原项目恢复主要语言包 (ja, ko, es, de, fr 等) | 1d |
+| 5.5.2 | 建立翻译贡献流程 | 0.5d |
+| 5.5.3 | 添加语言完整性检查脚本（对比 cn.ts 的 key 完整度） | 0.5d |
+
+---
+
+## 推迟事项追踪
+
+| 事项 | 原计划 | 推迟原因 | 目标阶段 |
+|------|--------|----------|----------|
+| 虚拟滚动 (react-window) | Phase 3 Sprint 3.2 | 需引入新依赖 + 与 `msgRenderIndex` 分页集成，风险高 | Phase 5+ |
+| 请求限流 (upstash) | Phase 3 Sprint 3.3 | 需 Redis 基础设施，独立改造 | Phase 5+ |
+| 模型管理动态化 | Phase 2 Sprint 2.4 | 涉及 API 端点 + constant.ts 大改动 | Phase 5+ |
+| chat.ts Store 拆分 | — (新发现) | 951 行含状态+副作用+业务逻辑，应拆为 chat-state + chat-actions | Phase 5+ |
 
 ---
 
@@ -294,7 +397,7 @@ interface ProviderConfig {
 
 | 事项 | 描述 | 优先级 |
 |------|------|--------|
-| ESLint 升级到 v9 | 使用 flat config 格式 | P2 |
+| ESLint 升级到 v9 | 使用 flat config 格式（归入 Sprint 5.4.2） | P2 |
 | 启用 unused-imports 规则 | 当前设为 off，应改为 warn | P1 |
 | 添加 Prettier 格式化 | 统一代码风格 | P2 |
 | 组件文件大小限制 | ESLint 自定义规则，单文件不超过 500 行 | P2 |
@@ -305,36 +408,36 @@ interface ProviderConfig {
 |------|------|--------|
 | 错误上报 | 集成 Sentry 或类似服务 | P1 |
 | 性能监控 | Web Vitals 持续追踪 | P2 |
-| API 调用监控 | 成功率、延迟、Token 消耗统计 | P2 |
+| API 调用监控 | 成功率、延迟、Token 消耗统计（基础已有 TokenUsage 接口） | P2 |
 
 ---
 
 ## 里程碑时间线
 
 ```
-2026-02    2026-03    2026-04    2026-05    2026-06
-   │          │          │          │          │
-   ├─ Phase 1 ─┤          │          │          │
-   │  基础加固  │          │          │          │
-   │           ├── Phase 2 ──┤        │          │
-   │           │  架构优化    │        │          │
-   │           │             ├ Phase 3 ┤          │
-   │           │             │ 性能优化 │          │
-   │           │             │         ├─ Phase 4 ──┤
-   │           │             │         │ 社区功能    │
-   │           │             │         │            ├─ Phase 5 ──>
-   │           │             │         │            │   高级功能
+2026-02              2026-03              2026-04              2026-05              2026-06
+   │                    │                    │                    │                    │
+   ├── Phase 1 ✅ ──────┤                    │                    │                    │
+   │   基础加固          │                    │                    │                    │
+   ├── Phase 2 ✅ ──────┤                    │                    │                    │
+   │   架构优化          │                    │                    │                    │
+   ├── Phase 3 ✅ ──────┤                    │                    │                    │
+   │   性能优化          │                    │                    │                    │
+   │                    ├──── Phase 4 ────────┤                    │                    │
+   │                    │  社区功能+代码健康    │                    │                    │
+   │                    │                    ├───── Phase 5 ───────┤────────────────────┤
+   │                    │                    │  高级功能+技术升级    │                    │
 ```
 
 ### 关键里程碑
 
 | 日期 | 里程碑 | 验收指标 |
 |------|--------|---------|
-| 2026-02-28 | Phase 1 完成 | 测试覆盖率 >15%，auth 模块零重复 fix |
-| 2026-03-21 | Phase 2 完成 | chat.tsx <500 行，新增平台 <50 行 |
-| 2026-04-04 | Phase 3 完成 | 首屏加载时间 <3s (4G)，Lighthouse >80 |
-| 2026-05-02 | Phase 4 完成 | 完成 5 个社区高需求 Issue |
-| 2026-06-30 | Phase 5 完成 | 支持联网搜索 + 文档问答 |
+| 2026-02-13 | Phase 1 完成 ✅ | 55 测试通过，auth 覆盖率 89%，API 层零裸 console.log |
+| 2026-02-14 | Phase 2 完成 ✅ | chat.tsx 1303 行，新增平台 20 行，66 测试通过 |
+| 2026-02-14 | Phase 3 完成 ✅ | mermaid/tiktoken 动态化，fetchWithRetry，78 测试通过 |
+| 2026-03-14 | Phase 4 完成 | Think 折叠 UI、CUSTOM_MODELS 通配符、LaTeX 修复、WebDAV 增量同步、测试 120+ |
+| 2026-05-30 | Phase 5 完成 | 联网搜索、文档问答、实时语音增强、依赖升级到最新 |
 
 ---
 
@@ -342,12 +445,14 @@ interface ProviderConfig {
 
 | 风险 | 概率 | 影响 | 缓解措施 |
 |------|------|------|----------|
-| Next.js 15 升级引入 Breaking Changes | 高 | 中 | 在 Phase 3 后单独分支测试 |
-| 平台 API 频繁变化 | 高 | 低 | 动态模型管理 + 平台抽象层 |
-| 重构导致回归 bug | 中 | 高 | 每次重构前先补充测试 |
+| Think 标记格式变更导致历史消息渲染异常 | 高 | 中 | 4.1.3 中实现旧格式兼容迁移 |
+| WebDAV 增量同步引入数据丢失 | 中 | 高 | tombstone 机制 + 完整测试 + 用户可选 fallback 到全量同步 |
+| Next.js 15 升级引入 Breaking Changes | 高 | 中 | 单独分支测试，Phase 5.4 处理 |
+| 平台 API 频繁变化 | 高 | 低 | 动态模型管理 + 平台抽象层 (base.ts) |
+| 重构导致回归 bug | 中 | 高 | Sprint 4.6 扩展测试覆盖；每次重构前先补充测试 |
 | 社区贡献质量参差不齐 | 中 | 中 | PR Review 流程 + CI 门禁 |
-| 大依赖懒加载影响用户体验 | 低 | 中 | 添加 loading 状态 + 预加载策略 |
+| 大依赖懒加载影响用户体验 | 低 | 中 | 已有 loading 状态（Phase 3），可追加 prefetch 策略 |
 
 ---
 
-*本计划为滚动规划，建议每 2 周回顾一次，根据实际进度和社区反馈调整优先级。*
+*本计划为滚动规划，每个阶段完成后进行全面审查更新。上次审查：2026-02-14（Phase 3 完成后）。*
