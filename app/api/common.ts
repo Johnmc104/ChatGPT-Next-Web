@@ -8,6 +8,13 @@ import {
 import { cloudflareAIGatewayUrl } from "../utils/cloudflare";
 import { getModelProvider, isModelNotavailableInServer } from "../utils/model";
 import { type AuthResult } from "./auth";
+import {
+  buildFetchUrl,
+  normalizeBaseUrl,
+  cleanResponseHeaders,
+  createTimeoutController,
+} from "./url-builder";
+import { logger } from "@/app/utils/logger";
 
 const serverConfig = getServerSideConfig();
 
@@ -52,108 +59,32 @@ export function resolveAuthHeaderValue(
 }
 
 export async function requestOpenai(req: NextRequest, authResult?: AuthResult) {
-  const controller = new AbortController();
-
   const isAzure = req.nextUrl.pathname.includes("azure/deployments");
 
-  var authValue,
-    authHeaderName = "";
-  if (isAzure) {
-    authValue =
-      req.headers
-        .get("Authorization")
-        ?.trim()
-        .replaceAll("Bearer ", "")
-        .trim() ?? "";
+  // Resolve auth header name and value
+  const authHeaderName = isAzure ? "api-key" : "Authorization";
+  const isBearer = !isAzure;
+  let authValue = resolveAuthHeaderValue(req, authResult, {
+    isBearer,
+    headerName: authHeaderName,
+  });
 
-    authHeaderName = "api-key";
-  } else {
-    authValue = req.headers.get("Authorization") ?? "";
-    authHeaderName = "Authorization";
-  }
-
-  // Resolve the correct auth value for upstream API calls:
-  // Priority: 1) User's own API key  2) System API key  3) Original auth header
-  const userApiKey = req.headers.get("X-User-Api-Key");
-  if (userApiKey) {
-    // User provided their own API key
-    authValue = isAzure ? userApiKey : `Bearer ${userApiKey}`;
-  } else if (authResult?.systemApiKey) {
-    // User authenticated with access code, use server's API key
-    authValue = isAzure
-      ? authResult.systemApiKey
-      : `Bearer ${authResult.systemApiKey}`;
-  } else if (
-    authValue.includes(ACCESS_CODE_PREFIX) ||
-    authValue.replace("Bearer ", "").trim().startsWith("nk-")
-  ) {
-    // Fallback safety: if the auth header still contains an access code prefix,
-    // try to use the server's API key to prevent forwarding access codes upstream
-    const fallbackKey = isAzure
-      ? serverConfig.azureApiKey
-      : serverConfig.apiKey;
-    if (fallbackKey) {
-      authValue = isAzure ? fallbackKey : `Bearer ${fallbackKey}`;
-    }
+  // Fallback safety for Azure: if resolveAuthHeaderValue returned empty,
+  // try server config directly
+  if (!authValue && isAzure && serverConfig.azureApiKey) {
+    authValue = serverConfig.azureApiKey;
   }
 
   let path = `${req.nextUrl.pathname}`.replaceAll("/api/openai/", "");
 
-  let baseUrl =
-    (isAzure ? serverConfig.azureUrl : serverConfig.baseUrl) || OPENAI_BASE_URL;
-
-  if (!baseUrl.startsWith("http")) {
-    baseUrl = `https://${baseUrl}`;
-  }
-
-  if (baseUrl.endsWith("/")) {
-    baseUrl = baseUrl.slice(0, -1);
-  }
-
-  // Known API endpoint paths
-  const apiEndpoints = [
-    "/v1/chat/completions",
-    "/v1/completions",
-    "/v1/embeddings",
-    "/v1/images/generations",
-    "/v1/audio/speech",
-    "/v1/audio/transcriptions",
-    "/v1/models",
-    "/chat/completions",
-  ];
-
-  // Check if BASE_URL already contains an API endpoint path
-  // If so, we need to handle path replacement intelligently
-  let baseUrlEndpoint = "";
-  for (const endpoint of apiEndpoints) {
-    if (baseUrl.toLowerCase().endsWith(endpoint)) {
-      baseUrlEndpoint = endpoint;
-      break;
-    }
-  }
-
-  // Extract the base URL without the endpoint (if present)
-  const baseUrlWithoutEndpoint = baseUrlEndpoint
-    ? baseUrl.slice(0, -baseUrlEndpoint.length)
-    : baseUrl;
-
-  // Determine if the current request path matches the endpoint in BASE_URL
-  const requestPath = "/" + path;
-  const requestMatchesBaseEndpoint =
-    baseUrlEndpoint && requestPath.toLowerCase() === baseUrlEndpoint;
-
-  console.log("[Proxy] ", path);
-  console.log("[Base Url]", baseUrl);
-  console.log("[Base URL endpoint]", baseUrlEndpoint || "none");
-  console.log("[Request path]", requestPath);
-  console.log("[Request matches base endpoint]", requestMatchesBaseEndpoint);
-
-  const timeoutId = setTimeout(
-    () => {
-      controller.abort();
-    },
-    10 * 60 * 1000,
+  let baseUrl = normalizeBaseUrl(
+    (isAzure ? serverConfig.azureUrl : serverConfig.baseUrl) || OPENAI_BASE_URL,
   );
+
+  logger.debug("[OpenAI Proxy]", path);
+  logger.debug("[Base Url]", baseUrl);
+
+  const { signal, cleanup: cleanupTimeout } = createTimeoutController();
 
   if (isAzure) {
     const azureApiVersion =
@@ -187,32 +118,18 @@ export async function requestOpenai(req: NextRequest, authResult?: AuthResult) {
           }
         });
       if (realDeployName) {
-        console.log("[Replace with DeployId", realDeployName);
+        logger.debug("[Azure] Replace with DeployId", realDeployName);
         path = path.replaceAll(modelName, realDeployName);
       }
     }
   }
 
-  // Determine the final URL:
-  // 1. If BASE_URL has an endpoint and request matches it -> use BASE_URL directly
-  // 2. If BASE_URL has an endpoint but request is different -> replace endpoint
-  // 3. If BASE_URL has no endpoint -> append path as usual
-  let fetchUrl: string;
-  if (baseUrlEndpoint) {
-    if (requestMatchesBaseEndpoint) {
-      // Request matches the endpoint in BASE_URL, use it directly
-      fetchUrl = baseUrl;
-    } else {
-      // Request is for a different endpoint, replace the endpoint part
-      fetchUrl = cloudflareAIGatewayUrl(
-        `${baseUrlWithoutEndpoint}${requestPath}`,
-      );
-    }
-  } else {
-    // BASE_URL doesn't have an endpoint, append path normally
-    fetchUrl = cloudflareAIGatewayUrl(`${baseUrl}/${path}`);
-  }
-  console.log("fetchUrl", fetchUrl);
+  const fetchUrl = buildFetchUrl({
+    baseUrl,
+    requestPath: "/" + path,
+    useCloudflareGateway: true,
+  });
+  logger.info("[OpenAI] fetchUrl", fetchUrl);
   const fetchOptions: RequestInit = {
     headers: {
       "Content-Type": "application/json",
@@ -224,11 +141,10 @@ export async function requestOpenai(req: NextRequest, authResult?: AuthResult) {
     },
     method: req.method,
     body: req.body,
-    // to fix #2485: https://stackoverflow.com/questions/55920957/cloudflare-worker-typeerror-one-time-use-body
     redirect: "manual",
     // @ts-ignore
     duplex: "half",
-    signal: controller.signal,
+    signal,
   };
 
   // Check if using custom BASE_URL (e.g., OpenRouter, other compatible APIs)
@@ -267,41 +183,19 @@ export async function requestOpenai(req: NextRequest, authResult?: AuthResult) {
         );
       }
     } catch (e) {
-      console.error("[OpenAI] gpt4 filter", e);
+      logger.error("[OpenAI] gpt4 filter", e);
     }
   }
 
   try {
     const res = await fetch(fetchUrl, fetchOptions);
 
-    // Extract the OpenAI-Organization header from the response
-    const openaiOrganizationHeader = res.headers.get("OpenAI-Organization");
+    const newHeaders = cleanResponseHeaders(res.headers);
 
-    // Check if serverConfig.openaiOrgId is defined and not an empty string
-    if (serverConfig.openaiOrgId && serverConfig.openaiOrgId.trim() !== "") {
-      // If openaiOrganizationHeader is present, log it; otherwise, log that the header is not present
-      console.log("[Org ID]", openaiOrganizationHeader);
-    } else {
-      console.log("[Org ID] is not set up.");
-    }
-
-    // to prevent browser prompt for credentials
-    const newHeaders = new Headers(res.headers);
-    newHeaders.delete("www-authenticate");
-    // to disable nginx buffering
-    newHeaders.set("X-Accel-Buffering", "no");
-
-    // Conditionally delete the OpenAI-Organization header from the response if [Org ID] is undefined or empty (not setup in ENV)
-    // Also, this is to prevent the header from being sent to the client
+    // Keep OpenAI-Organization header only if configured
     if (!serverConfig.openaiOrgId || serverConfig.openaiOrgId.trim() === "") {
       newHeaders.delete("OpenAI-Organization");
     }
-
-    // The latest version of the OpenAI API forced the content-encoding to be "br" in json response
-    // So if the streaming is disabled, we need to remove the content-encoding header
-    // Because Vercel uses gzip to compress the response, if we don't remove the content-encoding header
-    // The browser will try to decode the response with brotli and fail
-    newHeaders.delete("content-encoding");
 
     return new Response(res.body, {
       status: res.status,
@@ -309,6 +203,6 @@ export async function requestOpenai(req: NextRequest, authResult?: AuthResult) {
       headers: newHeaders,
     });
   } finally {
-    clearTimeout(timeoutId);
+    cleanupTimeout();
   }
 }

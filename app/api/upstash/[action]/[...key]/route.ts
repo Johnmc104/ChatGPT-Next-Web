@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { logger } from "@/app/utils/logger";
 
 async function handle(
   req: NextRequest,
@@ -26,7 +27,7 @@ async function handle(
 
   // only allow upstash get and set method
   if (params.action !== "get" && params.action !== "set") {
-    console.log("[Upstash Route] forbidden action ", params.action);
+    logger.warn("[Upstash Route] forbidden action", params.action);
     return NextResponse.json(
       {
         error: true,
@@ -55,10 +56,10 @@ async function handle(
     duplex: "half",
   };
 
-  console.log("[Upstash Proxy]", targetUrl, fetchOptions);
+  logger.debug("[Upstash Proxy]", targetUrl);
   const fetchResult = await fetch(targetUrl, fetchOptions);
 
-  console.log("[Any Proxy]", targetUrl, {
+  logger.debug("[Upstash Proxy] response", {
     status: fetchResult.status,
     statusText: fetchResult.statusText,
   });

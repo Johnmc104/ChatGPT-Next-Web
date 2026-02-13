@@ -5,6 +5,7 @@ import { prettyObject } from "@/app/utils/format";
 import { NextRequest, NextResponse } from "next/server";
 import { auth } from "./auth";
 import { requestOpenai } from "./common";
+import { logger } from "@/app/utils/logger";
 
 const ALLOWED_PATH = new Set(Object.values(OpenaiPath));
 
@@ -30,7 +31,7 @@ export async function handle(
   req: NextRequest,
   { params }: { params: { path: string[] } },
 ) {
-  console.log("[OpenAI Route] params ", params);
+  logger.debug("[OpenAI Route] params", params);
 
   if (req.method === "OPTIONS") {
     return NextResponse.json({ body: "OK" }, { status: 200 });
@@ -39,7 +40,7 @@ export async function handle(
   const subpath = params.path.join("/");
 
   if (!ALLOWED_PATH.has(subpath)) {
-    console.log("[OpenAI Route] forbidden path ", subpath);
+    logger.warn("[OpenAI Route] forbidden path", subpath);
     return NextResponse.json(
       {
         error: true,
@@ -72,7 +73,7 @@ export async function handle(
 
     return response;
   } catch (e) {
-    console.error("[OpenAI] ", e);
+    logger.error("[OpenAI]", e);
     return NextResponse.json(prettyObject(e));
   }
 }

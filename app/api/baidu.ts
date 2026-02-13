@@ -10,6 +10,12 @@ import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/app/api/auth";
 import { isModelNotavailableInServer } from "@/app/utils/model";
 import { getAccessToken } from "@/app/utils/baidu";
+import {
+  normalizeBaseUrl,
+  cleanResponseHeaders,
+  createTimeoutController,
+} from "@/app/api/url-builder";
+import { logger } from "@/app/utils/logger";
 
 const serverConfig = getServerSideConfig();
 
@@ -17,7 +23,7 @@ export async function handle(
   req: NextRequest,
   { params }: { params: { path: string[] } },
 ) {
-  console.log("[Baidu Route] params ", params);
+  logger.debug("[Baidu Route] params", params);
 
   if (req.method === "OPTIONS") {
     return NextResponse.json({ body: "OK" }, { status: 200 });
@@ -46,35 +52,20 @@ export async function handle(
     const response = await request(req);
     return response;
   } catch (e) {
-    console.error("[Baidu] ", e);
+    logger.error("[Baidu]", e);
     return NextResponse.json(prettyObject(e));
   }
 }
 
 async function request(req: NextRequest) {
-  const controller = new AbortController();
-
   let path = `${req.nextUrl.pathname}`.replaceAll(ApiPath.Baidu, "");
 
-  let baseUrl = serverConfig.baiduUrl || BAIDU_BASE_URL;
+  let baseUrl = normalizeBaseUrl(serverConfig.baiduUrl || BAIDU_BASE_URL);
 
-  if (!baseUrl.startsWith("http")) {
-    baseUrl = `https://${baseUrl}`;
-  }
+  logger.debug("[Baidu Proxy]", path);
+  logger.debug("[Baidu Base Url]", baseUrl);
 
-  if (baseUrl.endsWith("/")) {
-    baseUrl = baseUrl.slice(0, -1);
-  }
-
-  console.log("[Proxy] ", path);
-  console.log("[Base Url]", baseUrl);
-
-  const timeoutId = setTimeout(
-    () => {
-      controller.abort();
-    },
-    10 * 60 * 1000,
-  );
+  const { signal, cleanup } = createTimeoutController();
 
   const { access_token } = await getAccessToken(
     serverConfig.baiduApiKey as string,
@@ -91,7 +82,7 @@ async function request(req: NextRequest) {
     redirect: "manual",
     // @ts-ignore
     duplex: "half",
-    signal: controller.signal,
+    signal,
   };
 
   // #1815 try to refuse some request to some models
@@ -121,24 +112,18 @@ async function request(req: NextRequest) {
         );
       }
     } catch (e) {
-      console.error(`[Baidu] filter`, e);
+      logger.error("[Baidu] filter", e);
     }
   }
   try {
     const res = await fetch(fetchUrl, fetchOptions);
 
-    // to prevent browser prompt for credentials
-    const newHeaders = new Headers(res.headers);
-    newHeaders.delete("www-authenticate");
-    // to disable nginx buffering
-    newHeaders.set("X-Accel-Buffering", "no");
-
     return new Response(res.body, {
       status: res.status,
       statusText: res.statusText,
-      headers: newHeaders,
+      headers: cleanResponseHeaders(res.headers),
     });
   } finally {
-    clearTimeout(timeoutId);
+    cleanup();
   }
 }

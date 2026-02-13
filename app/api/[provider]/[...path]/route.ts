@@ -7,13 +7,14 @@ import { handle as baiduHandler } from "../../baidu";
 import { handle as stabilityHandler } from "../../stability";
 import { handle as proxyHandler } from "../../proxy";
 import { PROVIDER_CONFIGS, createProviderHandler } from "../../provider";
+import { logger } from "@/app/utils/logger";
 
 async function handle(
   req: NextRequest,
   { params }: { params: { provider: string; path: string[] } },
 ) {
   const apiPath = `/api/${params.provider}`;
-  console.log(`[${params.provider} Route] params `, params);
+  logger.debug(`[${params.provider} Route] params`, params);
 
   // Check the generic provider registry first
   const providerConfig = PROVIDER_CONFIGS[apiPath];

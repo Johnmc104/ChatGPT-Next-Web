@@ -1,6 +1,7 @@
 import md5 from "spark-md5";
 import { NextRequest, NextResponse } from "next/server";
 import { getServerSideConfig } from "@/app/config/server";
+import { logger } from "@/app/utils/logger";
 
 async function handle(req: NextRequest, res: NextResponse) {
   const serverConfig = getServerSideConfig();
@@ -26,7 +27,7 @@ async function handle(req: NextRequest, res: NextResponse) {
         body["expiration_ttl"] = ttl;
       }
     } catch (e) {
-      console.error(e);
+      logger.error("[Artifacts]", e);
     }
     const res = await fetch(`${storeUrl()}/bulk`, {
       headers: {
@@ -37,7 +38,7 @@ async function handle(req: NextRequest, res: NextResponse) {
       body: JSON.stringify([body]),
     });
     const result = await res.json();
-    console.log("save data", result);
+    logger.debug("[Artifacts] save data", result);
     if (result?.success) {
       return NextResponse.json(
         { code: 0, id: hashedCode, result },

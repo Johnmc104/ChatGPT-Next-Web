@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 
 import { ensureModelInfo, getModelInfoCache } from "./cache";
 import type { ModelInfoResponse } from "./types";
+import { logger } from "@/app/utils/logger";
 
 /**
  * GET /api/model-info
@@ -29,7 +30,7 @@ async function handle() {
       },
     });
   } catch (err) {
-    console.error("[Model Info] Error:", err);
+    logger.error("[Model Info] Error:", err);
     return NextResponse.json(
       { error: "Failed to fetch model info", models: {}, updated_at: null },
       { status: 502 },

@@ -1,4 +1,5 @@
 import type { ModelInfo, OpenRouterModel } from "./types";
+import { logger } from "@/app/utils/logger";
 
 const OPENROUTER_MODELS_URL = "https://openrouter.ai/api/v1/models";
 
@@ -34,7 +35,7 @@ function parseModel(m: OpenRouterModel): ModelInfo {
  * Returns the number of models fetched.
  */
 export async function refreshModelInfo(): Promise<number> {
-  console.log("[Model Info] Fetching models from OpenRouter...");
+  logger.info("[Model Info] Fetching models from OpenRouter...");
 
   const res = await fetch(OPENROUTER_MODELS_URL, {
     headers: { Accept: "application/json" },
@@ -65,7 +66,7 @@ export async function refreshModelInfo(): Promise<number> {
   modelInfoCache = newCache;
   lastUpdated = new Date().toISOString();
 
-  console.log(
+  logger.info(
     `[Model Info] Cached ${
       Object.keys(newCache).length
     } models at ${lastUpdated}`,
@@ -84,7 +85,7 @@ export async function ensureModelInfo(): Promise<void> {
     fetchPromise = refreshModelInfo()
       .then(() => {})
       .catch((err) => {
-        console.error("[Model Info] Failed to fetch:", err);
+        logger.error("[Model Info] Failed to fetch:", err);
         lastUpdated = null; // allow retry
       })
       .finally(() => {

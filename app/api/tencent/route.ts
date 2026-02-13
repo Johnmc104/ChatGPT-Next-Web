@@ -4,6 +4,12 @@ import { prettyObject } from "@/app/utils/format";
 import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/app/api/auth";
 import { getHeader } from "@/app/utils/tencent";
+import {
+  normalizeBaseUrl,
+  cleanResponseHeaders,
+  createTimeoutController,
+} from "@/app/api/url-builder";
+import { logger } from "@/app/utils/logger";
 
 const serverConfig = getServerSideConfig();
 
@@ -11,7 +17,7 @@ async function handle(
   req: NextRequest,
   { params }: { params: { path: string[] } },
 ) {
-  console.log("[Tencent Route] params ", params);
+  logger.debug("[Tencent Route] params", params);
 
   if (req.method === "OPTIONS") {
     return NextResponse.json({ body: "OK" }, { status: 200 });
@@ -28,7 +34,7 @@ async function handle(
     const response = await request(req);
     return response;
   } catch (e) {
-    console.error("[Tencent] ", e);
+    logger.error("[Tencent]", e);
     return NextResponse.json(prettyObject(e));
   }
 }
@@ -58,26 +64,11 @@ export const preferredRegion = [
 ];
 
 async function request(req: NextRequest) {
-  const controller = new AbortController();
+  let baseUrl = normalizeBaseUrl(serverConfig.tencentUrl || TENCENT_BASE_URL);
 
-  let baseUrl = serverConfig.tencentUrl || TENCENT_BASE_URL;
+  logger.debug("[Tencent Base Url]", baseUrl);
 
-  if (!baseUrl.startsWith("http")) {
-    baseUrl = `https://${baseUrl}`;
-  }
-
-  if (baseUrl.endsWith("/")) {
-    baseUrl = baseUrl.slice(0, -1);
-  }
-
-  console.log("[Base Url]", baseUrl);
-
-  const timeoutId = setTimeout(
-    () => {
-      controller.abort();
-    },
-    10 * 60 * 1000,
-  );
+  const { signal, cleanup } = createTimeoutController();
 
   const fetchUrl = baseUrl;
 
@@ -94,24 +85,18 @@ async function request(req: NextRequest) {
     redirect: "manual",
     // @ts-ignore
     duplex: "half",
-    signal: controller.signal,
+    signal,
   };
 
   try {
     const res = await fetch(fetchUrl, fetchOptions);
 
-    // to prevent browser prompt for credentials
-    const newHeaders = new Headers(res.headers);
-    newHeaders.delete("www-authenticate");
-    // to disable nginx buffering
-    newHeaders.set("X-Accel-Buffering", "no");
-
     return new Response(res.body, {
       status: res.status,
       statusText: res.statusText,
-      headers: newHeaders,
+      headers: cleanResponseHeaders(res.headers),
     });
   } finally {
-    clearTimeout(timeoutId);
+    cleanup();
   }
 }

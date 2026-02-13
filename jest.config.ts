@@ -17,6 +17,14 @@ const config: Config = {
   },
   extensionsToTreatAsEsm: [".ts", ".tsx"],
   injectGlobals: true,
+  collectCoverageFrom: [
+    "app/api/auth.ts",
+    "app/api/url-builder.ts",
+    "app/utils/logger.ts",
+    "app/api/proxy.ts",
+    "app/api/common.ts",
+    "app/api/provider.ts",
+  ],
 };
 
 // createJestConfig is exported this way to ensure that next/jest can load the Next.js config which is async

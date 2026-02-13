@@ -45,9 +45,11 @@ const nextConfig = {
   },
 };
 
+const corsOrigin = process.env.CORS_ALLOW_ORIGIN ?? "*";
+
 const CorsHeaders = [
   { key: "Access-Control-Allow-Credentials", value: "true" },
-  { key: "Access-Control-Allow-Origin", value: "*" },
+  { key: "Access-Control-Allow-Origin", value: corsOrigin },
   {
     key: "Access-Control-Allow-Methods",
     value: "*",

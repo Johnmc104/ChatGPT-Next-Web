@@ -9,6 +9,12 @@ import {
 } from "@/app/constant";
 import { prettyObject } from "@/app/utils/format";
 import { resolveAuthHeaderValue } from "@/app/api/common";
+import {
+  normalizeBaseUrl,
+  cleanResponseHeaders,
+  createTimeoutController,
+} from "@/app/api/url-builder";
+import { logger } from "@/app/utils/logger";
 
 const serverConfig = getServerSideConfig();
 
@@ -16,7 +22,7 @@ export async function handle(
   req: NextRequest,
   { params }: { params: { provider: string; path: string[] } },
 ) {
-  console.log("[Google Route] params ", params);
+  logger.debug("[Google Route] params", params);
 
   if (req.method === "OPTIONS") {
     return NextResponse.json({ body: "OK" }, { status: 200 });
@@ -56,7 +62,7 @@ export async function handle(
     const response = await request(req, apiKey);
     return response;
   } catch (e) {
-    console.error("[Google] ", e);
+    logger.error("[Google]", e);
     return NextResponse.json(prettyObject(e));
   }
 }
@@ -81,34 +87,19 @@ export const preferredRegion = [
 ];
 
 async function request(req: NextRequest, apiKey: string) {
-  const controller = new AbortController();
-
-  let baseUrl = serverConfig.googleUrl || GEMINI_BASE_URL;
+  let baseUrl = normalizeBaseUrl(serverConfig.googleUrl || GEMINI_BASE_URL);
 
   let path = `${req.nextUrl.pathname}`.replaceAll(ApiPath.Google, "");
 
-  if (!baseUrl.startsWith("http")) {
-    baseUrl = `https://${baseUrl}`;
-  }
+  logger.debug("[Google Proxy]", path);
+  logger.debug("[Google Base Url]", baseUrl);
 
-  if (baseUrl.endsWith("/")) {
-    baseUrl = baseUrl.slice(0, -1);
-  }
-
-  console.log("[Proxy] ", path);
-  console.log("[Base Url]", baseUrl);
-
-  const timeoutId = setTimeout(
-    () => {
-      controller.abort();
-    },
-    10 * 60 * 1000,
-  );
+  const { signal, cleanup } = createTimeoutController();
   const fetchUrl = `${baseUrl}${path}${
     req?.nextUrl?.searchParams?.get("alt") === "sse" ? "?alt=sse" : ""
   }`;
 
-  console.log("[Fetch Url] ", fetchUrl);
+  logger.info("[Google] fetchUrl:", fetchUrl);
   const fetchOptions: RequestInit = {
     headers: {
       "Content-Type": "application/json",
@@ -117,27 +108,20 @@ async function request(req: NextRequest, apiKey: string) {
     },
     method: req.method,
     body: req.body,
-    // to fix #2485: https://stackoverflow.com/questions/55920957/cloudflare-worker-typeerror-one-time-use-body
     redirect: "manual",
     // @ts-ignore
     duplex: "half",
-    signal: controller.signal,
+    signal,
   };
 
   try {
     const res = await fetch(fetchUrl, fetchOptions);
-    // to prevent browser prompt for credentials
-    const newHeaders = new Headers(res.headers);
-    newHeaders.delete("www-authenticate");
-    // to disable nginx buffering
-    newHeaders.set("X-Accel-Buffering", "no");
-
     return new Response(res.body, {
       status: res.status,
       statusText: res.statusText,
-      headers: newHeaders,
+      headers: cleanResponseHeaders(res.headers),
     });
   } finally {
-    clearTimeout(timeoutId);
+    cleanup();
   }
 }

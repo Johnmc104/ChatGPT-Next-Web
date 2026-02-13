@@ -1,6 +1,7 @@
 import md5 from "spark-md5";
 import { DEFAULT_MODELS, DEFAULT_GA_ID } from "../constant";
 import { isGPT4Model } from "../utils/model";
+import { logger } from "@/app/utils/logger";
 
 declare global {
   namespace NodeJS {
@@ -96,6 +97,9 @@ declare global {
       DEFAULT_INPUT_TEMPLATE?: string;
 
       ENABLE_MCP?: string; // enable mcp functionality
+
+      // CORS configuration
+      CORS_ALLOW_ORIGIN?: string; // default "*", restrict via specific origin
     }
   }
 }
@@ -119,10 +123,9 @@ function getApiKey(keys?: string) {
   const randomIndex = Math.floor(Math.random() * apiKeys.length);
   const apiKey = apiKeys[randomIndex];
   if (apiKey) {
-    console.log(
-      `[Server Config] using ${randomIndex + 1} of ${
-        apiKeys.length
-      } api key - ${apiKey}`,
+    logger.keyInfo(
+      `[Server Config] using ${randomIndex + 1} of ${apiKeys.length} api key`,
+      apiKey,
     );
   }
 

@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 
 import { refreshModelInfo, getModelInfoCache } from "../cache";
+import { logger } from "@/app/utils/logger";
 
 /**
  * POST /api/model-info/refresh
@@ -22,7 +23,7 @@ async function handle() {
       updated_at,
     });
   } catch (err: any) {
-    console.error("[Model Info Refresh] Error:", err);
+    logger.error("[Model Info Refresh] Error:", err);
     return NextResponse.json(
       {
         success: false,

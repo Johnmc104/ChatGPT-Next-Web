@@ -2,6 +2,7 @@ import { NextRequest } from "next/server";
 import { getServerSideConfig } from "../config/server";
 import md5 from "spark-md5";
 import { ACCESS_CODE_PREFIX, ModelProvider } from "../constant";
+import { logger } from "@/app/utils/logger";
 
 function getIP(req: NextRequest) {
   let ip = req.ip ?? req.headers.get("x-real-ip");
@@ -42,11 +43,9 @@ export function auth(
   const hashedCode = md5.hash(accessCode ?? "").trim();
 
   const serverConfig = getServerSideConfig();
-  console.log("[Auth] allowed hashed codes: ", [...serverConfig.codes]);
-  console.log("[Auth] got access code:", accessCode);
-  console.log("[Auth] hashed access code:", hashedCode);
-  console.log("[User IP] ", getIP(req));
-  console.log("[Time] ", new Date().toLocaleString());
+  logger.debug("[Auth] code count:", serverConfig.codes.size);
+  logger.debug("[Auth] has access code:", !!accessCode);
+  logger.debug("[User IP]", getIP(req));
 
   if (serverConfig.needCode && !serverConfig.codes.has(hashedCode) && !apiKey) {
     return {
@@ -126,27 +125,21 @@ export function auth(
     // but BASE_URL is set (unified proxy mode), fall back to the default apiKey.
     // This allows all providers to share the same API key through the proxy.
     if (!systemApiKey && serverConfig.baseUrl) {
-      console.log(
+      logger.info(
         "[Auth] provider-specific key not set, falling back to default apiKey (unified proxy mode)",
       );
       systemApiKey = serverConfig.apiKey;
     }
 
     if (systemApiKey) {
-      console.log("[Auth] use system api key, length:", systemApiKey.length);
-      console.log(
-        "[Auth] api key prefix:",
-        systemApiKey.substring(0, 10) + "...",
-      );
+      logger.keyInfo("[Auth] system api key", systemApiKey);
       // Return systemApiKey so the caller can set the Authorization header
       return {
         error: false,
         systemApiKey,
       };
     } else {
-      console.log("[Auth] admin did not provide an api key");
-      console.log("[Auth] modelProvider:", modelProvider);
-      console.log("[Auth] serverConfig.apiKey exists:", !!serverConfig.apiKey);
+      logger.warn("[Auth] no api key available for provider:", modelProvider);
       // Return error if no API key is available
       return {
         error: true,
@@ -154,7 +147,7 @@ export function auth(
       };
     }
   } else {
-    console.log("[Auth] use user api key");
+    logger.info("[Auth] using user-provided api key");
     // User provided their own API key, pass it through
     return {
       error: false,
