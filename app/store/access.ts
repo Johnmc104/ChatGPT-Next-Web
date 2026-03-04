@@ -4,20 +4,6 @@ import {
   StoreKey,
   ApiPath,
   OPENAI_BASE_URL,
-  ANTHROPIC_BASE_URL,
-  GEMINI_BASE_URL,
-  BAIDU_BASE_URL,
-  BYTEDANCE_BASE_URL,
-  ALIBABA_BASE_URL,
-  TENCENT_BASE_URL,
-  MOONSHOT_BASE_URL,
-  STABILITY_BASE_URL,
-  IFLYTEK_BASE_URL,
-  DEEPSEEK_BASE_URL,
-  XAI_BASE_URL,
-  CHATGLM_BASE_URL,
-  SILICONFLOW_BASE_URL,
-  AI302_BASE_URL,
   RAGFLOW_BASE_URL,
 } from "../constant";
 import { getHeaders } from "../client/api";
@@ -31,38 +17,10 @@ let fetchState = 0; // 0 not fetch, 1 fetching, 2 done
 
 const isApp = getClientConfig()?.buildMode === "export";
 
+// Only two URLs are actively used:
+// - OpenAI: for user custom endpoint (settings page)
+// - RAGFlow: for dedicated RAGFlow upstream
 const DEFAULT_OPENAI_URL = isApp ? OPENAI_BASE_URL : ApiPath.OpenAI;
-
-const DEFAULT_GOOGLE_URL = isApp ? GEMINI_BASE_URL : ApiPath.Google;
-
-const DEFAULT_ANTHROPIC_URL = isApp ? ANTHROPIC_BASE_URL : ApiPath.Anthropic;
-
-const DEFAULT_BAIDU_URL = isApp ? BAIDU_BASE_URL : ApiPath.Baidu;
-
-const DEFAULT_BYTEDANCE_URL = isApp ? BYTEDANCE_BASE_URL : ApiPath.ByteDance;
-
-const DEFAULT_ALIBABA_URL = isApp ? ALIBABA_BASE_URL : ApiPath.Alibaba;
-
-const DEFAULT_TENCENT_URL = isApp ? TENCENT_BASE_URL : ApiPath.Tencent;
-
-const DEFAULT_MOONSHOT_URL = isApp ? MOONSHOT_BASE_URL : ApiPath.Moonshot;
-
-const DEFAULT_STABILITY_URL = isApp ? STABILITY_BASE_URL : ApiPath.Stability;
-
-const DEFAULT_IFLYTEK_URL = isApp ? IFLYTEK_BASE_URL : ApiPath.Iflytek;
-
-const DEFAULT_DEEPSEEK_URL = isApp ? DEEPSEEK_BASE_URL : ApiPath.DeepSeek;
-
-const DEFAULT_XAI_URL = isApp ? XAI_BASE_URL : ApiPath.XAI;
-
-const DEFAULT_CHATGLM_URL = isApp ? CHATGLM_BASE_URL : ApiPath.ChatGLM;
-
-const DEFAULT_SILICONFLOW_URL = isApp
-  ? SILICONFLOW_BASE_URL
-  : ApiPath.SiliconFlow;
-
-const DEFAULT_AI302_URL = isApp ? AI302_BASE_URL : ApiPath["302.AI"];
-
 const DEFAULT_RAGFLOW_URL = isApp ? RAGFLOW_BASE_URL : ApiPath.RAGFlow;
 
 const DEFAULT_ACCESS_STATE = {
@@ -71,80 +29,55 @@ const DEFAULT_ACCESS_STATE = {
 
   provider: ServiceProvider.OpenAI,
 
-  // openai
+  // --- Active fields ---
+  // OpenAI-compatible endpoint (user custom endpoint or default proxy)
   openaiUrl: DEFAULT_OPENAI_URL,
   openaiApiKey: "",
 
-  // azure
+  // RAGFlow (server-managed, client fields kept for store compatibility)
+  ragflowUrl: DEFAULT_RAGFLOW_URL,
+  ragflowApiKey: "",
+
+  // --- Legacy fields (kept for persistent store migration compatibility) ---
+  // These are NOT used in unified proxy mode but remain to avoid breaking
+  // existing users' persisted state when they upgrade.
   azureUrl: "",
   azureApiKey: "",
   azureApiVersion: "2023-08-01-preview",
-
-  // google ai studio
-  googleUrl: DEFAULT_GOOGLE_URL,
+  googleUrl: "",
   googleApiKey: "",
   googleApiVersion: "v1",
   googleSafetySettings: GoogleSafetySettingsThreshold.BLOCK_ONLY_HIGH,
-
-  // anthropic
-  anthropicUrl: DEFAULT_ANTHROPIC_URL,
+  anthropicUrl: "",
   anthropicApiKey: "",
   anthropicApiVersion: "2023-06-01",
-
-  // baidu
-  baiduUrl: DEFAULT_BAIDU_URL,
+  baiduUrl: "",
   baiduApiKey: "",
   baiduSecretKey: "",
-
-  // bytedance
-  bytedanceUrl: DEFAULT_BYTEDANCE_URL,
+  bytedanceUrl: "",
   bytedanceApiKey: "",
-
-  // alibaba
-  alibabaUrl: DEFAULT_ALIBABA_URL,
+  alibabaUrl: "",
   alibabaApiKey: "",
-
-  // moonshot
-  moonshotUrl: DEFAULT_MOONSHOT_URL,
+  moonshotUrl: "",
   moonshotApiKey: "",
-
-  //stability
-  stabilityUrl: DEFAULT_STABILITY_URL,
+  stabilityUrl: "",
   stabilityApiKey: "",
-
-  // tencent
-  tencentUrl: DEFAULT_TENCENT_URL,
+  tencentUrl: "",
   tencentSecretKey: "",
   tencentSecretId: "",
-
-  // iflytek
-  iflytekUrl: DEFAULT_IFLYTEK_URL,
+  iflytekUrl: "",
   iflytekApiKey: "",
   iflytekApiSecret: "",
-
-  // deepseek
-  deepseekUrl: DEFAULT_DEEPSEEK_URL,
+  deepseekUrl: "",
   deepseekApiKey: "",
-
-  // xai
-  xaiUrl: DEFAULT_XAI_URL,
+  xaiUrl: "",
   xaiApiKey: "",
-
-  // chatglm
-  chatglmUrl: DEFAULT_CHATGLM_URL,
+  chatglmUrl: "",
   chatglmApiKey: "",
-
-  // siliconflow
-  siliconflowUrl: DEFAULT_SILICONFLOW_URL,
+  siliconflowUrl: "",
   siliconflowApiKey: "",
-
-  // 302.AI
-  ai302Url: DEFAULT_AI302_URL,
+  ai302Url: "",
   ai302ApiKey: "",
-
-  // ragflow
-  ragflowUrl: DEFAULT_RAGFLOW_URL,
-  ragflowApiKey: "",
 
   // server config
   needCode: true,
@@ -181,62 +114,14 @@ export const useAccessStore = createPersistStore(
       return get().edgeTTSVoiceName;
     },
 
+    // -----------------------------------------------------------------------
+    // Authorization check — simplified for unified proxy architecture.
+    // Only openaiApiKey matters client-side (for user custom endpoints).
+    // RAGFlow and per-provider keys are server-managed via env vars.
+    // -----------------------------------------------------------------------
+
     isValidOpenAI() {
       return ensure(get(), ["openaiApiKey"]);
-    },
-
-    isValidAzure() {
-      return ensure(get(), ["azureUrl", "azureApiKey", "azureApiVersion"]);
-    },
-
-    isValidGoogle() {
-      return ensure(get(), ["googleApiKey"]);
-    },
-
-    isValidAnthropic() {
-      return ensure(get(), ["anthropicApiKey"]);
-    },
-
-    isValidBaidu() {
-      return ensure(get(), ["baiduApiKey", "baiduSecretKey"]);
-    },
-
-    isValidByteDance() {
-      return ensure(get(), ["bytedanceApiKey"]);
-    },
-
-    isValidAlibaba() {
-      return ensure(get(), ["alibabaApiKey"]);
-    },
-
-    isValidTencent() {
-      return ensure(get(), ["tencentSecretKey", "tencentSecretId"]);
-    },
-
-    isValidMoonshot() {
-      return ensure(get(), ["moonshotApiKey"]);
-    },
-    isValidIflytek() {
-      return ensure(get(), ["iflytekApiKey"]);
-    },
-    isValidDeepSeek() {
-      return ensure(get(), ["deepseekApiKey"]);
-    },
-
-    isValidXAI() {
-      return ensure(get(), ["xaiApiKey"]);
-    },
-
-    isValidChatGLM() {
-      return ensure(get(), ["chatglmApiKey"]);
-    },
-
-    isValidSiliconFlow() {
-      return ensure(get(), ["siliconflowApiKey"]);
-    },
-
-    isValidRAGFlow() {
-      return ensure(get(), ["ragflowApiKey"]);
     },
 
     isAuthorized() {
@@ -244,24 +129,8 @@ export const useAccessStore = createPersistStore(
 
       const state = get();
 
-      // User has their own API key - always authorized
-      if (
-        this.isValidOpenAI() ||
-        this.isValidAzure() ||
-        this.isValidGoogle() ||
-        this.isValidAnthropic() ||
-        this.isValidBaidu() ||
-        this.isValidByteDance() ||
-        this.isValidAlibaba() ||
-        this.isValidTencent() ||
-        this.isValidMoonshot() ||
-        this.isValidIflytek() ||
-        this.isValidDeepSeek() ||
-        this.isValidXAI() ||
-        this.isValidChatGLM() ||
-        this.isValidSiliconFlow() ||
-        this.isValidRAGFlow()
-      ) {
+      // User has their own API key for custom endpoint
+      if (this.isValidOpenAI()) {
         return true;
       }
 

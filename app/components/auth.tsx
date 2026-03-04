@@ -20,11 +20,8 @@ export function AuthPage() {
     // Clear any previous error
     setError("");
 
-    // Check if user has provided their own API key
-    const hasUserKey =
-      accessStore.isValidOpenAI() ||
-      accessStore.isValidGoogle() ||
-      accessStore.isValidAnthropic();
+    // Check if user has provided their own API key (unified proxy: only openaiApiKey matters)
+    const hasUserKey = accessStore.isValidOpenAI();
 
     // Check if server has API key and user provided access code (if needed)
     const hasServerKey = accessStore.hasServerApiKey;
@@ -102,19 +99,6 @@ export function AuthPage() {
             onChange={(e) => {
               accessStore.update(
                 (access) => (access.openaiApiKey = e.currentTarget.value),
-              );
-            }}
-          />
-          <PasswordInput
-            style={{ marginTop: "3vh", marginBottom: "3vh" }}
-            aria={Locale.Settings.ShowPassword}
-            aria-label={Locale.Settings.Access.Google.ApiKey.Placeholder}
-            value={accessStore.googleApiKey}
-            type="text"
-            placeholder={Locale.Settings.Access.Google.ApiKey.Placeholder}
-            onChange={(e) => {
-              accessStore.update(
-                (access) => (access.googleApiKey = e.currentTarget.value),
               );
             }}
           />

@@ -12,19 +12,6 @@ import {
   useChatStore,
 } from "../store";
 import { ChatGPTApi, DalleRequestPayload } from "./platforms/openai";
-import { GeminiProApi } from "./platforms/google";
-import { ClaudeApi } from "./platforms/anthropic";
-import { ErnieApi } from "./platforms/baidu";
-import { DoubaoApi } from "./platforms/bytedance";
-import { QwenApi } from "./platforms/alibaba";
-import { HunyuanApi } from "./platforms/tencent";
-import { MoonshotApi } from "./platforms/moonshot";
-import { SparkApi } from "./platforms/iflytek";
-import { DeepSeekApi } from "./platforms/deepseek";
-import { XAIApi } from "./platforms/xai";
-import { ChatGLMApi } from "./platforms/glm";
-import { SiliconflowApi } from "./platforms/siliconflow";
-import { Ai302Api } from "./platforms/ai302";
 import { RAGFlowApi } from "./platforms/ragflow";
 
 export const ROLES = ["system", "user", "assistant"] as const;
@@ -146,46 +133,10 @@ export class ClientApi {
   public llm: LLMApi;
 
   constructor(provider: ModelProvider = ModelProvider.GPT) {
+    // In unified proxy mode, only two paths are active:
+    // - RAGFlow: dedicated client with its own upstream URL
+    // - Everything else: OpenAI-compatible client (routes through BASE_URL proxy)
     switch (provider) {
-      case ModelProvider.GeminiPro:
-        this.llm = new GeminiProApi();
-        break;
-      case ModelProvider.Claude:
-        this.llm = new ClaudeApi();
-        break;
-      case ModelProvider.Ernie:
-        this.llm = new ErnieApi();
-        break;
-      case ModelProvider.Doubao:
-        this.llm = new DoubaoApi();
-        break;
-      case ModelProvider.Qwen:
-        this.llm = new QwenApi();
-        break;
-      case ModelProvider.Hunyuan:
-        this.llm = new HunyuanApi();
-        break;
-      case ModelProvider.Moonshot:
-        this.llm = new MoonshotApi();
-        break;
-      case ModelProvider.Iflytek:
-        this.llm = new SparkApi();
-        break;
-      case ModelProvider.DeepSeek:
-        this.llm = new DeepSeekApi();
-        break;
-      case ModelProvider.XAI:
-        this.llm = new XAIApi();
-        break;
-      case ModelProvider.ChatGLM:
-        this.llm = new ChatGLMApi();
-        break;
-      case ModelProvider.SiliconFlow:
-        this.llm = new SiliconflowApi();
-        break;
-      case ModelProvider["302.AI"]:
-        this.llm = new Ai302Api();
-        break;
       case ModelProvider.RAGFlow:
         this.llm = new RAGFlowApi();
         break;
@@ -272,143 +223,36 @@ export function getHeaders(
     headers["X-Base-URL"] = customBaseUrl;
   }
 
-  const clientConfig = getClientConfig();
+  // ---------------------------------------------------------------------------
+  // Simplified header logic for unified proxy architecture:
+  //   - All non-RAGFlow models route through BASE_URL (unified proxy)
+  //   - RAGFlow auth is entirely server-side (RAGFLOW_API_KEY env var)
+  //   - Users may provide their own openaiApiKey for custom endpoints
+  // ---------------------------------------------------------------------------
 
-  // Check if custom BASE_URL is configured (e.g., OpenRouter, Cloudflare AI Gateway)
-  // When custom URL is set, always use openaiApiKey regardless of provider
-  const useCustomUrl =
-    customBaseUrl ||
-    accessStore.hasCustomBaseUrl ||
-    (accessStore.useCustomConfig && accessStore.openaiUrl);
+  const modelConfig = chatStore.currentSession().mask.modelConfig;
+  const isRAGFlow = modelConfig.providerName === ServiceProvider.RAGFlow;
 
-  function getConfig() {
-    const modelConfig = chatStore.currentSession().mask.modelConfig;
-    const isGoogle = modelConfig.providerName === ServiceProvider.Google;
-    const isAzure = modelConfig.providerName === ServiceProvider.Azure;
-    const isAnthropic = modelConfig.providerName === ServiceProvider.Anthropic;
-    const isBaidu = modelConfig.providerName == ServiceProvider.Baidu;
-    const isByteDance = modelConfig.providerName === ServiceProvider.ByteDance;
-    const isAlibaba = modelConfig.providerName === ServiceProvider.Alibaba;
-    const isMoonshot = modelConfig.providerName === ServiceProvider.Moonshot;
-    const isIflytek = modelConfig.providerName === ServiceProvider.Iflytek;
-    const isDeepSeek = modelConfig.providerName === ServiceProvider.DeepSeek;
-    const isXAI = modelConfig.providerName === ServiceProvider.XAI;
-    const isChatGLM = modelConfig.providerName === ServiceProvider.ChatGLM;
-    const isSiliconFlow =
-      modelConfig.providerName === ServiceProvider.SiliconFlow;
-    const isAI302 = modelConfig.providerName === ServiceProvider["302.AI"];
-    const isRAGFlow = modelConfig.providerName === ServiceProvider.RAGFlow;
-    const isEnabledAccessControl = accessStore.enabledAccessControl();
+  // RAGFlow: no client-side key needed (server injects RAGFLOW_API_KEY).
+  // Everything else: user's openaiApiKey (for custom endpoint) or empty
+  // (server will inject OPENAI_API_KEY via access code auth).
+  const apiKey = isRAGFlow ? "" : accessStore.openaiApiKey;
 
-    // When using custom BASE_URL (OpenRouter, Cloudflare AI Gateway, etc.),
-    // always use openaiApiKey since all requests go through the same endpoint.
-    // Exception: RAGFlow has its own upstream and must use its own key.
-    const apiKey = isRAGFlow
-      ? accessStore.ragflowApiKey
-      : useCustomUrl
-      ? accessStore.openaiApiKey
-      : isGoogle
-      ? accessStore.googleApiKey
-      : isAzure
-      ? accessStore.azureApiKey
-      : isAnthropic
-      ? accessStore.anthropicApiKey
-      : isByteDance
-      ? accessStore.bytedanceApiKey
-      : isAlibaba
-      ? accessStore.alibabaApiKey
-      : isMoonshot
-      ? accessStore.moonshotApiKey
-      : isXAI
-      ? accessStore.xaiApiKey
-      : isDeepSeek
-      ? accessStore.deepseekApiKey
-      : isChatGLM
-      ? accessStore.chatglmApiKey
-      : isSiliconFlow
-      ? accessStore.siliconflowApiKey
-      : isIflytek
-      ? accessStore.iflytekApiKey && accessStore.iflytekApiSecret
-        ? accessStore.iflytekApiKey + ":" + accessStore.iflytekApiSecret
-        : ""
-      : isAI302
-      ? accessStore.ai302ApiKey
-      : accessStore.openaiApiKey;
-    return {
-      isGoogle,
-      isAzure,
-      isAnthropic,
-      isBaidu,
-      isByteDance,
-      isAlibaba,
-      isMoonshot,
-      isIflytek,
-      isDeepSeek,
-      isXAI,
-      isChatGLM,
-      isSiliconFlow,
-      isAI302,
-      isRAGFlow,
-      apiKey,
-      isEnabledAccessControl,
-    };
-  }
-
-  function getAuthHeader(): string {
-    return isAzure
-      ? "api-key"
-      : isAnthropic
-      ? "x-api-key"
-      : isGoogle
-      ? "x-goog-api-key"
-      : "Authorization";
-  }
-
-  const {
-    isGoogle,
-    isAzure,
-    isAnthropic,
-    isBaidu,
-    isByteDance,
-    isAlibaba,
-    isMoonshot,
-    isIflytek,
-    isDeepSeek,
-    isXAI,
-    isChatGLM,
-    isSiliconFlow,
-    isAI302,
-    apiKey,
-    isEnabledAccessControl,
-  } = getConfig();
-  // when using baidu api in app, not set auth header
-  if (isBaidu && clientConfig?.isApp) return headers;
-
-  const authHeader = getAuthHeader();
-
-  // Strategy: Send both access code AND user's API key when both are available
-  // - Access code goes in Authorization header (for server-side validation)
-  // - User's API key goes in X-User-Api-Key header (for actual API calls)
-
-  // 1. Always send access code if available (for authentication)
+  // 1. Always send access code if available (for server-side authentication)
   if (validString(accessStore.accessCode)) {
     headers["Authorization"] = getBearerToken(
       ACCESS_CODE_PREFIX + accessStore.accessCode,
     );
   }
 
-  // 2. Send user's API key in custom header if available
+  // 2. Send user's API key in custom header (server uses this for upstream calls)
   if (validString(apiKey)) {
     headers["X-User-Api-Key"] = apiKey;
   }
 
-  // 3. If no access code but has API key, also set Authorization (backward compatibility)
+  // 3. If no access code but has API key, set Authorization directly
   if (!validString(accessStore.accessCode) && validString(apiKey)) {
-    const bearerToken = getBearerToken(
-      apiKey,
-      isAzure || isAnthropic || isGoogle,
-    );
-    headers[authHeader] = bearerToken;
+    headers["Authorization"] = getBearerToken(apiKey);
   }
 
   return headers;
@@ -438,41 +282,13 @@ export function getClientApi(provider: ServiceProvider): ClientApi {
     return new ClientApi(ModelProvider.RAGFlow);
   }
 
-  // When custom BASE_URL is configured, always use OpenAI-compatible client
-  // This allows routing all models through OpenRouter/custom endpoints
+  // In unified proxy mode (BASE_URL set), all non-RAGFlow models go through
+  // OpenAI-compatible client. This is the dominant path in production.
   if (hasCustomBaseUrl()) {
     return new ClientApi(ModelProvider.GPT);
   }
 
-  // Default behavior: use provider-specific clients
-  switch (provider) {
-    case ServiceProvider.Google:
-      return new ClientApi(ModelProvider.GeminiPro);
-    case ServiceProvider.Anthropic:
-      return new ClientApi(ModelProvider.Claude);
-    case ServiceProvider.Baidu:
-      return new ClientApi(ModelProvider.Ernie);
-    case ServiceProvider.ByteDance:
-      return new ClientApi(ModelProvider.Doubao);
-    case ServiceProvider.Alibaba:
-      return new ClientApi(ModelProvider.Qwen);
-    case ServiceProvider.Tencent:
-      return new ClientApi(ModelProvider.Hunyuan);
-    case ServiceProvider.Moonshot:
-      return new ClientApi(ModelProvider.Moonshot);
-    case ServiceProvider.Iflytek:
-      return new ClientApi(ModelProvider.Iflytek);
-    case ServiceProvider.DeepSeek:
-      return new ClientApi(ModelProvider.DeepSeek);
-    case ServiceProvider.XAI:
-      return new ClientApi(ModelProvider.XAI);
-    case ServiceProvider.ChatGLM:
-      return new ClientApi(ModelProvider.ChatGLM);
-    case ServiceProvider.SiliconFlow:
-      return new ClientApi(ModelProvider.SiliconFlow);
-    case ServiceProvider["302.AI"]:
-      return new ClientApi(ModelProvider["302.AI"]);
-    default:
-      return new ClientApi(ModelProvider.GPT);
-  }
+  // Fallback: direct provider access (no unified proxy configured).
+  // Kept for completeness but not reached in current deployment.
+  return new ClientApi(ModelProvider.GPT);
 }
