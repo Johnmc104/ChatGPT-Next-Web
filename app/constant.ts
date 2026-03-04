@@ -498,6 +498,9 @@ export const EXCLUDE_VISION_MODEL_REGEXES = [
 // Reference: https://openrouter.ai/models?order=most-popular
 
 const defaultModels = [
+  // RAGFlow - 知识库（优先）
+  "ragflow/synopsys",
+
   // Anthropic Claude - 编程最强
   "anthropic/claude-opus-4.6",
   "anthropic/claude-opus-4.5",
@@ -531,9 +534,6 @@ const defaultModels = [
   // Alibaba Qwen - 国产新秀
   "qwen/qwen3-coder",
   "qwen/qwen3-235b-a22b-2507",
-
-  // RAGFlow - 知识库
-  "ragflow/synopsys",
 
   // Other
   "z-ai/glm-4.7",
@@ -629,7 +629,7 @@ const getProviderFromModelName = (
       id: "ragflow",
       providerName: "RAGFlow",
       providerType: "ragflow",
-      sorted: 12,
+      sorted: 0,
     };
   }
   return {
