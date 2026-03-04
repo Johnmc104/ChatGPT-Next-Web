@@ -38,7 +38,7 @@ export const SILICONFLOW_BASE_URL = "https://api.siliconflow.cn";
 
 export const AI302_BASE_URL = "https://api.302.ai";
 
-export const RAGFLOW_BASE_URL = "http://120.26.221.214:8081";
+export const RAGFLOW_BASE_URL = "http://git.johndaily.cn:8081";
 
 export const CACHE_URL_PREFIX = "/api/cache";
 export const UPLOAD_URL = `${CACHE_URL_PREFIX}/upload`;
