@@ -15,6 +15,7 @@ import {
   CHATGLM_BASE_URL,
   SILICONFLOW_BASE_URL,
   AI302_BASE_URL,
+  RAGFLOW_BASE_URL,
 } from "../constant";
 import { prettyObject } from "../utils/format";
 import { auth, type AuthResult } from "./auth";
@@ -126,6 +127,13 @@ export const PROVIDER_CONFIGS: Record<string, ProviderConfig> = {
     apiPath: ApiPath["302.AI"],
     serviceProvider: ServiceProvider["302.AI"],
     getBaseUrl: () => serverConfig.ai302Url || AI302_BASE_URL,
+  },
+  [ApiPath.RAGFlow]: {
+    name: "RAGFlow",
+    modelProvider: ModelProvider.RAGFlow,
+    apiPath: ApiPath.RAGFlow,
+    serviceProvider: ServiceProvider.RAGFlow,
+    getBaseUrl: () => serverConfig.ragflowUrl || RAGFLOW_BASE_URL,
   },
   [ApiPath.Anthropic]: {
     name: "Anthropic",

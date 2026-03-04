@@ -25,6 +25,7 @@ import { XAIApi } from "./platforms/xai";
 import { ChatGLMApi } from "./platforms/glm";
 import { SiliconflowApi } from "./platforms/siliconflow";
 import { Ai302Api } from "./platforms/ai302";
+import { RAGFlowApi } from "./platforms/ragflow";
 
 export const ROLES = ["system", "user", "assistant"] as const;
 export type MessageRole = (typeof ROLES)[number];
@@ -184,6 +185,9 @@ export class ClientApi {
         break;
       case ModelProvider["302.AI"]:
         this.llm = new Ai302Api();
+        break;
+      case ModelProvider.RAGFlow:
+        this.llm = new RAGFlowApi();
         break;
       default:
         this.llm = new ChatGPTApi();

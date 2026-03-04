@@ -38,6 +38,8 @@ export const SILICONFLOW_BASE_URL = "https://api.siliconflow.cn";
 
 export const AI302_BASE_URL = "https://api.302.ai";
 
+export const RAGFLOW_BASE_URL = "http://120.26.221.214:8081";
+
 export const CACHE_URL_PREFIX = "/api/cache";
 export const UPLOAD_URL = `${CACHE_URL_PREFIX}/upload`;
 
@@ -51,6 +53,7 @@ export enum Path {
   Auth = "/auth",
   Sd = "/sd",
   SdNew = "/sd-new",
+  RAGFlow = "/ragflow",
   Artifacts = "/artifacts",
   SearchChat = "/search-chat",
   McpMarket = "/mcp-market",
@@ -73,6 +76,7 @@ export enum ApiPath {
   XAI = "/api/xai",
   ChatGLM = "/api/chatglm",
   DeepSeek = "/api/deepseek",
+  RAGFlow = "/api/ragflow",
   SiliconFlow = "/api/siliconflow",
   "302.AI" = "/api/302ai",
 }
@@ -133,6 +137,7 @@ export enum ServiceProvider {
   ChatGLM = "ChatGLM",
   DeepSeek = "DeepSeek",
   SiliconFlow = "SiliconFlow",
+  RAGFlow = "RAGFlow",
   "302.AI" = "302.AI",
 }
 
@@ -160,6 +165,7 @@ export enum ModelProvider {
   ChatGLM = "ChatGLM",
   DeepSeek = "DeepSeek",
   SiliconFlow = "SiliconFlow",
+  RAGFlow = "RAGFlow",
   "302.AI" = "302.AI",
 }
 
@@ -276,6 +282,12 @@ export const AI302 = {
   ChatPath: "v1/chat/completions",
   EmbeddingsPath: "jina/v1/embeddings",
   ListModelPath: "v1/models?llm=1",
+};
+
+export const RAGFlow = {
+  ExampleEndpoint: RAGFLOW_BASE_URL,
+  ChatPath: "v1/chat/completions",
+  ListModelPath: "v1/models",
 };
 
 export const DEFAULT_INPUT_TEMPLATE = `{{input}}`; // input / time / model / lang
@@ -520,6 +532,9 @@ const defaultModels = [
   "qwen/qwen3-coder",
   "qwen/qwen3-235b-a22b-2507",
 
+  // RAGFlow - 知识库
+  "ragflow/synopsys",
+
   // Other
   "z-ai/glm-4.7",
   "minimax/minimax-m2.1",
@@ -608,6 +623,13 @@ const getProviderFromModelName = (
       providerName: "Mistral",
       providerType: "mistral",
       sorted: 11,
+    };
+  } else if (name.startsWith("ragflow/")) {
+    return {
+      id: "ragflow",
+      providerName: "RAGFlow",
+      providerType: "ragflow",
+      sorted: 12,
     };
   }
   return {
