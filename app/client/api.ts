@@ -427,6 +427,12 @@ export function hasCustomBaseUrl(): boolean {
 }
 
 export function getClientApi(provider: ServiceProvider): ClientApi {
+  // RAGFlow always uses its own client — it has its own upstream URL
+  // and must not be routed through the unified proxy (BASE_URL/OpenRouter).
+  if (provider === ServiceProvider.RAGFlow) {
+    return new ClientApi(ModelProvider.RAGFlow);
+  }
+
   // When custom BASE_URL is configured, always use OpenAI-compatible client
   // This allows routing all models through OpenRouter/custom endpoints
   if (hasCustomBaseUrl()) {
