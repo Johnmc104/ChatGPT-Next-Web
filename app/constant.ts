@@ -552,84 +552,84 @@ const getProviderFromModelName = (
   providerType: string;
   sorted: number;
 } => {
-  if (name.startsWith("anthropic/")) {
+  if (name.startsWith("ragflow/")) {
+    return {
+      id: "ragflow",
+      providerName: "RAGFlow",
+      providerType: "ragflow",
+      sorted: 1,
+    };
+  } else if (name.startsWith("anthropic/")) {
     return {
       id: "anthropic",
       providerName: "Anthropic",
       providerType: "anthropic",
-      sorted: 1,
+      sorted: 2,
     };
   } else if (name.startsWith("openai/")) {
     return {
       id: "openai",
       providerName: "OpenAI",
       providerType: "openai",
-      sorted: 2,
+      sorted: 3,
     };
   } else if (name.startsWith("google/")) {
     return {
       id: "google",
       providerName: "Google",
       providerType: "google",
-      sorted: 3,
+      sorted: 4,
     };
   } else if (name.startsWith("x-ai/")) {
-    return { id: "xai", providerName: "XAI", providerType: "xai", sorted: 4 };
+    return { id: "xai", providerName: "XAI", providerType: "xai", sorted: 5 };
   } else if (name.startsWith("deepseek/")) {
     return {
       id: "deepseek",
       providerName: "DeepSeek",
       providerType: "deepseek",
-      sorted: 5,
+      sorted: 6,
     };
   } else if (name.startsWith("z-ai/") || name.startsWith("zhipu/")) {
     return {
       id: "chatglm",
       providerName: "ChatGLM",
       providerType: "chatglm",
-      sorted: 6,
+      sorted: 7,
     };
   } else if (name.startsWith("minimax/")) {
     return {
       id: "minimax",
       providerName: "MiniMax",
       providerType: "minimax",
-      sorted: 7,
+      sorted: 8,
     };
   } else if (name.startsWith("qwen/") || name.startsWith("alibaba/")) {
     return {
       id: "alibaba",
       providerName: "Alibaba",
       providerType: "alibaba",
-      sorted: 8,
+      sorted: 9,
     };
   } else if (name.startsWith("moonshot/") || name.startsWith("moonshotai/")) {
     return {
       id: "moonshot",
       providerName: "Moonshot",
       providerType: "moonshot",
-      sorted: 9,
+      sorted: 10,
     };
   } else if (name.startsWith("meta-llama/") || name.startsWith("llama/")) {
     return {
       id: "meta",
       providerName: "Meta",
       providerType: "meta",
-      sorted: 10,
+      sorted: 11,
     };
   } else if (name.startsWith("mistral/")) {
     return {
       id: "mistral",
       providerName: "Mistral",
       providerType: "mistral",
-      sorted: 11,
-    };
-  } else if (name.startsWith("ragflow/")) {
-    return {
-      id: "ragflow",
-      providerName: "RAGFlow",
-      providerType: "ragflow",
-      sorted: 0,
+      sorted: 12,
     };
   }
   return {
