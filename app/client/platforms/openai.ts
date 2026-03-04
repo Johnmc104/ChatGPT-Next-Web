@@ -90,12 +90,6 @@ export class ChatGPTApi implements LLMApi {
 
     const isAzure = path.includes("deployments");
     if (accessStore.useCustomConfig) {
-      if (isAzure && !accessStore.isValidAzure()) {
-        throw Error(
-          "incomplete azure config, please check it in your settings page",
-        );
-      }
-
       baseUrl = isAzure ? accessStore.azureUrl : accessStore.openaiUrl;
     }
 
@@ -578,7 +572,6 @@ export class ChatGPTApi implements LLMApi {
       provider: {
         id: "openai",
         providerName: "OpenAI",
-        providerType: "openai",
         sorted: 1,
       },
     }));

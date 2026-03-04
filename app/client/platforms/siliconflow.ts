@@ -63,7 +63,6 @@ export class SiliconflowApi extends BaseOpenAICompatibleApi {
       provider: {
         id: "siliconflow",
         providerName: "SiliconFlow",
-        providerType: "siliconflow",
         sorted: 14,
       },
     }));

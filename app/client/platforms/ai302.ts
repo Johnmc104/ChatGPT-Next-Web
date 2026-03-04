@@ -58,7 +58,6 @@ export class Ai302Api extends BaseOpenAICompatibleApi {
       provider: {
         id: "ai302",
         providerName: "302.AI",
-        providerType: "ai302",
         sorted: 15,
       },
     }));

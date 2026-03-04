@@ -540,102 +540,109 @@ const defaultModels = [
   "minimax/minimax-m2.1",
 ];
 
-// Model provider mapping for the simplified model list
-// Note: All models use OpenAI-compatible API through OpenRouter/custom endpoint
-// Model provider mapping - providerName is used for display grouping
-// API routing is determined by BASE_URL configuration, not by providerName
+// Map provider id to display name (= ServiceProvider enum value)
+// This is the single source of truth for id → display name mapping.
+export const PROVIDER_DISPLAY_NAMES: Record<string, string> = {
+  ragflow: "RAGFlow",
+  anthropic: "Anthropic",
+  openai: "OpenAI",
+  google: "Google",
+  xai: "XAI",
+  deepseek: "DeepSeek",
+  chatglm: "ChatGLM",
+  minimax: "MiniMax",
+  alibaba: "Alibaba",
+  moonshot: "Moonshot",
+  meta: "Meta",
+  mistral: "Mistral",
+};
+
+/** Get display name from provider id. Falls back to capitalized id. */
+export function getProviderDisplayName(id: string): string {
+  return PROVIDER_DISPLAY_NAMES[id] ?? id.charAt(0).toUpperCase() + id.slice(1);
+}
+
+// Model provider mapping - only id and sorted are needed.
+// providerName (display name) is derived from id via getProviderDisplayName().
 const getProviderFromModelName = (
   name: string,
 ): {
   id: string;
   providerName: string;
-  providerType: string;
   sorted: number;
 } => {
   if (name.startsWith("ragflow/")) {
     return {
       id: "ragflow",
       providerName: "RAGFlow",
-      providerType: "ragflow",
       sorted: 1,
     };
   } else if (name.startsWith("anthropic/")) {
     return {
       id: "anthropic",
       providerName: "Anthropic",
-      providerType: "anthropic",
       sorted: 2,
     };
   } else if (name.startsWith("openai/")) {
     return {
       id: "openai",
       providerName: "OpenAI",
-      providerType: "openai",
       sorted: 3,
     };
   } else if (name.startsWith("google/")) {
     return {
       id: "google",
       providerName: "Google",
-      providerType: "google",
       sorted: 4,
     };
   } else if (name.startsWith("x-ai/")) {
-    return { id: "xai", providerName: "XAI", providerType: "xai", sorted: 5 };
+    return { id: "xai", providerName: "XAI", sorted: 5 };
   } else if (name.startsWith("deepseek/")) {
     return {
       id: "deepseek",
       providerName: "DeepSeek",
-      providerType: "deepseek",
       sorted: 6,
     };
   } else if (name.startsWith("z-ai/") || name.startsWith("zhipu/")) {
     return {
       id: "chatglm",
       providerName: "ChatGLM",
-      providerType: "chatglm",
       sorted: 7,
     };
   } else if (name.startsWith("minimax/")) {
     return {
       id: "minimax",
       providerName: "MiniMax",
-      providerType: "minimax",
       sorted: 8,
     };
   } else if (name.startsWith("qwen/") || name.startsWith("alibaba/")) {
     return {
       id: "alibaba",
       providerName: "Alibaba",
-      providerType: "alibaba",
       sorted: 9,
     };
   } else if (name.startsWith("moonshot/") || name.startsWith("moonshotai/")) {
     return {
       id: "moonshot",
       providerName: "Moonshot",
-      providerType: "moonshot",
       sorted: 10,
     };
   } else if (name.startsWith("meta-llama/") || name.startsWith("llama/")) {
     return {
       id: "meta",
       providerName: "Meta",
-      providerType: "meta",
       sorted: 11,
     };
   } else if (name.startsWith("mistral/")) {
     return {
       id: "mistral",
       providerName: "Mistral",
-      providerType: "mistral",
       sorted: 12,
     };
   }
   return {
     id: "other",
     providerName: "Other",
-    providerType: "other",
     sorted: 99,
   };
 };

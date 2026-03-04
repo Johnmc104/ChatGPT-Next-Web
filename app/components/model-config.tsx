@@ -264,7 +264,7 @@ export function ModelConfigList(props: {
             .filter((v) => v.available)
             .map((v, i) => (
               <option value={`${v.name}@${v.provider?.providerName}`} key={i}>
-                {v.displayName}({v.provider?.providerType})
+                {v.displayName}({v.provider?.id})
               </option>
             ))}
         </Select>

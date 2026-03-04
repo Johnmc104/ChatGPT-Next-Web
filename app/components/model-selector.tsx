@@ -10,7 +10,6 @@ export interface ModelItem {
   provider?: {
     id: string;
     providerName: string;
-    providerType: string;
   };
   isCustom?: boolean;
 }
@@ -29,7 +28,7 @@ export function ModelSelector(props: ModelSelectorProps) {
   // Group models by provider
   const groupedModels = useMemo(() => {
     const groups: Record<string, ModelItem[]> = {};
-    
+
     // First add custom models group
     const customModels = models.filter((m) => m.isCustom);
     if (customModels.length > 0) {
@@ -82,11 +81,7 @@ export function ModelSelector(props: ModelSelectorProps) {
           <span className={styles["model-selector-title"]}>
             {Locale.Settings.Model}
           </span>
-          <IconButton
-            icon={<CloseIcon />}
-            onClick={onClose}
-            bordered
-          />
+          <IconButton icon={<CloseIcon />} onClick={onClose} bordered />
         </div>
 
         {/* Two-column layout */}
@@ -96,7 +91,7 @@ export function ModelSelector(props: ModelSelectorProps) {
             {providerNames.map((provider) => {
               const isActive = provider === activeProvider;
               const hasSelected = groupedModels[provider]?.some(
-                (m) => m.name === selectedModel
+                (m) => m.name === selectedModel,
               );
               return (
                 <div
@@ -134,9 +129,7 @@ export function ModelSelector(props: ModelSelectorProps) {
                       {model.displayName}
                     </span>
                   </div>
-                  {isSelected && (
-                    <div className={styles["model-check"]}>✓</div>
-                  )}
+                  {isSelected && <div className={styles["model-check"]}>✓</div>}
                 </div>
               );
             })}

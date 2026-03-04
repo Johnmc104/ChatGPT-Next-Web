@@ -97,7 +97,6 @@ export interface LLMModel {
 export interface LLMModelProvider {
   id: string;
   providerName: string;
-  providerType: string;
   sorted: number;
 }
 
