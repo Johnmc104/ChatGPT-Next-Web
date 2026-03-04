@@ -129,7 +129,7 @@ export class ErnieApi implements LLMApi {
       if (!!getClientConfig()?.isApp) {
         const accessStore = useAccessStore.getState();
         if (accessStore.useCustomConfig) {
-          if (accessStore.isValidBaidu()) {
+          if (accessStore.baiduApiKey && accessStore.baiduSecretKey) {
             const { access_token } = await getAccessToken(
               accessStore.baiduApiKey,
               accessStore.baiduSecretKey,
