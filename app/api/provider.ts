@@ -240,6 +240,7 @@ async function requestProvider(
   const authValue = resolveAuthHeaderValue(req, authResult, {
     isBearer: config.authIsBearer ?? true,
     headerName: authHeaderName,
+    ignoreUserApiKey: config.skipUnifiedProxy,
   });
 
   const headers: Record<string, string> = {

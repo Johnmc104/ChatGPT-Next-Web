@@ -297,11 +297,15 @@ export function getHeaders(
     const isSiliconFlow =
       modelConfig.providerName === ServiceProvider.SiliconFlow;
     const isAI302 = modelConfig.providerName === ServiceProvider["302.AI"];
+    const isRAGFlow = modelConfig.providerName === ServiceProvider.RAGFlow;
     const isEnabledAccessControl = accessStore.enabledAccessControl();
 
     // When using custom BASE_URL (OpenRouter, Cloudflare AI Gateway, etc.),
-    // always use openaiApiKey since all requests go through the same endpoint
-    const apiKey = useCustomUrl
+    // always use openaiApiKey since all requests go through the same endpoint.
+    // Exception: RAGFlow has its own upstream and must use its own key.
+    const apiKey = isRAGFlow
+      ? accessStore.ragflowApiKey
+      : useCustomUrl
       ? accessStore.openaiApiKey
       : isGoogle
       ? accessStore.googleApiKey
@@ -344,6 +348,7 @@ export function getHeaders(
       isChatGLM,
       isSiliconFlow,
       isAI302,
+      isRAGFlow,
       apiKey,
       isEnabledAccessControl,
     };

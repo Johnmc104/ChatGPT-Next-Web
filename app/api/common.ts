@@ -28,15 +28,21 @@ const serverConfig = getServerSideConfig();
 export function resolveAuthHeaderValue(
   req: NextRequest,
   authResult?: AuthResult,
-  options?: { isBearer?: boolean; headerName?: string },
+  options?: {
+    isBearer?: boolean;
+    headerName?: string;
+    ignoreUserApiKey?: boolean;
+  },
 ): string {
   const isBearer = options?.isBearer ?? true;
   const headerName = options?.headerName ?? "Authorization";
 
-  // 1. User provided their own API key
-  const userApiKey = req.headers.get("X-User-Api-Key");
-  if (userApiKey) {
-    return isBearer ? `Bearer ${userApiKey}` : userApiKey;
+  // 1. User provided their own API key (skip for providers that manage their own auth)
+  if (!options?.ignoreUserApiKey) {
+    const userApiKey = req.headers.get("X-User-Api-Key");
+    if (userApiKey) {
+      return isBearer ? `Bearer ${userApiKey}` : userApiKey;
+    }
   }
 
   // 2. User authenticated with access code, use server's API key
