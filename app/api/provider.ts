@@ -49,6 +49,8 @@ export interface ProviderConfig {
   allowedPaths?: Set<string>;
   /** Whether to wrap the fetch URL with cloudflareAIGatewayUrl (default false) */
   useCloudflareGateway?: boolean;
+  /** Skip unified proxy (BASE_URL) and always use provider's own URL (default false) */
+  skipUnifiedProxy?: boolean;
   /** Override the auth header name (default "Authorization") */
   authHeaderName?: string;
   /** Whether the auth value should be "Bearer <key>" (default true) */
@@ -134,6 +136,7 @@ export const PROVIDER_CONFIGS: Record<string, ProviderConfig> = {
     apiPath: ApiPath.RAGFlow,
     serviceProvider: ServiceProvider.RAGFlow,
     getBaseUrl: () => serverConfig.ragflowUrl || RAGFLOW_BASE_URL,
+    skipUnifiedProxy: true,
   },
   [ApiPath.Anthropic]: {
     name: "Anthropic",
@@ -208,7 +211,11 @@ async function requestProvider(
   // In unified proxy mode (BASE_URL is set), route through the unified proxy
   // instead of the provider's own upstream URL.
   let baseUrl: string;
-  if (serverConfig.baseUrl && !config.allowedPaths) {
+  if (
+    serverConfig.baseUrl &&
+    !config.allowedPaths &&
+    !config.skipUnifiedProxy
+  ) {
     baseUrl = serverConfig.baseUrl;
     logger.debug(`[${config.name}] using unified proxy (BASE_URL)`);
   } else {
