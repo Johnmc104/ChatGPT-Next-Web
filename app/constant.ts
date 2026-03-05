@@ -500,6 +500,7 @@ export const EXCLUDE_VISION_MODEL_REGEXES = [
 const defaultModels = [
   // RAGFlow - 知识库（优先）
   "ragflow/synopsys",
+  "ragflow/ae",
 
   // Anthropic Claude - 编程最强
   "anthropic/claude-opus-4.6",
