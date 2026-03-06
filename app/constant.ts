@@ -505,19 +505,19 @@ const defaultModels = [
   // Anthropic Claude - 编程最强
   "anthropic/claude-opus-4.6",
   "anthropic/claude-opus-4.5",
-  "anthropic/claude-sonnet-4.5",
+  "anthropic/claude-sonnet-4.6",
   "anthropic/claude-haiku-4.5",
 
   // OpenAI GPT - 稳定可靠
-  "openai/gpt-5.2-chat",
-  "openai/gpt-5.2",
-  "openai/gpt-5.2-codex",
+  "openai/gpt-5.4",
+  "openai/gpt-5.3-chat",
+  "openai/gpt-5.3-codex",
   "openai/gpt-4.1",
   "openai/gpt-4o-mini",
   "openai/gpt-oss-120b",
 
   // Google Gemini - 编程强
-  "google/gemini-3-pro-preview",
+  "google/gemini-3.1-pro-preview",
   "google/gemini-3-flash-preview",
 
   // xAI Grok - 免费/便宜
@@ -536,8 +536,11 @@ const defaultModels = [
   "qwen/qwen3-coder",
   "qwen/qwen3-235b-a22b-2507",
 
-  // Other
+  // zhipu
   "z-ai/glm-4.7",
+  "z-ai/glm-5",
+  
+  // Other
   "minimax/minimax-m2.1",
 ];
 
