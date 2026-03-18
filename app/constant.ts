@@ -512,13 +512,14 @@ const defaultModels = [
   "openai/gpt-5.4",
   "openai/gpt-5.3-chat",
   "openai/gpt-5.3-codex",
-  "openai/gpt-4.1",
+  "openai/gpt-5.4-mini",
   "openai/gpt-4o-mini",
   "openai/gpt-oss-120b",
 
   // Google Gemini - 编程强
   "google/gemini-3.1-pro-preview",
   "google/gemini-3-flash-preview",
+  "google/gemini-3.1-flash-lite-preview",
 
   // xAI Grok - 免费/便宜
   "x-ai/grok-4.1-fast",
