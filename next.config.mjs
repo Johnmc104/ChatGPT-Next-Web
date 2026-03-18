@@ -29,15 +29,13 @@ const nextConfig = {
       child_process: false,
     };
 
-    // Ignore optional WebSocket native modules (used by rt-client)
-    // These are not needed in browser environment
-    config.externals = config.externals || [];
-    if (!isServer) {
-      config.externals.push({
-        bufferutil: "bufferutil",
-        "utf-8-validate": "utf-8-validate",
-      });
-    }
+    // Ignore optional WebSocket native modules (used by rt-client / ws)
+    // These are not needed in browser or serverless environments
+    config.plugins.push(
+      new webpack.IgnorePlugin({
+        resourceRegExp: /^(bufferutil|utf-8-validate)$/,
+      }),
+    );
 
     return config;
   },

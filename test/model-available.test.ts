@@ -3,7 +3,7 @@ import { isModelNotavailableInServer } from "../app/utils/model";
 describe("isModelNotavailableInServer", () => {
   test("test model will return false, which means the model is available", () => {
     const customModels = "";
-    const modelName = "gpt-4";
+    const modelName = "openai/gpt-4o-mini";
     const providerNames = "OpenAI";
     const result = isModelNotavailableInServer(
       customModels,

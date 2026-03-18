@@ -1,4 +1,9 @@
-import { DEFAULT_MODELS, ServiceProvider } from "../constant";
+import {
+  DEFAULT_MODELS,
+  ServiceProvider,
+  VISION_MODEL_REGEXES,
+  EXCLUDE_VISION_MODEL_REGEXES,
+} from "../constant";
 import { LLMModel } from "../client/api";
 
 const CustomSeq = {
@@ -257,4 +262,21 @@ export function isModelNotavailableInServer(
     if (modelTable?.[fullName]?.available === true) return false;
   }
   return true;
+}
+
+/**
+ * Pure server-compatible check for whether a model supports vision.
+ * Reads VISION_MODELS from process.env (set at server boot / in tests),
+ * then falls back to regex matching.
+ */
+export function isVisionModel(model: string): boolean {
+  const envVisionModels = process.env.VISION_MODELS;
+  if (envVisionModels) {
+    const models = envVisionModels.split(",").map((m) => m.trim());
+    if (models.includes(model)) return true;
+  }
+  return (
+    !EXCLUDE_VISION_MODEL_REGEXES.some((regex) => regex.test(model)) &&
+    VISION_MODEL_REGEXES.some((regex) => regex.test(model))
+  );
 }
