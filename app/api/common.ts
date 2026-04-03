@@ -137,6 +137,11 @@ export async function requestOpenai(req: NextRequest, authResult?: AuthResult) {
     useCloudflareGateway: true,
   });
   logger.info("[OpenAI] fetchUrl", fetchUrl);
+  // Always clone body to a string so fetchWithRetry can safely retry.
+  // ReadableStream can only be consumed once — retries with an already-consumed
+  // stream would send an empty body.
+  const clonedBody = req.body ? await req.text() : null;
+
   const fetchOptions: RequestInit = {
     headers: {
       "Content-Type": "application/json",
@@ -147,7 +152,7 @@ export async function requestOpenai(req: NextRequest, authResult?: AuthResult) {
       }),
     },
     method: req.method,
-    body: req.body,
+    body: clonedBody,
     redirect: "manual",
     // @ts-ignore
     duplex: "half",
@@ -160,11 +165,8 @@ export async function requestOpenai(req: NextRequest, authResult?: AuthResult) {
 
   // #1815 try to refuse gpt4 request
   // Skip model filtering when using custom BASE_URL (OpenRouter compatible APIs)
-  if (serverConfig.customModels && req.body && !isUsingCustomBaseUrl) {
+  if (serverConfig.customModels && clonedBody && !isUsingCustomBaseUrl) {
     try {
-      const clonedBody = await req.text();
-      fetchOptions.body = clonedBody;
-
       const jsonBody = JSON.parse(clonedBody) as { model?: string };
 
       // not undefined and is false

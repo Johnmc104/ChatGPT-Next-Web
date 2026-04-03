@@ -56,11 +56,16 @@ export async function handle(
     headers.set("Authorization", authValue);
   }
 
+  // Always clone body to a string so fetchWithRetry can safely retry.
+  // ReadableStream can only be consumed once — retries with an already-consumed
+  // stream would send an empty body.
+  const clonedBody = req.body ? await req.text() : null;
+
   const { signal, cleanup } = createTimeoutController();
   const fetchOptions: RequestInit = {
     headers,
     method: req.method,
-    body: req.body,
+    body: clonedBody,
     redirect: "manual",
     // @ts-ignore
     duplex: "half",
