@@ -1,48 +1,49 @@
 <div align="center">
 
-<a href='#企业版'>
-  <img src="./docs/images/ent.svg" alt="icon"/>
-</a>
-
 <h1 align="center">NextChat</h1>
 
-一键免费部署你的私人 ChatGPT 网页应用，支持 Claude, GPT4 & Gemini Pro 模型。
+一键免费部署你的私人 ChatGPT 网页应用，支持 GPT-4/5、Claude、DeepSeek、Gemini、通义千问 等主流大模型。
 
-[NextChatAI](https://nextchat.club?utm_source=readme) / [企业版](#%E4%BC%81%E4%B8%9A%E7%89%88) / [演示 Demo](https://chat-gpt-next-web.vercel.app/) / [反馈 Issues](https://github.com/Yidadaa/ChatGPT-Next-Web/issues) / [加入 Discord](https://discord.gg/zrhvHCr79N)
+[演示 Demo](https://chat-gpt-next-web.vercel.app/) / [反馈 Issues](https://github.com/ChatGPTNextWeb/ChatGPT-Next-Web/issues) / [English](./README.md)
 
-[<img src="https://vercel.com/button" alt="Deploy on Zeabur" height="30">](https://vercel.com/new/clone?repository-url=https%3A%2F%2Fgithub.com%2FChatGPTNextWeb%2FChatGPT-Next-Web&env=OPENAI_API_KEY&env=CODE&project-name=nextchat&repository-name=NextChat) [<img src="https://zeabur.com/button.svg" alt="Deploy on Zeabur" height="30">](https://zeabur.com/templates/ZBUEFA) [<img src="https://gitpod.io/button/open-in-gitpod.svg" alt="Open in Gitpod" height="30">](https://gitpod.io/#https://github.com/Yidadaa/ChatGPT-Next-Web)
+[<img src="https://vercel.com/button" alt="Deploy on Vercel" height="30">](https://vercel.com/new/clone?repository-url=https%3A%2F%2Fgithub.com%2FChatGPTNextWeb%2FChatGPT-Next-Web&env=OPENAI_API_KEY&env=CODE&project-name=nextchat&repository-name=NextChat) [<img src="https://zeabur.com/button.svg" alt="Deploy on Zeabur" height="30">](https://zeabur.com/templates/ZBUEFA)
 
 </div>
 
-## Sponsor AI API
+## 项目状态
 
-<a href='https://302.ai/'>
-  <img src="https://github.com/user-attachments/assets/d8c0c513-1e18-4d3b-a2a9-ff3696aec0d4" width="100%" alt="icon"/>
-</a>
+本项目为 [ChatGPTNextWeb/ChatGPT-Next-Web](https://github.com/ChatGPTNextWeb/ChatGPT-Next-Web) 的社区维护分支。原作者已不再活跃维护，当前由社区团队持续开发和维护。
 
-[302.AI](https://302.ai/) 是一个按需付费的AI应用平台，提供市面上最全的AI API和AI在线应用。
+**接手后的主要改进：**
+- 认证与代理架构重构，解决频繁出现的 auth/proxy bug
+- 组件拆分优化（chat.tsx -42%、settings.tsx -61%）
+- 平台客户端抽象基类，新增平台适配仅需 ~20 行
+- 性能优化：mermaid/tiktoken 动态加载、fetchWithRetry 重试机制
+- 安全加固：日志脱敏、CORS 环境变量化
+- 测试体系：113 个测试用例
+- 新增功能：Token 用量追踪、成本估算、RAGFlow 知识库支持
 
-## 企业版
+详见 [开发计划](./docs/development-plan.md) 和 [工程分析](./docs/project-analysis.md)。
 
-满足您公司私有化部署和定制需求
+## 主要功能
 
-- **品牌定制**：企业量身定制 VI/UI，与企业品牌形象无缝契合
-- **资源集成**：由企业管理人员统一配置和管理数十种 AI 资源，团队成员开箱即用
-- **权限管理**：成员权限、资源权限、知识库权限层级分明，企业级 Admin Panel 统一控制
-- **知识接入**：企业内部知识库与 AI 能力相结合，比通用 AI 更贴近企业自身业务需求
-- **安全审计**：自动拦截敏感提问，支持追溯全部历史对话记录，让 AI 也能遵循企业信息安全规范
-- **私有部署**：企业级私有部署，支持各类主流私有云部署，确保数据安全和隐私保护
-- **持续更新**：提供多模态、智能体等前沿能力持续更新升级服务，常用常新、持续先进
+- **一键部署**：Vercel / Docker / 宝塔 一分钟上线
+- **多模型支持**：OpenAI (GPT-4/5)、Claude、DeepSeek、Gemini、通义千问、文心一言、讯飞星火、智谱 GLM、Moonshot、SiliconFlow、302.AI、RAGFlow 等 14+ 平台
+- **统一代理**：配置 `BASE_URL` 即可通过 OpenRouter / one-api 等统一网关接入所有模型
+- **MCP 工具调用**：支持 Model Context Protocol（设置 `ENABLE_MCP=true`）
+- **实时语音**：支持 OpenAI / Azure Realtime API
+- **隐私优先**：所有数据保存在浏览器本地
+- **Markdown**：LaTeX 公式、Mermaid 流程图、代码高亮
+- **Token 追踪**：实时用量显示与成本估算
+- **Cloudflare AI Gateway**：可选流量走 Cloudflare 代理
+- **桌面端**：基于 Tauri，支持 Windows / macOS / Linux
+- **PWA**：可作为 Web App 安装
 
-企业版咨询: **business@nextchat.dev**
+## 快速开始
 
-<img width="300" src="https://github.com/user-attachments/assets/bb29a11d-ff75-48a8-b1f8-d2d7238cf987">
-
-## 开始使用
-
-1. 准备好你的 [OpenAI API Key](https://platform.openai.com/account/api-keys);
-2. 点击右侧按钮开始部署：
-   [![Deploy with Vercel](https://vercel.com/button)](https://vercel.com/new/clone?repository-url=https%3A%2F%2Fgithub.com%2FYidadaa%2FChatGPT-Next-Web&env=OPENAI_API_KEY&env=CODE&env=GOOGLE_API_KEY&project-name=chatgpt-next-web&repository-name=ChatGPT-Next-Web)，直接使用 Github 账号登录即可，记得在环境变量页填入 API Key 和[页面访问密码](#配置页面访问密码) CODE；
+1. 准备好你的 API Key（OpenAI / Claude / DeepSeek 等均可）；
+2. 点击按钮开始部署：
+   [![Deploy with Vercel](https://vercel.com/button)](https://vercel.com/new/clone?repository-url=https%3A%2F%2Fgithub.com%2FChatGPTNextWeb%2FChatGPT-Next-Web&env=OPENAI_API_KEY&env=CODE&project-name=nextchat&repository-name=NextChat)，记得在环境变量页填入 API Key 和[页面访问密码](#配置页面访问密码) CODE；
 3. 部署完毕后，即可开始使用；
 4. （可选）[绑定自定义域名](https://vercel.com/docs/concepts/projects/domains/add-a-domain)：Vercel 分配的域名 DNS 在某些区域被污染了，绑定自定义域名即可直连。
 
@@ -54,34 +55,13 @@
 
 ## 保持更新
 
-如果你按照上述步骤一键部署了自己的项目，可能会发现总是提示“存在更新”的问题，这是由于 Vercel 会默认为你创建一个新项目而不是 fork 本项目，这会导致无法正确地检测更新。
-推荐你按照下列步骤重新部署：
-
-- 删除掉原先的仓库；
-- 使用页面右上角的 fork 按钮，fork 本项目；
-- 在 Vercel 重新选择并部署，[请查看详细教程](./docs/vercel-cn.md#如何新建项目)。
-
-### 打开自动更新
-
-> 如果你遇到了 Upstream Sync 执行错误，请[手动 Sync Fork 一次](./README_CN.md#手动更新代码)！
-
-当你 fork 项目之后，由于 Github 的限制，需要手动去你 fork 后的项目的 Actions 页面启用 Workflows，并启用 Upstream Sync Action，启用之后即可开启每小时定时自动更新：
-
-![自动更新](./docs/images/enable-actions.jpg)
-
-![启用自动更新](./docs/images/enable-actions-sync.jpg)
-
-### 手动更新代码
-
-如果你想让手动立即更新，可以查看 [Github 的文档](https://docs.github.com/en/pull-requests/collaborating-with-pull-requests/working-with-forks/syncing-a-fork) 了解如何让 fork 的项目与上游代码同步。
-
-你可以 star/watch 本项目或者 follow 作者来及时获得新功能更新通知。
+Fork 本项目后，在 Actions 页面启用 **Upstream Sync** Workflow 即可每小时自动同步上游更新。也可手动 [Sync Fork](https://docs.github.com/en/pull-requests/collaborating-with-pull-requests/working-with-forks/syncing-a-fork)。
 
 ## 配置页面访问密码
 
 > 配置密码后，用户需要在设置页手动填写访问码才可以正常聊天，否则会通过消息提示未授权状态。
 
-> **警告**：请务必将密码的位数设置得足够长，最好 7 位以上，否则[会被爆破](https://github.com/Yidadaa/ChatGPT-Next-Web/issues/518)。
+> **警告**：请务必将密码的位数设置得足够长，最好 7 位以上，否则[会被爆破](https://github.com/ChatGPTNextWeb/ChatGPT-Next-Web/issues/518)。
 
 本项目提供有限的权限控制功能，请在 Vercel 项目控制面板的环境变量页增加名为 `CODE` 的环境变量，值为用英文逗号分隔的自定义密码：
 
@@ -209,6 +189,20 @@ DeepSeek Api Key.
 
 DeepSeek Api Url.
 
+### `RAGFLOW_API_KEY` (可选)
+
+RAGFlow Api Key.
+
+### `RAGFLOW_URL` (可选)
+
+RAGFlow Api Url.
+
+### `CORS_ALLOW_ORIGIN` (可选)
+
+> 默认值：`*`
+
+CORS 允许的来源域名。生产环境建议设置为具体域名以增强安全性。
+
 ### `HIDE_USER_API_KEY` （可选）
 
 如果你不想让用户自行填入 API Key，将此环境变量设置为 1 即可。
@@ -294,24 +288,50 @@ SiliconFlow API URL.
 
 ## 开发
 
-点击下方按钮，开始二次开发：
-
-[![Open in Gitpod](https://gitpod.io/button/open-in-gitpod.svg)](https://gitpod.io/#https://github.com/Yidadaa/ChatGPT-Next-Web)
-
 在开始写代码之前，需要在项目根目录新建一个 `.env.local` 文件，里面填入环境变量：
 
-```
+```bash
 OPENAI_API_KEY=<your api key here>
-
-# 中国大陆用户，可以使用本项目自带的代理进行开发，你也可以自由选择其他代理地址
-BASE_URL=https://b.nextweb.fun/api/proxy
+# 或使用统一代理
+BASE_URL=https://your-proxy.com/v1
 ```
 
 ### 本地开发
 
-1. 安装 nodejs 18 和 yarn，具体细节请询问 ChatGPT；
-2. 执行 `yarn install && yarn dev` 即可。⚠️ 注意：此命令仅用于本地开发，不要用于部署！
-3. 如果你想本地部署，请使用 `yarn install && yarn build && yarn start` 命令，你可以配合 pm2 来守护进程，防止被杀死，详情询问 ChatGPT。
+```bash
+# 需要 Node.js >= 18
+yarn install && yarn dev
+```
+
+### 本地构建
+
+```bash
+yarn install && yarn build && yarn start
+```
+
+### 运行测试
+
+```bash
+yarn test       # watch 模式
+yarn test:ci    # CI 模式 + 覆盖率
+```
+
+### 项目结构
+
+```
+app/
+├── api/          # Next.js 服务端 API 路由（auth, proxy, provider 等）
+├── client/       # 客户端 API 层（14 个平台适配器 + 基类）
+├── components/   # React 组件（chat, settings 等，已模块化拆分）
+├── store/        # Zustand 状态管理
+├── utils/        # 工具函数（logger, stream, chat 等）
+├── mcp/          # MCP (Model Context Protocol) 支持
+└── locales/      # 国际化
+docs/             # 开发文档
+test/             # 测试用例（113 个）
+```
+
+详细架构说明见 [工程分析报告](./docs/project-analysis.md)。
 
 ## 部署
 
@@ -323,15 +343,14 @@ BASE_URL=https://b.nextweb.fun/api/proxy
 
 > Docker 版本需要在 20 及其以上，否则会提示找不到镜像。
 
-> ⚠️ 注意：docker 版本在大多数时间都会落后最新的版本 1 到 2 天，所以部署后会持续出现“存在更新”的提示，属于正常现象。
 
 ```shell
-docker pull yidadaa/chatgpt-next-web
+docker pull chatgptnextweb/chatgpt-next-web
 
 docker run -d -p 3000:3000 \
    -e OPENAI_API_KEY=sk-xxxx \
    -e CODE=页面访问密码 \
-   yidadaa/chatgpt-next-web
+   chatgptnextweb/chatgpt-next-web
 ```
 
 你也可以指定 proxy：
@@ -342,7 +361,7 @@ docker run -d -p 3000:3000 \
    -e CODE=页面访问密码 \
    --net=host \
    -e PROXY_URL=http://127.0.0.1:7890 \
-   yidadaa/chatgpt-next-web
+   chatgptnextweb/chatgpt-next-web
 ```
 
 如需启用 MCP 功能，可以使用：
@@ -352,7 +371,7 @@ docker run -d -p 3000:3000 \
    -e OPENAI_API_KEY=sk-xxxx \
    -e CODE=页面访问密码 \
    -e ENABLE_MCP=true \
-   yidadaa/chatgpt-next-web
+   chatgptnextweb/chatgpt-next-web
 ```
 
 如果你的本地代理需要账号密码，可以使用：
@@ -368,24 +387,15 @@ docker run -d -p 3000:3000 \
 在控制台运行下方命令：
 
 ```shell
-bash <(curl -s https://raw.githubusercontent.com/Yidadaa/ChatGPT-Next-Web/main/scripts/setup.sh)
+bash <(curl -s https://raw.githubusercontent.com/ChatGPTNextWeb/ChatGPT-Next-Web/main/scripts/setup.sh)
 ```
 
 ⚠️ 注意：如果你安装过程中遇到了问题，请使用 docker 部署。
 
-## 鸣谢
-
-### 捐赠者
-
-> 见英文版。
-
-### 贡献者
-
-[见项目贡献者列表](https://github.com/Yidadaa/ChatGPT-Next-Web/graphs/contributors)
-
-### 相关项目
+## 相关项目
 
 - [one-api](https://github.com/songquanpeng/one-api): 一站式大模型额度管理平台，支持市面上所有主流大语言模型
+- [OpenRouter](https://openrouter.ai/): 统一 AI 模型网关
 
 ## 开源协议
 
