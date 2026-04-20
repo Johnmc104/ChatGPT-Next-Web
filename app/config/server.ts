@@ -30,6 +30,10 @@ declare global {
       STABILITY_URL?: string;
       STABILITY_API_KEY?: string;
 
+      // ragflow only
+      RAGFLOW_URL?: string;
+      RAGFLOW_API_KEY?: string;
+
       // azure only
       AZURE_URL?: string; // https://{azure-url}/openai/deployments/{deploy-name}
       AZURE_API_KEY?: string;
@@ -100,6 +104,7 @@ export const getServerSideConfig = () => {
   }
 
   const isStability = !!process.env.STABILITY_API_KEY;
+  const isRAGFlow = !!process.env.RAGFLOW_API_KEY;
 
   const isAzure = !!process.env.AZURE_URL;
   // const apiKeyEnvVar = process.env.OPENAI_API_KEY ?? "";
@@ -122,6 +127,10 @@ export const getServerSideConfig = () => {
     isStability,
     stabilityUrl: process.env.STABILITY_URL,
     stabilityApiKey: getApiKey(process.env.STABILITY_API_KEY),
+
+    isRAGFlow,
+    ragflowUrl: process.env.RAGFLOW_URL,
+    ragflowApiKey: getApiKey(process.env.RAGFLOW_API_KEY),
 
     isAzure,
     azureUrl: process.env.AZURE_URL,

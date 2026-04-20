@@ -10,6 +10,7 @@ export const FETCH_TAG_URL = `https://api.github.com/repos/${OWNER}/${REPO}/tags
 export const RUNTIME_CONFIG_DOM = "danger-runtime-config";
 
 export const OPENAI_BASE_URL = "https://api.openai.com";
+export const RAGFLOW_BASE_URL = "http://git.johndaily.cn:8081";
 
 export const CACHE_URL_PREFIX = "/api/cache";
 export const UPLOAD_URL = `${CACHE_URL_PREFIX}/upload`;
@@ -35,6 +36,7 @@ export enum ApiPath {
   Azure = "/api/azure",
   OpenAI = "/api/openai",
   Stability = "/api/stability",
+  RAGFlow = "/api/ragflow",
   Artifacts = "/api/artifacts",
 }
 
@@ -82,20 +84,13 @@ export enum ServiceProvider {
   OpenAI = "OpenAI",
   Azure = "Azure",
   Stability = "Stability",
-}
-
-// Google API safety settings, see https://ai.google.dev/gemini-api/docs/safety-settings
-// BLOCK_NONE will not block any content, and BLOCK_ONLY_HIGH will block only high-risk content.
-export enum GoogleSafetySettingsThreshold {
-  BLOCK_NONE = "BLOCK_NONE",
-  BLOCK_ONLY_HIGH = "BLOCK_ONLY_HIGH",
-  BLOCK_MEDIUM_AND_ABOVE = "BLOCK_MEDIUM_AND_ABOVE",
-  BLOCK_LOW_AND_ABOVE = "BLOCK_LOW_AND_ABOVE",
+  RAGFlow = "RAGFlow",
 }
 
 export enum ModelProvider {
   Stability = "Stability",
   GPT = "GPT",
+  RAGFlow = "RAGFlow",
 }
 
 export const StabilityConfig = {
@@ -119,6 +114,12 @@ export const Azure = {
   ImagePath: (deployName: string, apiVersion: string) =>
     `deployments/${deployName}/images/generations?api-version=${apiVersion}`,
   ExampleEndpoint: "https://{resource-url}/openai",
+};
+
+export const RAGFlow = {
+  ExampleEndpoint: RAGFLOW_BASE_URL,
+  ChatPath: "v1/chat/completions",
+  ListModelPath: "v1/models",
 };
 
 export const DEFAULT_INPUT_TEMPLATE = `{{input}}`; // input / time / model / lang

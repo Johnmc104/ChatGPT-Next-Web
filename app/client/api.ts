@@ -9,8 +9,10 @@ import {
   ChatMessage,
   ModelType,
   useAccessStore,
+  useChatStore,
 } from "../store";
 import { ChatGPTApi, DalleRequestPayload } from "./platforms/openai";
+import { RAGFlowApi } from "./platforms/ragflow";
 
 export const ROLES = ["system", "user", "assistant"] as const;
 export type MessageRole = (typeof ROLES)[number];
@@ -104,9 +106,13 @@ export class ClientApi {
   public llm: LLMApi;
 
   constructor(provider: ModelProvider = ModelProvider.GPT) {
-    // All providers route through the OpenAI-compatible client.
-    // The server-side proxy handles routing to the correct upstream.
-    this.llm = new ChatGPTApi();
+    switch (provider) {
+      case ModelProvider.RAGFlow:
+        this.llm = new RAGFlowApi();
+        break;
+      default:
+        this.llm = new ChatGPTApi();
+    }
   }
 
   config() {}
@@ -187,11 +193,14 @@ export function getHeaders(
   }
 
   // ---------------------------------------------------------------------------
-  // Simplified header logic for unified proxy architecture:
-  // All models route through the unified proxy (BASE_URL).
-  // Users may provide their own openaiApiKey for custom endpoints.
+  // Header logic for unified proxy + RAGFlow:
+  // - RAGFlow: auth is server-side (RAGFLOW_API_KEY env), no client key needed
+  // - Everything else: user's openaiApiKey for custom endpoints
+  // ---------------------------------------------------------------------------
 
-  const apiKey = accessStore.openaiApiKey;
+  const modelConfig = useChatStore.getState().currentSession().mask.modelConfig;
+  const isRAGFlow = modelConfig.providerName === ServiceProvider.RAGFlow;
+  const apiKey = isRAGFlow ? "" : accessStore.openaiApiKey;
 
   // 1. Always send access code if available (for server-side authentication)
   if (validString(accessStore.accessCode)) {
@@ -230,7 +239,11 @@ export function hasCustomBaseUrl(): boolean {
   return false;
 }
 
-export function getClientApi(_provider: ServiceProvider): ClientApi {
-  // All providers route through the unified OpenAI-compatible client.
+export function getClientApi(provider: ServiceProvider): ClientApi {
+  // RAGFlow has its own client with a dedicated upstream URL.
+  if (provider === ServiceProvider.RAGFlow) {
+    return new ClientApi(ModelProvider.RAGFlow);
+  }
+  // Everything else routes through the unified OpenAI-compatible client.
   return new ClientApi(ModelProvider.GPT);
 }

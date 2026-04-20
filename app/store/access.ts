@@ -1,9 +1,9 @@
 import {
-  GoogleSafetySettingsThreshold,
   ServiceProvider,
   StoreKey,
   ApiPath,
   OPENAI_BASE_URL,
+  RAGFLOW_BASE_URL,
 } from "../constant";
 import { getHeaders } from "../client/api";
 import { getClientConfig } from "../config/client";
@@ -17,6 +17,7 @@ let fetchState = 0; // 0 not fetch, 1 fetching, 2 done
 const isApp = getClientConfig()?.buildMode === "export";
 
 const DEFAULT_OPENAI_URL = isApp ? OPENAI_BASE_URL : ApiPath.OpenAI;
+const DEFAULT_RAGFLOW_URL = isApp ? RAGFLOW_BASE_URL : ApiPath.RAGFlow;
 
 const DEFAULT_ACCESS_STATE = {
   accessCode: "",
@@ -38,40 +39,8 @@ const DEFAULT_ACCESS_STATE = {
   stabilityUrl: "",
   stabilityApiKey: "",
 
-  // --- Legacy fields (kept for persistent store migration compatibility) ---
-  googleUrl: "",
-  googleApiKey: "",
-  googleApiVersion: "v1",
-  googleSafetySettings: GoogleSafetySettingsThreshold.BLOCK_ONLY_HIGH,
-  anthropicUrl: "",
-  anthropicApiKey: "",
-  anthropicApiVersion: "2023-06-01",
-  baiduUrl: "",
-  baiduApiKey: "",
-  baiduSecretKey: "",
-  bytedanceUrl: "",
-  bytedanceApiKey: "",
-  alibabaUrl: "",
-  alibabaApiKey: "",
-  moonshotUrl: "",
-  moonshotApiKey: "",
-  tencentUrl: "",
-  tencentSecretKey: "",
-  tencentSecretId: "",
-  iflytekUrl: "",
-  iflytekApiKey: "",
-  iflytekApiSecret: "",
-  deepseekUrl: "",
-  deepseekApiKey: "",
-  xaiUrl: "",
-  xaiApiKey: "",
-  chatglmUrl: "",
-  chatglmApiKey: "",
-  siliconflowUrl: "",
-  siliconflowApiKey: "",
-  ai302Url: "",
-  ai302ApiKey: "",
-  ragflowUrl: "",
+  // RAGFlow (knowledge base proxy)
+  ragflowUrl: DEFAULT_RAGFLOW_URL,
   ragflowApiKey: "",
 
   // server config
@@ -180,7 +149,7 @@ export const useAccessStore = createPersistStore(
   }),
   {
     name: StoreKey.Access,
-    version: 2,
+    version: 3,
     migrate(persistedState, version) {
       if (version < 2) {
         const state = persistedState as {
@@ -192,6 +161,9 @@ export const useAccessStore = createPersistStore(
         state.openaiApiKey = state.token;
         state.azureApiVersion = "2023-08-01-preview";
       }
+
+      // v3: legacy provider fields are dropped automatically by ensure()
+      // when they no longer exist in DEFAULT_ACCESS_STATE.
 
       return persistedState as any;
     },

@@ -65,18 +65,14 @@ export function auth(
   if (!apiKey) {
     const serverConfig = getServerSideConfig();
 
-    // const systemApiKey =
-    //   modelProvider === ModelProvider.GeminiPro
-    //     ? serverConfig.googleApiKey
-    //     : serverConfig.isAzure
-    //     ? serverConfig.azureApiKey
-    //     : serverConfig.apiKey;
-
     let systemApiKey: string | undefined;
 
     switch (modelProvider) {
       case ModelProvider.Stability:
         systemApiKey = serverConfig.stabilityApiKey;
+        break;
+      case ModelProvider.RAGFlow:
+        systemApiKey = serverConfig.ragflowApiKey;
         break;
       case ModelProvider.GPT:
       default:

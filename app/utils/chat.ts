@@ -102,14 +102,6 @@ export async function preProcessImageContent(
   })) as Promise<MultimodalContent[] | string>;
 }
 
-export async function preProcessImageContentForAlibabaDashScope(
-  content: RequestMessage["content"],
-) {
-  return preProcessImageContentBase(content, async (url) => ({
-    image: url,
-  }));
-}
-
 const imageCaches: Record<string, string> = {};
 export function cacheImageToBase64Image(imageUrl: string) {
   if (imageUrl.includes(CACHE_URL_PREFIX)) {
