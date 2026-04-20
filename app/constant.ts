@@ -503,8 +503,8 @@ const defaultModels = [
   "ragflow/ae",
 
   // Anthropic Claude - 编程最强
+  "anthropic/claude-opus-4.7",
   "anthropic/claude-opus-4.6",
-  "anthropic/claude-opus-4.5",
   "anthropic/claude-sonnet-4.6",
   "anthropic/claude-haiku-4.5",
 
@@ -522,9 +522,10 @@ const defaultModels = [
   "google/gemini-3.1-flash-lite-preview",
 
   // xAI Grok - 免费/便宜
-  "x-ai/grok-4.1-fast",
-  "x-ai/grok-code-fast-1",
-  "x-ai/grok-4-fast",
+  "xai/grok-4",
+  "xai/grok-4.20-reasoning",
+  "xai/grok-4.20-multi-agent",
+  "xai/grok-4.1-fast",
 
   // DeepSeek - 国产性价比
   "deepseek/deepseek-v3.2",
@@ -534,15 +535,17 @@ const defaultModels = [
   "moonshotai/kimi-k2-thinking",
 
   // Alibaba Qwen - 国产新秀
-  "qwen/qwen3-coder",
-  "qwen/qwen3-235b-a22b-2507",
+  "alibaba/qwen3.6-plus",
+  "alibaba/qwen3-coder-plus",
+  "alibaba/qwen3-max-thinking",
 
   // zhipu
   "z-ai/glm-4.7",
   "z-ai/glm-5",
   
   // Other
-  "minimax/minimax-m2.1",
+  "minimax/minimax-m2.5",
+  "minimax/minimax-m2.7",
 ];
 
 // Map provider id to display name (= ServiceProvider enum value)
