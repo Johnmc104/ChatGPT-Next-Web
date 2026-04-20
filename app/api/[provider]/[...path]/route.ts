@@ -1,10 +1,7 @@
 import { ApiPath } from "@/app/constant";
 import { NextRequest, NextResponse } from "next/server";
 import { handle as openaiHandler } from "../../openai";
-import { handle as azureHandler } from "../../azure";
-import { handle as googleHandler } from "../../google";
 import { handle as baiduHandler } from "../../baidu";
-import { handle as stabilityHandler } from "../../stability";
 import { handle as proxyHandler } from "../../proxy";
 import { PROVIDER_CONFIGS, createProviderHandler } from "../../provider";
 import { logger } from "@/app/utils/logger";
@@ -24,17 +21,14 @@ async function handle(
 
   // Special handlers that need provider-specific logic
   switch (apiPath) {
+    // Azure reuses the OpenAI handler — requestOpenai() already detects
+    // Azure from the URL path and applies Azure-specific URL rewriting.
     case ApiPath.Azure:
-      return azureHandler(req, { params });
-    case ApiPath.Google:
-      return googleHandler(req, { params });
+    case ApiPath.OpenAI:
+      return openaiHandler(req, { params });
     case ApiPath.Baidu:
       return baiduHandler(req, { params });
     // case ApiPath.Tencent: using "/api/tencent"
-    case ApiPath.Stability:
-      return stabilityHandler(req, { params });
-    case ApiPath.OpenAI:
-      return openaiHandler(req, { params });
     default:
       return proxyHandler(req, { params });
   }

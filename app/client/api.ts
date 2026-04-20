@@ -29,11 +29,6 @@ export interface MultimodalContent {
   };
 }
 
-export interface MultimodalContentForAlibaba {
-  text?: string;
-  image?: string;
-}
-
 export interface RequestMessage {
   role: MessageRole;
   content: string | MultimodalContent[];
@@ -105,27 +100,6 @@ export abstract class LLMApi {
   abstract speech(options: SpeechOptions): Promise<ArrayBuffer>;
   abstract usage(): Promise<LLMUsage>;
   abstract models(): Promise<LLMModel[]>;
-}
-
-type ProviderName = "openai" | "azure" | "claude" | "palm";
-
-interface Model {
-  name: string;
-  provider: ProviderName;
-  ctxlen: number;
-}
-
-interface ChatProvider {
-  name: ProviderName;
-  apiConfig: {
-    baseUrl: string;
-    apiKey: string;
-    summaryModel: Model;
-  };
-  models: Model[];
-
-  chat: () => void;
-  usage: () => void;
 }
 
 export class ClientApi {

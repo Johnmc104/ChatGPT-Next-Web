@@ -16,6 +16,8 @@ import {
   SILICONFLOW_BASE_URL,
   AI302_BASE_URL,
   RAGFLOW_BASE_URL,
+  GEMINI_BASE_URL,
+  STABILITY_BASE_URL,
 } from "../constant";
 import { prettyObject } from "../utils/format";
 import { auth, type AuthResult } from "./auth";
@@ -57,6 +59,10 @@ export interface ProviderConfig {
   authIsBearer?: boolean;
   /** Extra headers to send upstream, computed per-request */
   extraHeaders?: (req: NextRequest) => Record<string, string>;
+  /** Override the default Content-Type header (default "application/json") */
+  contentType?: (req: NextRequest) => string;
+  /** Extra query params to append to the fetch URL, computed per-request */
+  queryParams?: (req: NextRequest) => string;
 }
 
 /**
@@ -158,6 +164,32 @@ export const PROVIDER_CONFIGS: Record<string, ProviderConfig> = {
         Anthropic.Vision,
     }),
   },
+  [ApiPath.Google]: {
+    name: "Google",
+    modelProvider: ModelProvider.GeminiPro,
+    apiPath: ApiPath.Google,
+    serviceProvider: ServiceProvider.Google,
+    getBaseUrl: () => serverConfig.googleUrl || GEMINI_BASE_URL,
+    authHeaderName: "x-goog-api-key",
+    authIsBearer: false,
+    extraHeaders: () => ({
+      "Cache-Control": "no-store",
+    }),
+    queryParams: (req) =>
+      req.nextUrl.searchParams.get("alt") === "sse" ? "?alt=sse" : "",
+  },
+  [ApiPath.Stability]: {
+    name: "Stability",
+    modelProvider: ModelProvider.Stability,
+    apiPath: ApiPath.Stability,
+    serviceProvider: ServiceProvider.Stability,
+    getBaseUrl: () => serverConfig.stabilityUrl || STABILITY_BASE_URL,
+    contentType: (req) =>
+      req.headers.get("Content-Type") || "multipart/form-data",
+    extraHeaders: (req) => ({
+      Accept: req.headers.get("Accept") || "application/json",
+    }),
+  },
 };
 
 // ---------------------------------------------------------------------------
@@ -227,11 +259,16 @@ async function requestProvider(
 
   const { signal, cleanup } = createTimeoutController();
 
-  const fetchUrl = buildFetchUrl({
+  let fetchUrl = buildFetchUrl({
     baseUrl,
     requestPath: path,
     useCloudflareGateway: config.useCloudflareGateway ?? false,
   });
+
+  // Append provider-specific query params (e.g. Google's ?alt=sse)
+  if (config.queryParams) {
+    fetchUrl += config.queryParams(req);
+  }
 
   logger.info(`[${config.name}] fetchUrl:`, fetchUrl);
 
@@ -243,8 +280,12 @@ async function requestProvider(
     ignoreUserApiKey: config.skipUnifiedProxy,
   });
 
+  const contentType = config.contentType
+    ? config.contentType(req)
+    : "application/json";
+
   const headers: Record<string, string> = {
-    "Content-Type": "application/json",
+    "Content-Type": contentType,
     [authHeaderName]: authValue,
     ...(config.extraHeaders?.(req) ?? {}),
   };
