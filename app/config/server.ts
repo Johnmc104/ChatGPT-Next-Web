@@ -107,13 +107,6 @@ export const getServerSideConfig = () => {
   const isRAGFlow = !!process.env.RAGFLOW_API_KEY;
 
   const isAzure = !!process.env.AZURE_URL;
-  // const apiKeyEnvVar = process.env.OPENAI_API_KEY ?? "";
-  // const apiKeys = apiKeyEnvVar.split(",").map((v) => v.trim());
-  // const randomIndex = Math.floor(Math.random() * apiKeys.length);
-  // const apiKey = apiKeys[randomIndex];
-  // console.log(
-  //   `[Server Config] using ${randomIndex + 1} of ${apiKeys.length} api key`,
-  // );
 
   const allowedWebDavEndpoints = (
     process.env.WHITE_WEBDAV_ENDPOINTS ?? ""

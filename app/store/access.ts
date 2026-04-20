@@ -156,7 +156,6 @@ export const useAccessStore = createPersistStore(
           token: string;
           openaiApiKey: string;
           azureApiVersion: string;
-          googleApiKey: string;
         };
         state.openaiApiKey = state.token;
         state.azureApiVersion = "2023-08-01-preview";

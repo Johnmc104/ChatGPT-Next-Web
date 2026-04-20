@@ -123,14 +123,6 @@ export const RAGFlow = {
 };
 
 export const DEFAULT_INPUT_TEMPLATE = `{{input}}`; // input / time / model / lang
-// export const DEFAULT_SYSTEM_TEMPLATE = `
-// You are ChatGPT, a large language model trained by {{ServiceProvider}}.
-// Knowledge cutoff: {{cutoff}}
-// Current model: {{model}}
-// Current time: {{time}}
-// Latex inline: $x^2$
-// Latex block: $$e=mc^2$$
-// `;
 export const DEFAULT_SYSTEM_TEMPLATE = `
 You are ChatGPT, a large language model trained by {{ServiceProvider}}.
 Knowledge cutoff: {{cutoff}}
@@ -310,10 +302,12 @@ export const VISION_MODEL_REGEXES = [
   /vision/i,
   /gpt-4o/i,
   /gpt-4\.1/i,
+  /gpt-4-turbo/i,
   /gpt-5/i,
   /claude.*[34]/i,
   /claude-.*opus/i,
   /claude-.*sonnet/i,
+  /gemini-1\.5/i,
   /gemini-[23]/i,
   /grok-4/i,
   /glm-4/i,
@@ -322,6 +316,7 @@ export const VISION_MODEL_REGEXES = [
 
 export const EXCLUDE_VISION_MODEL_REGEXES = [
   /haiku/i, // Claude Haiku models have limited vision
+  /turbo-preview/i, // gpt-4-turbo-preview is text-only
 ];
 
 // Simplified model list - OpenRouter format for custom API endpoints

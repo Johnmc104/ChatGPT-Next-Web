@@ -8,7 +8,7 @@
 
 English / [简体中文](./README_CN.md)
 
-A lightweight, fast AI assistant supporting **20+ LLM providers** through a unified proxy architecture.
+A lightweight, fast AI assistant with a unified proxy architecture for LLM providers.
 
 [![Saas][Saas-image]][saas-url]
 [![Web][Web-image]][web-url]
@@ -36,7 +36,7 @@ A lightweight, fast AI assistant supporting **20+ LLM providers** through a unif
 - **One-click deploy** on Vercel, Docker, or bare metal
 - **Compact client** (~5MB) on Linux / Windows / macOS (Tauri)
 - **Unified proxy architecture** — a single `BASE_URL` routes all providers through one endpoint (OpenRouter, Cloudflare AI Gateway, etc.)
-- **20+ LLM providers**: OpenAI, Azure, Anthropic Claude, Google Gemini, DeepSeek, Baidu ERNIE, ByteDance Doubao, Alibaba Qwen, Tencent Hunyuan, Moonshot, iFlytek Spark, xAI Grok, ChatGLM, SiliconFlow, 302.AI, RAGFlow, Stability AI, and more
+- **LLM providers**: OpenAI, Azure, Stability AI (image generation), RAGFlow (knowledge base), and any OpenAI-compatible provider via unified proxy
 - **Privacy first** — all data stored locally in the browser
 - **Markdown** with LaTeX, Mermaid, syntax highlighting
 - **Artifacts** — preview, copy, and share generated content in a separate window
@@ -72,21 +72,16 @@ docker run -d -p 3000:3000 \
 NextChat uses a **unified proxy architecture** where all LLM requests flow through a single server-side proxy:
 
 ```
-Browser (ChatGPTApi client)
+Browser (ChatGPTApi / RAGFlowApi client)
     │
     ▼
 /api/{provider}/v1/chat/completions
     │
     ▼
-Route Dispatcher ──► Provider Registry (provider.ts)
-    │                  Handles: Anthropic, DeepSeek, Google, Stability,
-    │                  ByteDance, Alibaba, Moonshot, iFlytek, xAI,
-    │                  ChatGLM, SiliconFlow, 302.AI, RAGFlow
-    │
+Route Dispatcher (route.ts)
     ├── OpenAI / Azure ──► requestOpenai() (GPT-4 filtering, Azure URL rewriting)
-    ├── Baidu ──► OAuth token flow (fundamentally different auth)
-    ├── Tencent ──► HMAC-SHA256 signing (dedicated route)
-    └── default ──► generic proxy pass-through
+    ├── Stability    ──► requestOpenai() (image generation)
+    └── default      ──► proxyHandler()  (generic pass-through, e.g. RAGFlow)
 ```
 
 When `BASE_URL` is set, all providers route through the unified proxy instead of their individual upstream URLs.
@@ -108,20 +103,8 @@ When `BASE_URL` is set, all providers route through the unified proxy instead of
 |----------|----------|
 | `OPENAI_API_KEY` | OpenAI |
 | `AZURE_URL` / `AZURE_API_KEY` / `AZURE_API_VERSION` | Azure OpenAI |
-| `GOOGLE_API_KEY` / `GOOGLE_URL` | Google Gemini |
-| `ANTHROPIC_API_KEY` / `ANTHROPIC_URL` / `ANTHROPIC_API_VERSION` | Anthropic Claude |
-| `BAIDU_API_KEY` / `BAIDU_SECRET_KEY` / `BAIDU_URL` | Baidu ERNIE |
-| `BYTEDANCE_API_KEY` / `BYTEDANCE_URL` | ByteDance Doubao |
-| `ALIBABA_API_KEY` / `ALIBABA_URL` | Alibaba Qwen |
-| `TENCENT_API_KEY` / `TENCENT_SECRET_KEY` / `TENCENT_URL` | Tencent Hunyuan |
-| `MOONSHOT_API_KEY` / `MOONSHOT_URL` | Moonshot |
-| `IFLYTEK_API_KEY` / `IFLYTEK_API_SECRET` / `IFLYTEK_URL` | iFlytek Spark |
-| `DEEPSEEK_API_KEY` / `DEEPSEEK_URL` | DeepSeek |
-| `XAI_API_KEY` / `XAI_URL` | xAI Grok |
-| `CHATGLM_API_KEY` / `CHATGLM_URL` | ChatGLM |
-| `SILICONFLOW_API_KEY` / `SILICONFLOW_URL` | SiliconFlow |
-| `AI302_API_KEY` / `AI302_URL` | 302.AI |
 | `STABILITY_API_KEY` / `STABILITY_URL` | Stability AI |
+| `RAGFLOW_API_KEY` / `RAGFLOW_URL` | RAGFlow |
 
 ### Feature Flags
 

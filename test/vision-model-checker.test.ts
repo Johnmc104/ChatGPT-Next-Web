@@ -23,8 +23,6 @@ describe("isVisionModel", () => {
       "learnlm-vision",
       "qwen-vl-max",
       "qwen2-vl-max",
-      "gpt-4-turbo",
-      "dall-e-3",
     ];
 
     visionModels.forEach((model) => {

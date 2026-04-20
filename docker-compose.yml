@@ -8,7 +8,6 @@ services:
       - 3000:3000
     environment:
       - OPENAI_API_KEY=$OPENAI_API_KEY
-      - GOOGLE_API_KEY=$GOOGLE_API_KEY
       - CODE=$CODE
       - BASE_URL=$BASE_URL
       - OPENAI_ORG_ID=$OPENAI_ORG_ID
@@ -16,7 +15,6 @@ services:
       - DISABLE_GPT4=$DISABLE_GPT4
       - ENABLE_BALANCE_QUERY=$ENABLE_BALANCE_QUERY
       - DISABLE_FAST_LINK=$DISABLE_FAST_LINK
-      - OPENAI_SB=$OPENAI_SB
 
   chatgpt-next-web-proxy:
     profiles: [ "proxy" ]
@@ -26,7 +24,6 @@ services:
       - 3000:3000
     environment:
       - OPENAI_API_KEY=$OPENAI_API_KEY
-      - GOOGLE_API_KEY=$GOOGLE_API_KEY
       - CODE=$CODE
       - PROXY_URL=$PROXY_URL
       - BASE_URL=$BASE_URL
@@ -35,4 +32,3 @@ services:
       - DISABLE_GPT4=$DISABLE_GPT4
       - ENABLE_BALANCE_QUERY=$ENABLE_BALANCE_QUERY
       - DISABLE_FAST_LINK=$DISABLE_FAST_LINK
-      - OPENAI_SB=$OPENAI_SB
