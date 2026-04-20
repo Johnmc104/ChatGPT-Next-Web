@@ -1,5 +1,5 @@
 import {
-  Stability,
+  StabilityConfig,
   StoreKey,
   ACCESS_CODE_PREFIX,
   ApiPath,
@@ -79,7 +79,7 @@ export const useSdStore = createPersistStore<
           Accept: "application/json",
           Authorization: bearerToken,
         };
-        const path = `${prefix}/${Stability.GeneratePath}/${data.model}`;
+        const path = `${prefix}/${StabilityConfig.GeneratePath}/${data.model}`;
         const formData = new FormData();
         for (let paramsKey in data.params) {
           formData.append(paramsKey, data.params[paramsKey]);

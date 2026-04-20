@@ -1,9 +1,7 @@
 import { ApiPath } from "@/app/constant";
 import { NextRequest, NextResponse } from "next/server";
 import { handle as openaiHandler } from "../../openai";
-import { handle as baiduHandler } from "../../baidu";
 import { handle as proxyHandler } from "../../proxy";
-import { PROVIDER_CONFIGS, createProviderHandler } from "../../provider";
 import { logger } from "@/app/utils/logger";
 
 async function handle(
@@ -13,22 +11,14 @@ async function handle(
   const apiPath = `/api/${params.provider}`;
   logger.debug(`[${params.provider} Route] params`, params);
 
-  // Check the generic provider registry first
-  const providerConfig = PROVIDER_CONFIGS[apiPath];
-  if (providerConfig) {
-    return createProviderHandler(providerConfig)(req, { params });
-  }
-
-  // Special handlers that need provider-specific logic
+  // All providers route through the unified proxy architecture.
+  // OpenAI and Azure have special handling (GPT-4 filtering, Azure URL rewriting).
+  // Everything else is a generic proxy pass-through.
   switch (apiPath) {
-    // Azure reuses the OpenAI handler — requestOpenai() already detects
-    // Azure from the URL path and applies Azure-specific URL rewriting.
     case ApiPath.Azure:
     case ApiPath.OpenAI:
+    case ApiPath.Stability:
       return openaiHandler(req, { params });
-    case ApiPath.Baidu:
-      return baiduHandler(req, { params });
-    // case ApiPath.Tencent: using "/api/tencent"
     default:
       return proxyHandler(req, { params });
   }

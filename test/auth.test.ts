@@ -195,30 +195,6 @@ describe("auth", () => {
     expect(result.systemApiKey).toBe("sk-openai-key");
   });
 
-  test("returns googleApiKey for GeminiPro provider", () => {
-    mockGetServerSideConfig.mockReturnValue(
-      makeConfig({ googleApiKey: "google-key-123" }),
-    );
-
-    const req = makeRequest();
-    const result = auth(req, ModelProvider.GeminiPro);
-
-    expect(result.error).toBe(false);
-    expect(result.systemApiKey).toBe("google-key-123");
-  });
-
-  test("returns anthropicApiKey for Claude provider", () => {
-    mockGetServerSideConfig.mockReturnValue(
-      makeConfig({ anthropicApiKey: "claude-key-456" }),
-    );
-
-    const req = makeRequest();
-    const result = auth(req, ModelProvider.Claude);
-
-    expect(result.error).toBe(false);
-    expect(result.systemApiKey).toBe("claude-key-456");
-  });
-
   test("returns stabilityApiKey for Stability provider", () => {
     mockGetServerSideConfig.mockReturnValue(
       makeConfig({ stabilityApiKey: "stability-key-789" }),
@@ -231,30 +207,6 @@ describe("auth", () => {
     expect(result.systemApiKey).toBe("stability-key-789");
   });
 
-  test("returns baiduApiKey for Ernie provider", () => {
-    mockGetServerSideConfig.mockReturnValue(
-      makeConfig({ baiduApiKey: "baidu-key" }),
-    );
-
-    const req = makeRequest();
-    const result = auth(req, ModelProvider.Ernie);
-
-    expect(result.error).toBe(false);
-    expect(result.systemApiKey).toBe("baidu-key");
-  });
-
-  test("returns combined iflytek key:secret for Iflytek provider", () => {
-    mockGetServerSideConfig.mockReturnValue(
-      makeConfig({ iflytekApiKey: "iflytek-key", iflytekApiSecret: "iflytek-secret" }),
-    );
-
-    const req = makeRequest();
-    const result = auth(req, ModelProvider.Iflytek);
-
-    expect(result.error).toBe(false);
-    expect(result.systemApiKey).toBe("iflytek-key:iflytek-secret");
-  });
-
   // --- Unified proxy fallback ---
 
   test("falls back to default apiKey when provider key is missing and baseUrl is set", () => {
@@ -262,12 +214,11 @@ describe("auth", () => {
       makeConfig({
         baseUrl: "https://proxy.example.com",
         apiKey: "sk-unified-proxy-key",
-        googleApiKey: "", // no provider-specific key
       }),
     );
 
     const req = makeRequest();
-    const result = auth(req, ModelProvider.GeminiPro);
+    const result = auth(req, ModelProvider.GPT);
 
     expect(result.error).toBe(false);
     expect(result.systemApiKey).toBe("sk-unified-proxy-key");
@@ -275,11 +226,11 @@ describe("auth", () => {
 
   test("returns error when no API key is available", () => {
     mockGetServerSideConfig.mockReturnValue(
-      makeConfig({ apiKey: "", googleApiKey: "" }),
+      makeConfig({ apiKey: "" }),
     );
 
     const req = makeRequest();
-    const result = auth(req, ModelProvider.GeminiPro);
+    const result = auth(req, ModelProvider.GPT);
 
     expect(result.error).toBe(true);
     expect(result.msg).toContain("not configured");

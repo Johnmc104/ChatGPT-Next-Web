@@ -4,7 +4,6 @@ import {
   StoreKey,
   ApiPath,
   OPENAI_BASE_URL,
-  RAGFLOW_BASE_URL,
 } from "../constant";
 import { getHeaders } from "../client/api";
 import { getClientConfig } from "../config/client";
@@ -17,11 +16,7 @@ let fetchState = 0; // 0 not fetch, 1 fetching, 2 done
 
 const isApp = getClientConfig()?.buildMode === "export";
 
-// Only two URLs are actively used:
-// - OpenAI: for user custom endpoint (settings page)
-// - RAGFlow: for dedicated RAGFlow upstream
 const DEFAULT_OPENAI_URL = isApp ? OPENAI_BASE_URL : ApiPath.OpenAI;
-const DEFAULT_RAGFLOW_URL = isApp ? RAGFLOW_BASE_URL : ApiPath.RAGFlow;
 
 const DEFAULT_ACCESS_STATE = {
   accessCode: "",
@@ -34,16 +29,16 @@ const DEFAULT_ACCESS_STATE = {
   openaiUrl: DEFAULT_OPENAI_URL,
   openaiApiKey: "",
 
-  // RAGFlow (server-managed, client fields kept for store compatibility)
-  ragflowUrl: DEFAULT_RAGFLOW_URL,
-  ragflowApiKey: "",
-
-  // --- Legacy fields (kept for persistent store migration compatibility) ---
-  // These are NOT used in unified proxy mode but remain to avoid breaking
-  // existing users' persisted state when they upgrade.
+  // Azure
   azureUrl: "",
   azureApiKey: "",
   azureApiVersion: "2023-08-01-preview",
+
+  // Stability (for SD image generation)
+  stabilityUrl: "",
+  stabilityApiKey: "",
+
+  // --- Legacy fields (kept for persistent store migration compatibility) ---
   googleUrl: "",
   googleApiKey: "",
   googleApiVersion: "v1",
@@ -60,8 +55,6 @@ const DEFAULT_ACCESS_STATE = {
   alibabaApiKey: "",
   moonshotUrl: "",
   moonshotApiKey: "",
-  stabilityUrl: "",
-  stabilityApiKey: "",
   tencentUrl: "",
   tencentSecretKey: "",
   tencentSecretId: "",
@@ -78,6 +71,8 @@ const DEFAULT_ACCESS_STATE = {
   siliconflowApiKey: "",
   ai302Url: "",
   ai302ApiKey: "",
+  ragflowUrl: "",
+  ragflowApiKey: "",
 
   // server config
   needCode: true,

@@ -19,8 +19,6 @@ import {
   DEFAULT_INPUT_TEMPLATE,
   DEFAULT_MODELS,
   DEFAULT_SYSTEM_TEMPLATE,
-  GEMINI_SUMMARIZE_MODEL,
-  DEEPSEEK_SUMMARIZE_MODEL,
   KnowledgeCutOffDate,
   MCP_SYSTEM_TEMPLATE,
   MCP_TOOLS_TEMPLATE,
@@ -149,11 +147,6 @@ function getSummarizeModel(
         summarizeModel.provider?.providerName as string,
       ];
     }
-  }
-  if (currentModel.startsWith("gemini")) {
-    return [GEMINI_SUMMARIZE_MODEL, ServiceProvider.Google];
-  } else if (currentModel.startsWith("deepseek-")) {
-    return [DEEPSEEK_SUMMARIZE_MODEL, ServiceProvider.DeepSeek];
   }
 
   return [currentModel, providerName];

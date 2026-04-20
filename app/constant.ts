@@ -9,36 +9,7 @@ export const FETCH_COMMIT_URL = `https://api.github.com/repos/${OWNER}/${REPO}/c
 export const FETCH_TAG_URL = `https://api.github.com/repos/${OWNER}/${REPO}/tags?per_page=1`;
 export const RUNTIME_CONFIG_DOM = "danger-runtime-config";
 
-export const STABILITY_BASE_URL = "https://api.stability.ai";
-
 export const OPENAI_BASE_URL = "https://api.openai.com";
-export const ANTHROPIC_BASE_URL = "https://api.anthropic.com";
-
-export const GEMINI_BASE_URL = "https://generativelanguage.googleapis.com/";
-
-export const BAIDU_BASE_URL = "https://aip.baidubce.com";
-export const BAIDU_OATUH_URL = `${BAIDU_BASE_URL}/oauth/2.0/token`;
-
-export const BYTEDANCE_BASE_URL = "https://ark.cn-beijing.volces.com";
-
-export const ALIBABA_BASE_URL = "https://dashscope.aliyuncs.com/api/";
-
-export const TENCENT_BASE_URL = "https://hunyuan.tencentcloudapi.com";
-
-export const MOONSHOT_BASE_URL = "https://api.moonshot.ai";
-export const IFLYTEK_BASE_URL = "https://spark-api-open.xf-yun.com";
-
-export const DEEPSEEK_BASE_URL = "https://api.deepseek.com";
-
-export const XAI_BASE_URL = "https://api.x.ai";
-
-export const CHATGLM_BASE_URL = "https://open.bigmodel.cn";
-
-export const SILICONFLOW_BASE_URL = "https://api.siliconflow.cn";
-
-export const AI302_BASE_URL = "https://api.302.ai";
-
-export const RAGFLOW_BASE_URL = "http://git.johndaily.cn:8081";
 
 export const CACHE_URL_PREFIX = "/api/cache";
 export const UPLOAD_URL = `${CACHE_URL_PREFIX}/upload`;
@@ -63,22 +34,8 @@ export enum ApiPath {
   Cors = "",
   Azure = "/api/azure",
   OpenAI = "/api/openai",
-  Anthropic = "/api/anthropic",
-  Google = "/api/google",
-  Baidu = "/api/baidu",
-  ByteDance = "/api/bytedance",
-  Alibaba = "/api/alibaba",
-  Tencent = "/api/tencent",
-  Moonshot = "/api/moonshot",
-  Iflytek = "/api/iflytek",
   Stability = "/api/stability",
   Artifacts = "/api/artifacts",
-  XAI = "/api/xai",
-  ChatGLM = "/api/chatglm",
-  DeepSeek = "/api/deepseek",
-  RAGFlow = "/api/ragflow",
-  SiliconFlow = "/api/siliconflow",
-  "302.AI" = "/api/302ai",
 }
 
 export enum SlotID {
@@ -124,21 +81,7 @@ export const EXPORT_MESSAGE_CLASS_NAME = "export-markdown";
 export enum ServiceProvider {
   OpenAI = "OpenAI",
   Azure = "Azure",
-  Google = "Google",
-  Anthropic = "Anthropic",
-  Baidu = "Baidu",
-  ByteDance = "ByteDance",
-  Alibaba = "Alibaba",
-  Tencent = "Tencent",
-  Moonshot = "Moonshot",
   Stability = "Stability",
-  Iflytek = "Iflytek",
-  XAI = "XAI",
-  ChatGLM = "ChatGLM",
-  DeepSeek = "DeepSeek",
-  SiliconFlow = "SiliconFlow",
-  RAGFlow = "RAGFlow",
-  "302.AI" = "302.AI",
 }
 
 // Google API safety settings, see https://ai.google.dev/gemini-api/docs/safety-settings
@@ -153,32 +96,11 @@ export enum GoogleSafetySettingsThreshold {
 export enum ModelProvider {
   Stability = "Stability",
   GPT = "GPT",
-  GeminiPro = "GeminiPro",
-  Claude = "Claude",
-  Ernie = "Ernie",
-  Doubao = "Doubao",
-  Qwen = "Qwen",
-  Hunyuan = "Hunyuan",
-  Moonshot = "Moonshot",
-  Iflytek = "Iflytek",
-  XAI = "XAI",
-  ChatGLM = "ChatGLM",
-  DeepSeek = "DeepSeek",
-  SiliconFlow = "SiliconFlow",
-  RAGFlow = "RAGFlow",
-  "302.AI" = "302.AI",
 }
 
-export const Stability = {
+export const StabilityConfig = {
   GeneratePath: "v2beta/stable-image/generate",
   ExampleEndpoint: "https://api.stability.ai",
-};
-
-export const Anthropic = {
-  ChatPath: "v1/messages",
-  ChatPath1: "v1/complete",
-  ExampleEndpoint: "https://api.anthropic.com",
-  Vision: "2023-06-01",
 };
 
 export const OpenaiPath = {
@@ -197,97 +119,6 @@ export const Azure = {
   ImagePath: (deployName: string, apiVersion: string) =>
     `deployments/${deployName}/images/generations?api-version=${apiVersion}`,
   ExampleEndpoint: "https://{resource-url}/openai",
-};
-
-export const Google = {
-  ExampleEndpoint: "https://generativelanguage.googleapis.com/",
-  ChatPath: (modelName: string) =>
-    `v1beta/models/${modelName}:streamGenerateContent`,
-};
-
-export const Baidu = {
-  ExampleEndpoint: BAIDU_BASE_URL,
-  ChatPath: (modelName: string) => {
-    let endpoint = modelName;
-    if (modelName === "ernie-4.0-8k") {
-      endpoint = "completions_pro";
-    }
-    if (modelName === "ernie-4.0-8k-preview-0518") {
-      endpoint = "completions_adv_pro";
-    }
-    if (modelName === "ernie-3.5-8k") {
-      endpoint = "completions";
-    }
-    if (modelName === "ernie-speed-8k") {
-      endpoint = "ernie_speed";
-    }
-    return `rpc/2.0/ai_custom/v1/wenxinworkshop/chat/${endpoint}`;
-  },
-};
-
-export const ByteDance = {
-  ExampleEndpoint: "https://ark.cn-beijing.volces.com/api/",
-  ChatPath: "api/v3/chat/completions",
-};
-
-export const Alibaba = {
-  ExampleEndpoint: ALIBABA_BASE_URL,
-  ChatPath: (modelName: string) => {
-    if (modelName.includes("vl") || modelName.includes("omni")) {
-      return "v1/services/aigc/multimodal-generation/generation";
-    }
-    return `v1/services/aigc/text-generation/generation`;
-  },
-};
-
-export const Tencent = {
-  ExampleEndpoint: TENCENT_BASE_URL,
-};
-
-export const Moonshot = {
-  ExampleEndpoint: MOONSHOT_BASE_URL,
-  ChatPath: "v1/chat/completions",
-};
-
-export const Iflytek = {
-  ExampleEndpoint: IFLYTEK_BASE_URL,
-  ChatPath: "v1/chat/completions",
-};
-
-export const DeepSeek = {
-  ExampleEndpoint: DEEPSEEK_BASE_URL,
-  ChatPath: "chat/completions",
-};
-
-export const XAI = {
-  ExampleEndpoint: XAI_BASE_URL,
-  ChatPath: "v1/chat/completions",
-};
-
-export const ChatGLM = {
-  ExampleEndpoint: CHATGLM_BASE_URL,
-  ChatPath: "api/paas/v4/chat/completions",
-  ImagePath: "api/paas/v4/images/generations",
-  VideoPath: "api/paas/v4/videos/generations",
-};
-
-export const SiliconFlow = {
-  ExampleEndpoint: SILICONFLOW_BASE_URL,
-  ChatPath: "v1/chat/completions",
-  ListModelPath: "v1/models?&sub_type=chat",
-};
-
-export const AI302 = {
-  ExampleEndpoint: AI302_BASE_URL,
-  ChatPath: "v1/chat/completions",
-  EmbeddingsPath: "jina/v1/embeddings",
-  ListModelPath: "v1/models?llm=1",
-};
-
-export const RAGFlow = {
-  ExampleEndpoint: RAGFLOW_BASE_URL,
-  ChatPath: "v1/chat/completions",
-  ListModelPath: "v1/models",
 };
 
 export const DEFAULT_INPUT_TEMPLATE = `{{input}}`; // input / time / model / lang
@@ -433,8 +264,6 @@ You are an AI assistant with access to system tools. Your role is to help users 
 `;
 
 export const SUMMARIZE_MODEL = "openai/gpt-4o-mini";
-export const GEMINI_SUMMARIZE_MODEL = "google/gemini-3-flash-preview";
-export const DEEPSEEK_SUMMARIZE_MODEL = "deepseek/deepseek-v3.2";
 
 export const KnowledgeCutOffDate: Record<string, string> = {
   default: "2021-09",
@@ -542,7 +371,7 @@ const defaultModels = [
   // zhipu
   "z-ai/glm-4.7",
   "z-ai/glm-5",
-  
+
   // Other
   "minimax/minimax-m2.5",
   "minimax/minimax-m2.7",

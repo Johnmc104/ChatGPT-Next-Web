@@ -9,10 +9,8 @@ import {
   ChatMessage,
   ModelType,
   useAccessStore,
-  useChatStore,
 } from "../store";
 import { ChatGPTApi, DalleRequestPayload } from "./platforms/openai";
-import { RAGFlowApi } from "./platforms/ragflow";
 
 export const ROLES = ["system", "user", "assistant"] as const;
 export type MessageRole = (typeof ROLES)[number];
@@ -106,16 +104,9 @@ export class ClientApi {
   public llm: LLMApi;
 
   constructor(provider: ModelProvider = ModelProvider.GPT) {
-    // In unified proxy mode, only two paths are active:
-    // - RAGFlow: dedicated client with its own upstream URL
-    // - Everything else: OpenAI-compatible client (routes through BASE_URL proxy)
-    switch (provider) {
-      case ModelProvider.RAGFlow:
-        this.llm = new RAGFlowApi();
-        break;
-      default:
-        this.llm = new ChatGPTApi();
-    }
+    // All providers route through the OpenAI-compatible client.
+    // The server-side proxy handles routing to the correct upstream.
+    this.llm = new ChatGPTApi();
   }
 
   config() {}
@@ -182,7 +173,6 @@ export function getHeaders(
   customBaseUrl?: string,
 ) {
   const accessStore = useAccessStore.getState();
-  const chatStore = useChatStore.getState();
   let headers: Record<string, string> = {};
   if (!ignoreHeaders) {
     headers = {
@@ -198,18 +188,10 @@ export function getHeaders(
 
   // ---------------------------------------------------------------------------
   // Simplified header logic for unified proxy architecture:
-  //   - All non-RAGFlow models route through BASE_URL (unified proxy)
-  //   - RAGFlow auth is entirely server-side (RAGFLOW_API_KEY env var)
-  //   - Users may provide their own openaiApiKey for custom endpoints
-  // ---------------------------------------------------------------------------
+  // All models route through the unified proxy (BASE_URL).
+  // Users may provide their own openaiApiKey for custom endpoints.
 
-  const modelConfig = chatStore.currentSession().mask.modelConfig;
-  const isRAGFlow = modelConfig.providerName === ServiceProvider.RAGFlow;
-
-  // RAGFlow: no client-side key needed (server injects RAGFLOW_API_KEY).
-  // Everything else: user's openaiApiKey (for custom endpoint) or empty
-  // (server will inject OPENAI_API_KEY via access code auth).
-  const apiKey = isRAGFlow ? "" : accessStore.openaiApiKey;
+  const apiKey = accessStore.openaiApiKey;
 
   // 1. Always send access code if available (for server-side authentication)
   if (validString(accessStore.accessCode)) {
@@ -248,20 +230,7 @@ export function hasCustomBaseUrl(): boolean {
   return false;
 }
 
-export function getClientApi(provider: ServiceProvider): ClientApi {
-  // RAGFlow always uses its own client — it has its own upstream URL
-  // and must not be routed through the unified proxy (BASE_URL/OpenRouter).
-  if (provider === ServiceProvider.RAGFlow) {
-    return new ClientApi(ModelProvider.RAGFlow);
-  }
-
-  // In unified proxy mode (BASE_URL set), all non-RAGFlow models go through
-  // OpenAI-compatible client. This is the dominant path in production.
-  if (hasCustomBaseUrl()) {
-    return new ClientApi(ModelProvider.GPT);
-  }
-
-  // Fallback: direct provider access (no unified proxy configured).
-  // Kept for completeness but not reached in current deployment.
+export function getClientApi(_provider: ServiceProvider): ClientApi {
+  // All providers route through the unified OpenAI-compatible client.
   return new ClientApi(ModelProvider.GPT);
 }
