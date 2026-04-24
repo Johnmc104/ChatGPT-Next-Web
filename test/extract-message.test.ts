@@ -37,6 +37,9 @@ jest.mock("@/app/utils/chat", () => ({
   preProcessImageContent: jest.fn((c: any) => c),
   // uploadImage mock: simulate ServiceWorker cache returning a URL
   uploadImage: jest.fn(async (_blob: Blob) => "https://cache.test/img-001"),
+  cacheBase64Image: jest.fn(
+    async (_b64: string, _mime?: string) => "https://cache.test/img-001",
+  ),
   base64Image2Blob: jest.fn(
     (b64: string, mime: string) => new Blob([b64], { type: mime }),
   ),

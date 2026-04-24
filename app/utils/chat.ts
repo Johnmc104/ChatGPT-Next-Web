@@ -115,13 +115,19 @@ export function cacheImageToBase64Image(imageUrl: string) {
         .then((res) => res.blob())
         .then(
           async (blob) =>
-            (imageCaches[imageUrl] = await compressImage(blob, 256 * 1024)),
+            (imageCaches[imageUrl] = await compressImage(
+              blob,
+              IMAGE_CACHE_MAX_SIZE,
+            )),
         ); // compressImage
     }
     return Promise.resolve(imageCaches[imageUrl]);
   }
   return Promise.resolve(imageUrl);
 }
+
+/** Max byte size used when compressing images for the ServiceWorker cache. */
+export const IMAGE_CACHE_MAX_SIZE = 256 * 1024;
 
 export function base64Image2Blob(base64Data: string, contentType: string) {
   const byteCharacters = atob(base64Data);
@@ -156,7 +162,7 @@ export async function base64Image2BlobAsync(
 export function uploadImage(file: Blob): Promise<string> {
   if (!window._SW_ENABLED) {
     // if serviceWorker register error, using compressImage
-    return compressImage(file, 256 * 1024);
+    return compressImage(file, IMAGE_CACHE_MAX_SIZE);
   }
   const body = new FormData();
   body.append("file", file);
@@ -174,6 +180,20 @@ export function uploadImage(file: Blob): Promise<string> {
       }
       throw Error(`upload Error: ${res?.msg}`);
     });
+}
+
+/**
+ * Convert a raw base64 string to a Blob and upload it to the ServiceWorker
+ * cache in one step.  Eliminates the repeated
+ * `uploadImage(await base64Image2BlobAsync(b64, mime))` pattern found in
+ * openai.ts and sd.ts.
+ */
+export async function cacheBase64Image(
+  base64Data: string,
+  contentType: string = "image/png",
+): Promise<string> {
+  const blob = await base64Image2BlobAsync(base64Data, contentType);
+  return uploadImage(blob);
 }
 
 export function removeImage(imageUrl: string) {

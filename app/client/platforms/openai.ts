@@ -21,7 +21,7 @@ import {
   preProcessImageContent,
   uploadImage,
   base64Image2Blob,
-  base64Image2BlobAsync,
+  cacheBase64Image,
   streamWithThink,
 } from "@/app/utils/chat";
 import { cloudflareAIGatewayUrl } from "@/app/utils/cloudflare";
@@ -175,9 +175,7 @@ export class ChatGPTApi implements LLMApi {
       const b64_json = res.data?.at(0)?.b64_json ?? "";
       if (!url && b64_json) {
         // uploadImage — cache in ServiceWorker (async blob conversion)
-        url = await uploadImage(
-          await base64Image2BlobAsync(b64_json, "image/png"),
-        );
+        url = await cacheBase64Image(b64_json, "image/png");
       }
       const parts: MultimodalContent[] = [];
       // Capture revised_prompt from DALL-E
@@ -231,9 +229,7 @@ export class ChatGPTApi implements LLMApi {
           if (url.startsWith("data:")) {
             try {
               const mime = url.split(";")[0].split(":")[1] || "image/png";
-              return await uploadImage(
-                await base64Image2BlobAsync(url.split(",")[1], mime),
-              );
+              return await cacheBase64Image(url.split(",")[1], mime);
             } catch (e) {
               console.warn("[Image] failed to cache base64 image", e);
               return url; // keep original data URI as fallback
