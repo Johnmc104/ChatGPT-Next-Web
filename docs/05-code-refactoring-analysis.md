@@ -111,21 +111,19 @@
 
 ---
 
-### R-05 — `ui-lib.tsx` 按职责拆分 ★★☆
+### R-05 — `ui-lib.tsx` 按职责拆分 ★★☆ ✅
 
 **位置**: `app/components/ui-lib.tsx`（651 行，17 个导出组件）  
 **问题**: Modal/Toast 命令式工具函数（`showConfirm`, `showPrompt`, `showImageModal`）与 React 声明式组件混合；文件过大难以导航。  
 **方案**: 拆分为子目录，barrel 重导出保持兼容。
 
-| 子任务 | 目标文件 | 组件 |
-|--------|----------|------|
-| R-05a | `ui-lib/modal.tsx` | `Modal`, `showModal`, `showConfirm`, `showPrompt`, `showImageModal` |
-| R-05b | `ui-lib/toast.tsx` | `Toast`, `showToast` |
-| R-05c | `ui-lib/form.tsx` | `Input`, `PasswordInput`, `Select` |
-| R-05d | `ui-lib/layout.tsx` | `Popover`, `Card`, `List`, `ListItem`, `Loading`, `FullScreen`, `Selector` |
-| R-05e | `ui-lib/index.ts` | barrel 重导出 |
+| 子任务 | 目标文件 | 组件 | 状态 |
+|--------|----------|------|------|
+| R-05a | `ui-lib-modal.tsx` | `Modal`, `showModal`, `showConfirm`, `showPrompt`, `showImageModal` | ✅ |
+| R-05b | `ui-lib-toast.tsx` | `Toast`, `showToast` | ✅ |
+| R-05c | `ui-lib.tsx` 保留 | `Popover`, `Card`, `List`, `ListItem`, `Input`, `PasswordInput`, `Select`, `Selector`, `Loading`, `FullScreen` + barrel 重导出 | ✅ |
 
-**类型修复**: `showConfirm(content: any)` → `React.ReactNode`，`FullScreen(props: any)` → 定义 Props 接口
+**实际**: `ui-lib.tsx` 651→359 行（−292），新增 `ui-lib-modal.tsx`（261 行）、`ui-lib-toast.tsx`（59 行）。29 个消费者零修改（barrel 重导出）。
 
 ---
 
