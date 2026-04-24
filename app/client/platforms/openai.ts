@@ -77,9 +77,10 @@ export interface DalleRequestPayload {
   model: string;
   prompt: string;
   response_format?: "url" | "b64_json";
+  output_format?: "png" | "jpeg" | "webp";
   n: number;
   size: ModelSize;
-  quality?: DalleQuality;
+  quality?: DalleQuality | "low" | "medium" | "high" | "auto";
   style?: DalleStyle;
 }
 
@@ -301,6 +302,11 @@ export class ChatGPTApi implements LLMApi {
     const isImageGen = _isImageModel(options.config.model);
     const isO1OrO3 = isReasoningModel(options.config.model);
     const isGpt5 = options.config.model.startsWith("gpt-5");
+    // Detect GPT Image model family (gpt-image-1, gpt-image-1.5, gpt-image-2, etc.)
+    // These use output_format instead of response_format and different quality values
+    const isGptImageModel = options.config.model
+      .toLowerCase()
+      .includes("gpt-image");
     if (isImageGen) {
       // ALL image-generation-only models (dall-e-3, gpt-image-1/2, cogview, etc.)
       // use /v1/images/generations. They do NOT support chat completions.
@@ -310,16 +316,24 @@ export class ChatGPTApi implements LLMApi {
       requestPayload = {
         model: options.config.model,
         prompt,
-        // URLs are only valid for 60 minutes after the image has been generated.
-        response_format: "b64_json", // using b64_json, and save image in CacheStorage
         n: 1,
         size: options.config?.size ?? "1024x1024",
-        // quality & style are DALL-E 3 specific; omit for other models
+        // GPT Image models (gpt-image-1/1.5/2) use output_format (png/jpeg/webp)
+        // and always return b64. DALL-E uses response_format (url/b64_json).
+        ...(isGptImageModel
+          ? { output_format: "png" }
+          : isDalle3
+          ? { response_format: "b64_json" as const }
+          : { response_format: "b64_json" as const }),
+        // DALL-E 3: quality (standard/hd) + style (vivid/natural)
+        // GPT Image: quality (low/medium/high/auto), no style param
         ...(isDalle3
           ? {
               quality: options.config?.quality ?? "standard",
               style: options.config?.style ?? "vivid",
             }
+          : isGptImageModel
+          ? { quality: options.config?.quality ?? "auto" }
           : {}),
       };
     } else {
