@@ -107,7 +107,21 @@ export async function preProcessImageContent(
   })) as Promise<MultimodalContent[] | string>;
 }
 
+const IMAGE_CACHE_LIMIT = 50;
 const imageCaches: Record<string, string> = {};
+const imageCacheKeys: string[] = [];
+
+function setImageCache(key: string, value: string) {
+  if (!(key in imageCaches)) {
+    if (imageCacheKeys.length >= IMAGE_CACHE_LIMIT) {
+      const evict = imageCacheKeys.shift()!;
+      delete imageCaches[evict];
+    }
+    imageCacheKeys.push(key);
+  }
+  imageCaches[key] = value;
+}
+
 export function cacheImageToBase64Image(imageUrl: string) {
   if (imageUrl.includes(CACHE_URL_PREFIX)) {
     if (!imageCaches[imageUrl]) {
@@ -118,13 +132,11 @@ export function cacheImageToBase64Image(imageUrl: string) {
         credentials: "include",
       })
         .then((res) => res.blob())
-        .then(
-          async (blob) =>
-            (imageCaches[imageUrl] = await compressImage(
-              blob,
-              IMAGE_CACHE_MAX_SIZE,
-            )),
-        ); // compressImage
+        .then(async (blob) => {
+          const base64 = await compressImage(blob, IMAGE_CACHE_MAX_SIZE);
+          setImageCache(imageUrl, base64);
+          return base64;
+        }); // compressImage
     }
     return Promise.resolve(imageCaches[imageUrl]);
   }
