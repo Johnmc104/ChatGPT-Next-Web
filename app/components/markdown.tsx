@@ -12,6 +12,8 @@ import {
   useEffect,
   useMemo,
   useCallback,
+  createContext,
+  useContext,
 } from "react";
 import { copyToClipboard, useWindowSize } from "../utils";
 import Locale from "../locales";
@@ -29,6 +31,15 @@ import { useChatStore } from "../store";
 import { IconButton } from "./button";
 
 import { useAppConfig } from "../store/config";
+
+/**
+ * Context to pass feature flags from the top-level Markdown component
+ * down to PreCode/CustomCode, avoiding per-component full-store subscriptions.
+ */
+const MarkdownFeatureContext = createContext({
+  enableArtifacts: true,
+  enableCodeFold: true,
+});
 import clsx from "clsx";
 
 // Lazy-load mermaid only when a mermaid code block is detected.
@@ -106,8 +117,7 @@ export function PreCode(props: { children: any }) {
   const [mermaidCode, setMermaidCode] = useState("");
   const [htmlCode, setHtmlCode] = useState("");
   const { height } = useWindowSize();
-  const chatStore = useChatStore();
-  const session = chatStore.currentSession();
+  const { enableArtifacts } = useContext(MarkdownFeatureContext);
 
   const renderArtifacts = useDebouncedCallback(() => {
     if (!ref.current) return;
@@ -127,10 +137,6 @@ export function PreCode(props: { children: any }) {
       setHtmlCode(refText);
     }
   }, 600);
-
-  const config = useAppConfig();
-  const enableArtifacts =
-    session.mask?.enableArtifacts !== false && config.enableArtifacts;
 
   //Wrap the paragraph for plain-text
   useEffect(() => {
@@ -204,11 +210,7 @@ export function PreCode(props: { children: any }) {
 }
 
 function CustomCode(props: { children: any; className?: string }) {
-  const chatStore = useChatStore();
-  const session = chatStore.currentSession();
-  const config = useAppConfig();
-  const enableCodeFold =
-    session.mask?.enableCodeFold !== false && config.enableCodeFold;
+  const { enableCodeFold } = useContext(MarkdownFeatureContext);
 
   const ref = useRef<HTMLPreElement>(null);
   const [collapsed, setCollapsed] = useState(true);
@@ -301,53 +303,77 @@ function _MarkDownContent(props: { content: string }) {
     return tryWrapHtmlCode(escapeBrackets(props.content));
   }, [props.content]);
 
+  const maskEnableArtifacts = useChatStore(
+    (s) => s.currentSession().mask?.enableArtifacts !== false,
+  );
+  const maskEnableCodeFold = useChatStore(
+    (s) => s.currentSession().mask?.enableCodeFold !== false,
+  );
+  const configEnableArtifacts = useAppConfig((s) => s.enableArtifacts);
+  const configEnableCodeFold = useAppConfig((s) => s.enableCodeFold);
+
+  const features = useMemo(
+    () => ({
+      enableArtifacts: maskEnableArtifacts && configEnableArtifacts,
+      enableCodeFold: maskEnableCodeFold && configEnableCodeFold,
+    }),
+    [
+      maskEnableArtifacts,
+      configEnableArtifacts,
+      maskEnableCodeFold,
+      configEnableCodeFold,
+    ],
+  );
+
   return (
-    <ReactMarkdown
-      remarkPlugins={[RemarkMath, RemarkGfm, RemarkBreaks]}
-      rehypePlugins={[
-        [
-          RehypeKatex,
-          {
-            strict: "ignore",
-            throwOnError: false,
+    <MarkdownFeatureContext.Provider value={features}>
+      <ReactMarkdown
+        remarkPlugins={[RemarkMath, RemarkGfm, RemarkBreaks]}
+        rehypePlugins={[
+          [
+            RehypeKatex,
+            {
+              strict: "ignore",
+              throwOnError: false,
+            },
+          ],
+          [
+            RehypeHighlight,
+            {
+              detect: false,
+              ignoreMissing: true,
+            },
+          ],
+        ]}
+        components={{
+          pre: PreCode,
+          code: CustomCode,
+          p: (pProps) => <p {...pProps} dir="auto" />,
+          a: (aProps) => {
+            const href = aProps.href || "";
+            if (/\.(aac|mp3|opus|wav)$/.test(href)) {
+              return (
+                <figure>
+                  <audio controls src={href}></audio>
+                </figure>
+              );
+            }
+            if (/\.(3gp|3g2|webm|ogv|mpeg|mp4|avi)$/.test(href)) {
+              return (
+                <video controls width="99.9%">
+                  <source src={href} />
+                </video>
+              );
+            }
+            const isInternal = /^\/#/i.test(href);
+            const target = isInternal ? "_self" : aProps.target ?? "_blank";
+            return <a {...aProps} target={target} />;
           },
-        ],
-        [
-          RehypeHighlight,
-          {
-            detect: false,
-            ignoreMissing: true,
-          },
-        ],
-      ]}
-      components={{
-        pre: PreCode,
-        code: CustomCode,
-        p: (pProps) => <p {...pProps} dir="auto" />,
-        a: (aProps) => {
-          const href = aProps.href || "";
-          if (/\.(aac|mp3|opus|wav)$/.test(href)) {
-            return (
-              <figure>
-                <audio controls src={href}></audio>
-              </figure>
-            );
-          }
-          if (/\.(3gp|3g2|webm|ogv|mpeg|mp4|avi)$/.test(href)) {
-            return (
-              <video controls width="99.9%">
-                <source src={href} />
-              </video>
-            );
-          }
-          const isInternal = /^\/#/i.test(href);
-          const target = isInternal ? "_self" : aProps.target ?? "_blank";
-          return <a {...aProps} target={target} />;
-        },
-      }}
-    >
-      {escapedContent}
-    </ReactMarkdown>
+        }}
+      >
+        {escapedContent}
+      </ReactMarkdown>
+    </MarkdownFeatureContext.Provider>
   );
 }
 
