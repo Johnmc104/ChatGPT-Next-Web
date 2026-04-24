@@ -15,6 +15,7 @@ import {
   createTimeoutController,
   fetchWithRetry,
 } from "./url-builder";
+import { wrapWithHeartbeat, SSE_HEADERS } from "./utils/sse-heartbeat";
 import { logger } from "@/app/utils/logger";
 
 const serverConfig = getServerSideConfig();
@@ -213,86 +214,19 @@ export async function requestOpenai(req: NextRequest, authResult?: AuthResult) {
     }
 
     // If the client requested heartbeat wrapping AND the upstream succeeded,
-    // wrap the response body in an SSE stream that first collects the entire
-    // upstream body while emitting `: heartbeat\n\n` every 15 s, then sends
-    // the payload as `data: <json>\n\n` followed by `data: [DONE]\n\n`.
-    //
-    // Dual-mode:
-    //   a) Upstream returns SSE (e.g. partial_images) → passthrough each
-    //      event with interleaved heartbeats.
-    //   b) Upstream returns JSON → collect full body, then wrap as one SSE
-    //      data event (original behavior).
+    // wrap the response body in an SSE stream with heartbeat keep-alive.
+    // See app/api/utils/sse-heartbeat.ts for the shared implementation.
     if (wantHeartbeat && res.ok && res.body) {
-      const upstream = res.body;
-      const HEARTBEAT_INTERVAL_MS = 15_000;
       const upstreamCT = res.headers.get("content-type") ?? "";
       const isUpstreamSSE = upstreamCT.includes("text/event-stream");
 
-      const stream = new ReadableStream({
-        async start(ctrl) {
-          const encoder = new TextEncoder();
-          const heartbeat = encoder.encode(": heartbeat\n\n");
-
-          // Start heartbeat timer
-          const timer = setInterval(() => {
-            try {
-              ctrl.enqueue(heartbeat);
-            } catch {
-              clearInterval(timer);
-            }
-          }, HEARTBEAT_INTERVAL_MS);
-
-          try {
-            const reader = upstream.getReader();
-
-            if (isUpstreamSSE) {
-              // --- Passthrough mode ---
-              // Forward each upstream chunk directly (preserving SSE events),
-              // heartbeats are interleaved by the timer above.
-              while (true) {
-                const { done, value } = await reader.read();
-                if (done) break;
-                if (value) ctrl.enqueue(value);
-              }
-              clearInterval(timer);
-              ctrl.close();
-            } else {
-              // --- Collect mode (original) ---
-              // Gather full upstream body, wrap as single SSE data event.
-              const chunks: Uint8Array[] = [];
-              while (true) {
-                const { done, value } = await reader.read();
-                if (done) break;
-                if (value) chunks.push(value);
-              }
-
-              clearInterval(timer);
-
-              // Concatenate chunks
-              const totalLen = chunks.reduce((n, c) => n + c.length, 0);
-              const body = new Uint8Array(totalLen);
-              let offset = 0;
-              for (const chunk of chunks) {
-                body.set(chunk, offset);
-                offset += chunk.length;
-              }
-
-              // Send the actual payload as an SSE data event
-              const payload = new TextDecoder().decode(body);
-              ctrl.enqueue(encoder.encode(`data: ${payload}\n\n`));
-              ctrl.enqueue(encoder.encode("data: [DONE]\n\n"));
-              ctrl.close();
-            }
-          } catch (e) {
-            clearInterval(timer);
-            ctrl.error(e);
-          }
-        },
+      const stream = wrapWithHeartbeat(res.body, {
+        passthrough: isUpstreamSSE,
       });
 
-      newHeaders.set("Content-Type", "text/event-stream; charset=utf-8");
-      newHeaders.set("Cache-Control", "no-cache");
-      newHeaders.set("Connection", "keep-alive");
+      newHeaders.set("Content-Type", SSE_HEADERS["Content-Type"]);
+      newHeaders.set("Cache-Control", SSE_HEADERS["Cache-Control"]);
+      newHeaders.set("Connection", SSE_HEADERS["Connection"]);
       newHeaders.delete("content-length");
 
       return new Response(stream, {

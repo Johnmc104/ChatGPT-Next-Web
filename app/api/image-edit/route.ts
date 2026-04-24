@@ -15,6 +15,7 @@ import { ModelProvider, OPENAI_BASE_URL } from "@/app/constant";
 import { auth } from "../auth";
 import { resolveAuthHeaderValue } from "../common";
 import { normalizeBaseUrl, buildFetchUrl } from "../url-builder";
+import { wrapWithHeartbeat, SSE_HEADERS } from "../utils/sse-heartbeat";
 import { logger } from "@/app/utils/logger";
 
 export const runtime = "nodejs";
@@ -74,63 +75,17 @@ export async function POST(req: NextRequest) {
       });
     }
 
-    // Wrap response with SSE heartbeats (same pattern as image-gen)
+    // Wrap response with SSE heartbeats (shared utility)
     const wantHeartbeat = req.headers.get("X-Stream-Heartbeat") === "1";
 
     if (wantHeartbeat && response.body) {
-      const upstream = response.body as ReadableStream<Uint8Array>;
-      const HEARTBEAT_INTERVAL_MS = 15_000;
-
-      const stream = new ReadableStream({
-        async start(ctrl) {
-          const encoder = new TextEncoder();
-          const heartbeat = encoder.encode(": heartbeat\n\n");
-
-          const timer = setInterval(() => {
-            try {
-              ctrl.enqueue(heartbeat);
-            } catch {
-              clearInterval(timer);
-            }
-          }, HEARTBEAT_INTERVAL_MS);
-
-          try {
-            const reader = upstream.getReader();
-            const chunks: Uint8Array[] = [];
-            while (true) {
-              const { done, value } = await reader.read();
-              if (done) break;
-              if (value) chunks.push(value);
-            }
-
-            clearInterval(timer);
-
-            const totalLen = chunks.reduce((n, c) => n + c.length, 0);
-            const body = new Uint8Array(totalLen);
-            let offset = 0;
-            for (const chunk of chunks) {
-              body.set(chunk, offset);
-              offset += chunk.length;
-            }
-
-            const payload = new TextDecoder().decode(body);
-            ctrl.enqueue(encoder.encode(`data: ${payload}\n\n`));
-            ctrl.enqueue(encoder.encode("data: [DONE]\n\n"));
-            ctrl.close();
-          } catch (e) {
-            clearInterval(timer);
-            ctrl.error(e);
-          }
-        },
-      });
+      const stream = wrapWithHeartbeat(
+        response.body as ReadableStream<Uint8Array>,
+      );
 
       return new Response(stream, {
         status: 200,
-        headers: {
-          "Content-Type": "text/event-stream; charset=utf-8",
-          "Cache-Control": "no-cache",
-          Connection: "keep-alive",
-        },
+        headers: SSE_HEADERS,
       });
     }
 

@@ -74,7 +74,7 @@ export interface RequestPayload {
   modalities?: string[];
 }
 
-export interface DalleRequestPayload {
+export interface ImageGenerationPayload {
   model: string;
   prompt: string;
   response_format?: "url" | "b64_json";
@@ -294,6 +294,146 @@ export class ChatGPTApi implements LLMApi {
     }
   }
 
+  /**
+   * Build the payload for image generation requests (DALL-E 3, gpt-image-*, cogview, etc.)
+   */
+  private buildImageGenPayload(
+    options: ChatOptions,
+    flags: {
+      isDalle3: boolean;
+      isGptImageModel: boolean;
+      isImageEdit: boolean;
+    },
+  ): ImageGenerationPayload {
+    const prompt = getMessageTextContent(
+      options.messages.slice(-1)?.pop() as any,
+    );
+    return {
+      model: options.config.model,
+      prompt,
+      n: 1,
+      size: options.config?.size ?? "1024x1024",
+      // GPT Image models use output_format (png/jpeg/webp); DALL-E uses response_format.
+      ...(flags.isGptImageModel
+        ? {
+            output_format: options.config?.outputFormat ?? "png",
+            ...((options.config?.outputFormat === "jpeg" ||
+              options.config?.outputFormat === "webp") && {
+              output_compression: 100,
+            }),
+          }
+        : flags.isDalle3
+        ? { response_format: "b64_json" as const }
+        : { response_format: "b64_json" as const }),
+      // Quality & style mapping per model family
+      ...(flags.isDalle3
+        ? {
+            quality: options.config?.quality ?? "standard",
+            style: options.config?.style ?? "vivid",
+          }
+        : flags.isGptImageModel
+        ? {
+            quality: (["low", "medium", "high", "auto"] as string[]).includes(
+              options.config?.quality ?? "",
+            )
+              ? options.config!.quality
+              : options.config?.quality === "hd"
+              ? "high"
+              : "auto",
+          }
+        : {}),
+      // partial_images for progressive preview (GPT Image only, not edits)
+      ...(flags.isGptImageModel && !flags.isImageEdit
+        ? { partial_images: 2 }
+        : {}),
+    };
+  }
+
+  /**
+   * Parse an SSE stream containing partial_images events (progressive preview).
+   * Returns the final JSON payload for extractMessage().
+   */
+  private async parsePartialImageStream(
+    body: ReadableStream<Uint8Array>,
+    onUpdate?: ChatOptions["onUpdate"],
+  ): Promise<any> {
+    const reader = body.getReader();
+    const decoder = new TextDecoder();
+    let buffer = "";
+    let prevBlobUrl = "";
+    let finalJson: any = null;
+
+    try {
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+        buffer += decoder.decode(value, { stream: true });
+
+        // Process complete SSE events (delimited by \n\n)
+        while (buffer.includes("\n\n")) {
+          const idx = buffer.indexOf("\n\n");
+          const eventBlock = buffer.slice(0, idx);
+          buffer = buffer.slice(idx + 2);
+
+          // Skip heartbeat comments and empty blocks
+          if (!eventBlock.trim() || eventBlock.trim().startsWith(":")) continue;
+
+          // Parse SSE event lines
+          let eventData = "";
+          for (const line of eventBlock.split("\n")) {
+            if (line.startsWith("data: ")) {
+              const payload = line.slice(6);
+              if (payload === "[DONE]") continue;
+              eventData += payload;
+            }
+          }
+
+          if (!eventData) continue;
+
+          try {
+            const json = JSON.parse(eventData);
+
+            if (json.type === "partial_image" && json.b64_json) {
+              // Convert partial preview to blob URL for display
+              const fmt = json.output_format || "png";
+              const blob = base64Image2Blob(json.b64_json, `image/${fmt}`);
+              const blobUrl = URL.createObjectURL(blob);
+
+              // Revoke previous preview to free memory
+              if (prevBlobUrl) URL.revokeObjectURL(prevBlobUrl);
+              prevBlobUrl = blobUrl;
+
+              // Update UI with progressive preview
+              const parts: MultimodalContent[] = [
+                { type: "image_url", image_url: { url: blobUrl } },
+              ];
+              onUpdate?.(parts, "");
+            } else if (json.type === "completed" && json.b64_json) {
+              finalJson = {
+                data: [
+                  {
+                    b64_json: json.b64_json,
+                    revised_prompt: json.revised_prompt,
+                  },
+                ],
+              };
+            } else if (json.data) {
+              // Standard wrapped JSON (fallback if partial_images not honored)
+              finalJson = json;
+            }
+          } catch (e) {
+            console.warn("[SSE] failed to parse event data", e);
+          }
+        }
+      }
+    } finally {
+      // Always clean up preview blob URLs — even on abort/error
+      if (prevBlobUrl) URL.revokeObjectURL(prevBlobUrl);
+    }
+
+    return finalJson || {};
+  }
+
   async chat(options: ChatOptions) {
     const modelConfig = {
       ...useAppConfig.getState().modelConfig,
@@ -304,14 +444,12 @@ export class ChatGPTApi implements LLMApi {
       },
     };
 
-    let requestPayload: RequestPayload | DalleRequestPayload;
+    let requestPayload: RequestPayload | ImageGenerationPayload;
 
     const isDalle3 = _isDalle3(options.config.model);
     const isImageGen = _isImageModel(options.config.model);
     const isO1OrO3 = isReasoningModel(options.config.model);
     const isGpt5 = options.config.model.startsWith("gpt-5");
-    // Detect GPT Image model family (gpt-image-1, gpt-image-1.5, gpt-image-2, etc.)
-    // These use output_format instead of response_format and different quality values
     const isGptImageModel = options.config.model
       .toLowerCase()
       .includes("gpt-image");
@@ -324,55 +462,11 @@ export class ChatGPTApi implements LLMApi {
     const isImageEdit =
       isImageGen && isGptImageModel && attachedImages.length > 0;
     if (isImageGen) {
-      // ALL image-generation-only models (dall-e-3, gpt-image-1/2, cogview, etc.)
-      // use /v1/images/generations. They do NOT support chat completions.
-      const prompt = getMessageTextContent(
-        options.messages.slice(-1)?.pop() as any,
-      );
-      requestPayload = {
-        model: options.config.model,
-        prompt,
-        n: 1,
-        size: options.config?.size ?? "1024x1024",
-        // GPT Image models (gpt-image-1/1.5/2) use output_format (png/jpeg/webp)
-        // and always return b64. DALL-E uses response_format (url/b64_json).
-        ...(isGptImageModel
-          ? {
-              output_format: options.config?.outputFormat ?? "png",
-              // jpeg/webp support output_compression (0-100)
-              ...((options.config?.outputFormat === "jpeg" ||
-                options.config?.outputFormat === "webp") && {
-                output_compression: 100,
-              }),
-            }
-          : isDalle3
-          ? { response_format: "b64_json" as const }
-          : { response_format: "b64_json" as const }),
-        // DALL-E 3: quality (standard/hd) + style (vivid/natural)
-        // GPT Image: quality (low/medium/high/auto), no style param
-        // For GPT Image, the UI now provides native values directly;
-        // for safety, still remap any stale DALL-E values from config
-        ...(isDalle3
-          ? {
-              quality: options.config?.quality ?? "standard",
-              style: options.config?.style ?? "vivid",
-            }
-          : isGptImageModel
-          ? {
-              quality: (["low", "medium", "high", "auto"] as string[]).includes(
-                options.config?.quality ?? "",
-              )
-                ? options.config!.quality
-                : options.config?.quality === "hd"
-                ? "high"
-                : "auto",
-            }
-          : {}),
-        // partial_images: request progressive preview images during generation.
-        // Only supported by GPT Image models, not DALL-E or others.
-        // Skipped for image edits (not supported by /v1/images/edits).
-        ...(isGptImageModel && !isImageEdit ? { partial_images: 2 } : {}),
-      };
+      requestPayload = this.buildImageGenPayload(options, {
+        isDalle3,
+        isGptImageModel,
+        isImageEdit,
+      });
     } else {
       const visionModel = isVisionModel(options.config.model);
       const messages: ChatOptions["messages"] = [];
@@ -600,7 +694,7 @@ export class ChatGPTApi implements LLMApi {
           }
           formData.append(
             "prompt",
-            (requestPayload as DalleRequestPayload).prompt,
+            (requestPayload as ImageGenerationPayload).prompt,
           );
           formData.append("model", options.config.model);
           formData.append("n", "1");
@@ -608,12 +702,12 @@ export class ChatGPTApi implements LLMApi {
           if (size !== "auto") {
             formData.append("size", size);
           }
-          const quality = (requestPayload as DalleRequestPayload).quality;
+          const quality = (requestPayload as ImageGenerationPayload).quality;
           if (quality) {
             formData.append("quality", quality);
           }
           const outputFormat =
-            (requestPayload as DalleRequestPayload).output_format ?? "png";
+            (requestPayload as ImageGenerationPayload).output_format ?? "png";
           formData.append("output_format", outputFormat);
 
           // Don't set Content-Type — browser will add multipart boundary
@@ -654,8 +748,8 @@ export class ChatGPTApi implements LLMApi {
         const hasPartialImages =
           isGptImageModel &&
           !isImageEdit &&
-          (requestPayload as DalleRequestPayload).partial_images &&
-          (requestPayload as DalleRequestPayload).partial_images! > 0;
+          (requestPayload as ImageGenerationPayload).partial_images &&
+          (requestPayload as ImageGenerationPayload).partial_images! > 0;
 
         if (
           hasPartialImages &&
@@ -663,82 +757,10 @@ export class ChatGPTApi implements LLMApi {
           contentType.includes("text/event-stream") &&
           res.body
         ) {
-          // Incremental SSE parsing for partial_images streaming
-          const reader = res.body.getReader();
-          const decoder = new TextDecoder();
-          let buffer = "";
-          let prevBlobUrl = "";
-          let finalJson: any = null;
-
-          while (true) {
-            const { done, value } = await reader.read();
-            if (done) break;
-            buffer += decoder.decode(value, { stream: true });
-
-            // Process complete SSE events (delimited by \n\n)
-            while (buffer.includes("\n\n")) {
-              const idx = buffer.indexOf("\n\n");
-              const eventBlock = buffer.slice(0, idx);
-              buffer = buffer.slice(idx + 2);
-
-              // Skip heartbeat comments and empty blocks
-              if (!eventBlock.trim() || eventBlock.trim().startsWith(":"))
-                continue;
-
-              // Parse SSE event lines
-              let eventData = "";
-              for (const line of eventBlock.split("\n")) {
-                if (line.startsWith("data: ")) {
-                  const payload = line.slice(6);
-                  if (payload === "[DONE]") continue;
-                  eventData += payload;
-                }
-              }
-
-              if (!eventData) continue;
-
-              try {
-                const json = JSON.parse(eventData);
-
-                if (json.type === "partial_image" && json.b64_json) {
-                  // Convert partial preview to blob URL for display
-                  const fmt = json.output_format || "png";
-                  const blob = base64Image2Blob(json.b64_json, `image/${fmt}`);
-                  const blobUrl = URL.createObjectURL(blob);
-
-                  // Revoke previous preview to free memory
-                  if (prevBlobUrl) URL.revokeObjectURL(prevBlobUrl);
-                  prevBlobUrl = blobUrl;
-
-                  // Update UI with progressive preview
-                  const parts: MultimodalContent[] = [
-                    { type: "image_url", image_url: { url: blobUrl } },
-                  ];
-                  options.onUpdate?.(parts, "");
-                } else if (json.type === "completed" && json.b64_json) {
-                  // Final completed image — wrap in extractMessage-compatible format
-                  finalJson = {
-                    data: [
-                      {
-                        b64_json: json.b64_json,
-                        revised_prompt: json.revised_prompt,
-                      },
-                    ],
-                  };
-                } else if (json.data) {
-                  // Standard wrapped JSON (fallback if partial_images not honored)
-                  finalJson = json;
-                }
-              } catch (e) {
-                console.warn("[SSE] failed to parse event data", e);
-              }
-            }
-          }
-
-          // Clean up last preview blob (extractMessage creates a persistent SW URL)
-          if (prevBlobUrl) URL.revokeObjectURL(prevBlobUrl);
-
-          resJson = finalJson || {};
+          resJson = await this.parsePartialImageStream(
+            res.body,
+            options.onUpdate,
+          );
         } else if (isImageGen && contentType.includes("text/event-stream")) {
           // Non-partial SSE: collect-all mode (heartbeat-wrapped JSON)
           const text = await res.text();

@@ -5,13 +5,19 @@ import {
   ServiceProvider,
 } from "../constant";
 import {
+  DalleStyle,
+  ImageOutputFormat,
+  ImageQuality,
+  ModelSize,
+} from "../typing";
+import {
   ChatMessageTool,
   ChatMessage,
   ModelType,
   useAccessStore,
   useChatStore,
 } from "../store";
-import { ChatGPTApi, DalleRequestPayload } from "./platforms/openai";
+import { ChatGPTApi } from "./platforms/openai";
 import { RAGFlowApi } from "./platforms/ragflow";
 
 export const ROLES = ["system", "user", "assistant"] as const;
@@ -42,10 +48,11 @@ export interface LLMConfig {
   stream?: boolean;
   presence_penalty?: number;
   frequency_penalty?: number;
-  size?: DalleRequestPayload["size"];
-  quality?: DalleRequestPayload["quality"];
-  style?: DalleRequestPayload["style"];
-  outputFormat?: DalleRequestPayload["output_format"];
+  // Image generation parameters (only used for image models)
+  size?: ModelSize;
+  quality?: ImageQuality;
+  style?: DalleStyle;
+  outputFormat?: ImageOutputFormat;
 }
 
 export interface SpeechOptions {
