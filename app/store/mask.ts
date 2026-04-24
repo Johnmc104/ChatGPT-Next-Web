@@ -104,7 +104,16 @@ export const useMaskStore = createPersistStore(
       return userMasks.concat(buildinMasks);
     },
     search(text: string) {
-      return Object.values(get().masks);
+      const masks = Object.values(get().masks);
+      if (!text.trim()) return masks;
+      const lowerText = text.toLowerCase();
+      return masks.filter(
+        (m) =>
+          m.name?.toLowerCase().includes(lowerText) ||
+          m.context?.some(
+            (c) => c.content?.toString().toLowerCase().includes(lowerText),
+          ),
+      );
     },
     setLanguage(language: Lang | undefined) {
       set({
