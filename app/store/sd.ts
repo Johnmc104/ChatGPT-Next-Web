@@ -13,7 +13,7 @@ import {
   getModelParamBasicData,
   SdFormData,
   SdModelConfig,
-} from "@/app/components/sd/sd-panel";
+} from "./sd-config";
 import { useAccessStore } from "./access";
 
 export interface SdDrawItem {

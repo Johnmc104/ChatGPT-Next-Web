@@ -1,4 +1,4 @@
-import { showToast } from "../components/ui-lib";
+import { showToast } from "./toast";
 import Locale from "../locales";
 import { fetch as tauriStreamFetch } from "./stream";
 

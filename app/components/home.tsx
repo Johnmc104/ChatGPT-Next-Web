@@ -32,6 +32,8 @@ import clsx from "clsx";
 import { initializeMcpSystem, isMcpEnabled } from "../mcp/actions";
 import { ServiceProvider } from "../constant";
 import { preloadEncoder } from "../utils/tiktoken";
+import { registerToastHandler } from "../utils/toast";
+import { showToast } from "./ui-lib";
 
 export function Loading(props: { noLogo?: boolean }) {
   return (
@@ -245,6 +247,7 @@ export function Home() {
   useHtmlLang();
 
   useEffect(() => {
+    registerToastHandler(showToast);
     console.log("[Config] got config from build time", getClientConfig());
     useAccessStore.getState().fetch();
 

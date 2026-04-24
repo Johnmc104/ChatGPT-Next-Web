@@ -15,7 +15,7 @@ import {
 import type { ClientApi, MultimodalContent } from "../client/api";
 import { getClientApi } from "../client/api";
 import { ChatControllerPool } from "../client/controller";
-import { showToast } from "../components/ui-lib";
+import { showToast } from "../utils/toast";
 import {
   DEFAULT_INPUT_TEMPLATE,
   DEFAULT_MODELS,

@@ -2,7 +2,7 @@ import { safeLocalStorage } from "../utils";
 
 import { indexedDBStorage } from "@/app/utils/indexedDB-storage";
 import { nanoid } from "nanoid";
-import { showToast } from "../components/ui-lib";
+import { showToast } from "../utils/toast";
 import { StoreKey } from "../constant";
 import Locale from "../locales";
 import { createPersistStore } from "../utils/store";
