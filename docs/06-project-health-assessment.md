@@ -419,8 +419,13 @@ update.ts (独立)
 
 ### 中期（待实施）
 
-6. **评估移除 react-router-dom** (M3)
-   - 检查实际使用范围，可能仅限 sidebar 导航
+6. **✅ 评估移除 react-router-dom** (M3) — **结论：保留**
+   - 调查发现：项目使用 `HashRouter` 作为 SPA 路由（单 Next.js 页面内 8 条路由）
+   - 15+ 组件使用 `useNavigate()`，4+ 使用 `useLocation()`
+   - 架构原因：支持 `output: "export"` 静态导出（Tauri 桌面端 + Cloudflare Pages）
+   - Next.js App Router 路由不支持 `#hash` 路径，无法替代
+   - 风险收益比极低，维持现状是正确的架构选择
+   - commit: 仅文档更新
 
 7. **进一步拆分 chat.tsx** (M4)
    - 当前约 900 行，可继续拆分渲染逻辑
