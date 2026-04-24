@@ -375,6 +375,13 @@ export class ChatGPTApi implements LLMApi {
 
     console.log("[Request] openai payload: ", requestPayload);
 
+    // DALL-E and image-generation models do not support SSE streaming —
+    // even when the caller passes `stream: true` (the default for chat),
+    // we silently force a single non-streamed JSON response here. The
+    // payload's `stream` field has already been suppressed for DALL-E
+    // (DalleRequestPayload has no stream key) and is left untouched for
+    // image-gen models (most upstreams ignore it; OpenRouter accepts it
+    // but returns a single chunk anyway).
     const shouldStream = !isDalle3 && !isImageGen && !!options.config.stream;
     const controller = new AbortController();
     options.onController?.(controller);

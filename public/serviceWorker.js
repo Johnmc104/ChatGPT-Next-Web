@@ -1,6 +1,28 @@
 const CHATGPT_NEXT_WEB_CACHE = "chatgpt-next-web-cache";
 const CHATGPT_NEXT_WEB_FILE_CACHE = "chatgpt-next-web-file";
+
+// LRU eviction cap. Prevents indefinite growth of generated/uploaded images.
+// FIFO by Cache.keys() insertion order (spec-defined). When the cache exceeds
+// MAX_CACHED_FILES, the oldest (HIGH_WATER - LOW_WATER) entries are deleted.
+const MAX_CACHED_FILES = 500;
+const EVICT_TARGET = 400;
+
 let a="useandom-26T198340PX75pxJACKVERYMINDBUSHWOLF_GQZbfghjklqvwyzrict";let nanoid=(e=21)=>{let t="",r=crypto.getRandomValues(new Uint8Array(e));for(let n=0;n<e;n++)t+=a[63&r[n]];return t};
+
+async function evictIfNeeded(cache) {
+  try {
+    const keys = await cache.keys();
+    if (keys.length <= MAX_CACHED_FILES) return;
+    const toDelete = keys.length - EVICT_TARGET;
+    // keys() returns requests in insertion order (oldest first per CacheStorage spec)
+    for (let i = 0; i < toDelete; i++) {
+      await cache.delete(keys[i]);
+    }
+    console.log('[SW] evicted', toDelete, 'old cache entries');
+  } catch (e) {
+    console.warn('[SW] cache eviction failed', e);
+  }
+}
 
 self.addEventListener("activate", function (event) {
   console.log("ServiceWorker activated.");
@@ -37,6 +59,8 @@ async function upload(request, url) {
       'server': 'ServiceWorker',
     }
   }))
+  // Best-effort LRU eviction (non-blocking semantically — awaited only briefly)
+  await evictIfNeeded(cache)
   return jsonify({ code: 0, data: fileUrl })
 }
 

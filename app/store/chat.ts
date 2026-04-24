@@ -725,11 +725,13 @@ export const useChatStore = createPersistStore(
             },
             onFinish(message, responseRes) {
               if (responseRes?.status === 200) {
+                // summarize uses text-only model, message is always string
+                const text = typeof message === "string" ? message : "";
                 get().updateTargetSession(
                   session,
                   (session) =>
                     (session.topic =
-                      message.length > 0 ? trimTopic(message) : DEFAULT_TOPIC),
+                      text.length > 0 ? trimTopic(text) : DEFAULT_TOPIC),
                 );
               }
             },
@@ -796,10 +798,12 @@ export const useChatStore = createPersistStore(
             },
             onFinish(message, responseRes) {
               if (responseRes?.status === 200) {
-                console.log("[Memory] ", message);
+                // memory summary uses text-only model
+                const text = typeof message === "string" ? message : "";
+                console.log("[Memory] ", text);
                 get().updateTargetSession(session, (session) => {
                   session.lastSummarizeIndex = lastSummarizeIndex;
-                  session.memoryPrompt = message; // Update the memory prompt for stored it in local storage
+                  session.memoryPrompt = text; // Update the memory prompt for stored it in local storage
                 });
               }
             },
