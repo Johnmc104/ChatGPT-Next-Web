@@ -26,8 +26,6 @@ import MaskIcon from "../icons/mask.svg";
 import BreakIcon from "../icons/break.svg";
 import RobotIcon from "../icons/robot.svg";
 import SizeIcon from "../icons/size.svg";
-import QualityIcon from "../icons/hd.svg";
-import StyleIcon from "../icons/palette.svg";
 import PluginIcon from "../icons/plugin.svg";
 import ShortcutkeyIcon from "../icons/shortcutkey.svg";
 import McpToolIcon from "../icons/tool.svg";
@@ -47,7 +45,6 @@ import {
   showPlugins,
 } from "../utils";
 import {
-  DalleQuality,
   DalleStyle,
   ImageOutputFormat,
   ImageQuality,
@@ -260,10 +257,7 @@ export function ChatActions(props: {
   const [showPluginSelector, setShowPluginSelector] = useState(false);
   const [showUploadImage, setShowUploadImage] = useState(false);
 
-  const [showSizeSelector, setShowSizeSelector] = useState(false);
-  const [showQualitySelector, setShowQualitySelector] = useState(false);
-  const [showStyleSelector, setShowStyleSelector] = useState(false);
-  const [showFormatSelector, setShowFormatSelector] = useState(false);
+  const [showImageConfig, setShowImageConfig] = useState(false);
   const modelSizes = getModelSizes(currentModel);
   const isCurrentImageModel = isImageModel(currentModel);
   const isCurrentDalle3 = isDalle3(currentModel);
@@ -416,110 +410,124 @@ export function ChatActions(props: {
 
         {supportsCustomSize(currentModel) && (
           <ChatAction
-            onClick={() => setShowSizeSelector(true)}
+            onClick={() => setShowImageConfig(true)}
             text={currentSize}
             icon={<SizeIcon />}
           />
         )}
 
-        {showSizeSelector && (
-          <Selector
-            defaultSelectedValue={currentSize}
-            items={modelSizes.map((m) => ({
-              title: m,
-              value: m,
-            }))}
-            onClose={() => setShowSizeSelector(false)}
-            onSelection={(s) => {
-              if (s.length === 0) return;
-              const size = s[0];
-              chatStore.updateTargetSession(session, (session) => {
-                session.mask.modelConfig.size = size;
-              });
-              showToast(size);
-            }}
-          />
-        )}
+        {showImageConfig && (
+          <div
+            className={styles["image-config-overlay"]}
+            onClick={() => setShowImageConfig(false)}
+          >
+            <div
+              className={styles["image-config-panel"]}
+              onClick={(e) => e.stopPropagation()}
+            >
+              {/* Size */}
+              {modelSizes.length > 0 && (
+                <div className={styles["image-config-group"]}>
+                  <div className={styles["image-config-group-label"]}>Size</div>
+                  <div className={styles["image-config-chips"]}>
+                    {modelSizes.map((s) => (
+                      <span
+                        key={s}
+                        className={clsx(styles["image-config-chip"], {
+                          [styles["selected"]]: s === currentSize,
+                        })}
+                        onClick={() => {
+                          chatStore.updateTargetSession(session, (sess) => {
+                            sess.mask.modelConfig.size = s;
+                          });
+                        }}
+                      >
+                        {s}
+                      </span>
+                    ))}
+                  </div>
+                </div>
+              )}
 
-        {isCurrentImageModel && (
-          <ChatAction
-            onClick={() => setShowQualitySelector(true)}
-            text={currentQuality}
-            icon={<QualityIcon />}
-          />
-        )}
+              {/* Quality */}
+              {isCurrentImageModel && (
+                <div className={styles["image-config-group"]}>
+                  <div className={styles["image-config-group-label"]}>
+                    Quality
+                  </div>
+                  <div className={styles["image-config-chips"]}>
+                    {qualityOptions.map((q) => (
+                      <span
+                        key={q}
+                        className={clsx(styles["image-config-chip"], {
+                          [styles["selected"]]: q === currentQuality,
+                        })}
+                        onClick={() => {
+                          chatStore.updateTargetSession(session, (sess) => {
+                            sess.mask.modelConfig.quality = q;
+                          });
+                        }}
+                      >
+                        {q}
+                      </span>
+                    ))}
+                  </div>
+                </div>
+              )}
 
-        {showQualitySelector && (
-          <Selector
-            defaultSelectedValue={currentQuality}
-            items={qualityOptions.map((m) => ({
-              title: m,
-              value: m,
-            }))}
-            onClose={() => setShowQualitySelector(false)}
-            onSelection={(q) => {
-              if (q.length === 0) return;
-              const quality = q[0] as ImageQuality;
-              chatStore.updateTargetSession(session, (session) => {
-                session.mask.modelConfig.quality = quality;
-              });
-              showToast(quality);
-            }}
-          />
-        )}
+              {/* Format (GPT Image only) */}
+              {isCurrentGptImage && (
+                <div className={styles["image-config-group"]}>
+                  <div className={styles["image-config-group-label"]}>
+                    Format
+                  </div>
+                  <div className={styles["image-config-chips"]}>
+                    {formatOptions.map((f) => (
+                      <span
+                        key={f}
+                        className={clsx(styles["image-config-chip"], {
+                          [styles["selected"]]: f === currentFormat,
+                        })}
+                        onClick={() => {
+                          chatStore.updateTargetSession(session, (sess) => {
+                            sess.mask.modelConfig.outputFormat = f;
+                          });
+                        }}
+                      >
+                        {f}
+                      </span>
+                    ))}
+                  </div>
+                </div>
+              )}
 
-        {isCurrentGptImage && (
-          <ChatAction
-            onClick={() => setShowFormatSelector(true)}
-            text={currentFormat}
-            icon={<ImageIcon />}
-          />
-        )}
-
-        {showFormatSelector && (
-          <Selector
-            defaultSelectedValue={currentFormat}
-            items={formatOptions.map((f) => ({
-              title: f,
-              value: f,
-            }))}
-            onClose={() => setShowFormatSelector(false)}
-            onSelection={(s) => {
-              if (s.length === 0) return;
-              const fmt = s[0] as ImageOutputFormat;
-              chatStore.updateTargetSession(session, (session) => {
-                session.mask.modelConfig.outputFormat = fmt;
-              });
-              showToast(fmt);
-            }}
-          />
-        )}
-
-        {isCurrentDalle3 && (
-          <ChatAction
-            onClick={() => setShowStyleSelector(true)}
-            text={currentStyle}
-            icon={<StyleIcon />}
-          />
-        )}
-
-        {showStyleSelector && (
-          <Selector
-            defaultSelectedValue={currentStyle}
-            items={dalle3Styles.map((m) => ({
-              title: m,
-              value: m,
-            }))}
-            onClose={() => setShowStyleSelector(false)}
-            onSelection={(s) => {
-              if (s.length === 0) return;
-              const style = s[0];
-              chatStore.updateTargetSession(session, (session) => {
-                session.mask.modelConfig.style = style;
-              });
-              showToast(style);
-            }}
-          />
+              {/* Style (DALL-E 3 only) */}
+              {isCurrentDalle3 && (
+                <div className={styles["image-config-group"]}>
+                  <div className={styles["image-config-group-label"]}>
+                    Style
+                  </div>
+                  <div className={styles["image-config-chips"]}>
+                    {dalle3Styles.map((s) => (
+                      <span
+                        key={s}
+                        className={clsx(styles["image-config-chip"], {
+                          [styles["selected"]]: s === currentStyle,
+                        })}
+                        onClick={() => {
+                          chatStore.updateTargetSession(session, (sess) => {
+                            sess.mask.modelConfig.style = s;
+                          });
+                        }}
+                      >
+                        {s}
+                      </span>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </div>
+          </div>
         )}
 
         {showPlugins(currentProviderName, currentModel) && (

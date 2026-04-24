@@ -100,6 +100,78 @@
   }
 }
 
+.image-config-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  height: 100vh;
+  width: 100vw;
+  background-color: rgba(0, 0, 0, 0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 999;
+}
+
+.image-config-panel {
+  background-color: var(--white);
+  border-radius: 12px;
+  padding: 16px;
+  min-width: 320px;
+  max-width: 90vw;
+  max-height: 80vh;
+  overflow-y: auto;
+  box-shadow: var(--shadow);
+
+  .image-config-group {
+    margin-bottom: 12px;
+
+    &:last-child {
+      margin-bottom: 0;
+    }
+
+    .image-config-group-label {
+      font-size: 11px;
+      font-weight: 600;
+      color: var(--primary);
+      text-transform: uppercase;
+      margin-bottom: 6px;
+      padding-left: 2px;
+    }
+
+    .image-config-chips {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+
+      .image-config-chip {
+        display: inline-flex;
+        align-items: center;
+        padding: 4px 12px;
+        border-radius: 16px;
+        font-size: 12px;
+        cursor: pointer;
+        border: 1px solid var(--border-in-light);
+        background-color: var(--white);
+        color: var(--black);
+        transition: all ease 0.2s;
+        user-select: none;
+
+        &:hover {
+          border-color: var(--primary);
+          color: var(--primary);
+        }
+
+        &.selected {
+          background-color: var(--primary);
+          border-color: var(--primary);
+          color: white;
+        }
+      }
+    }
+  }
+}
+
 .token-usage {
   display: inline-flex;
   align-items: center;
