@@ -342,8 +342,7 @@ const defaultModels = [
   "openai/gpt-oss-120b",
 
   // OpenAI Image Generation
-  "openai/gpt-5.4-image-2",
-  "openai/gpt-image-1",
+  "openai/gpt-image-2",
 
   // Google Gemini - 编程强
   "google/gemini-3.1-pro-preview",
