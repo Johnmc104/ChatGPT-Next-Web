@@ -569,13 +569,13 @@ usePluginStore → OpenAPIClientAxios → 解析 YAML → FunctionToolItem[]
 
 ### Sprint F — 性能关键修复
 
-| 序号 | 任务 | 涉及文件 | 预期收益 |
-|------|------|----------|----------|
-| F-01 | `PreCode`/`CustomCode` 改为 props 传入或窄 selector | markdown.tsx | 流式响应重渲染降低 80%+ |
-| F-02 | 修复 sync 合并 bug（`remoteState.lastUpdateTime`） | utils/sync.ts L156 | 修复数据同步覆写问题 |
-| F-03 | Store 不可变性修复（mask, prompt, plugin, sd） | 4 个 store 文件 | 消除状态一致性隐患 |
-| F-04 | `update()` 改为 Immer produce 或浅合并替代 deepClone | utils/store.ts | config update 性能提升 10x+ |
-| F-05 | ChatList 移除全量 store 订阅 | chat-list.tsx | 列表重渲染降低 |
+| 序号 | 任务 | 涉及文件 | 预期收益 | 状态 |
+|------|------|----------|----------|------|
+| F-01 | `PreCode`/`CustomCode` 改为 props 传入或窄 selector | markdown.tsx | 流式响应重渲染降低 80%+ | ✅ 已完成 |
+| F-02 | 修复 sync 合并 bug（`remoteState.lastUpdateTime`） | utils/sync.ts L156 | 修复数据同步覆写问题 | ✅ 已完成 |
+| F-03 | Store 不可变性修复（mask, prompt, plugin, sd） | 4 个 store 文件 | 消除状态一致性隐患 | ✅ 已完成 |
+| F-04 | `update()` 改为浅合并替代 deepClone | utils/store.ts | config update 性能提升 10x+ | ✅ 已完成 |
+| F-05 | ChatList 移除全量 store 订阅 | chat-list.tsx | 列表重渲染降低 | ✅ 已完成 |
 
 ### Sprint G — 安全与正确性
 
