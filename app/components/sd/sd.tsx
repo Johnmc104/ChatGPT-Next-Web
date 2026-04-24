@@ -252,7 +252,7 @@ export function Sd() {
                                           case "style":
                                             label = Locale.SdPanel.ImageStyle;
                                             value =
-                                              params
+                                              params()
                                                 .find(
                                                   (item) =>
                                                     item.value === "style",

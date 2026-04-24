@@ -43,6 +43,7 @@ function setItem(key: string, value: string) {
 
 function getLanguage() {
   try {
+    if (typeof navigator === "undefined") return DEFAULT_LANG;
     const locale = new Intl.Locale(navigator.language).maximize();
     const region = locale?.region?.toLowerCase();
     // 1. check region code in ALL_LANGS

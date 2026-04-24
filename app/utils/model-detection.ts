@@ -13,7 +13,7 @@ import {
   VISION_MODEL_REGEXES,
   EXCLUDE_VISION_MODEL_REGEXES,
 } from "@/app/constant";
-import { useAccessStore } from "@/app/store";
+import { useAccessStore } from "@/app/store/access";
 import { ModelSize } from "@/app/typing";
 import { ModelCapability } from "@/app/api/model-info/types";
 import { hasCapability } from "@/app/hooks/useModelInfo";

@@ -10,6 +10,7 @@ import {
   type SdParamConfig,
   type SdFormData,
   type SdModelConfig,
+  getParamDefinitions,
   params,
   models,
   getModelParamBasicData,
@@ -18,7 +19,13 @@ import {
 
 // Re-export types/values so existing consumers of sd-panel keep working
 export type { SdParamOption, SdParamConfig, SdFormData, SdModelConfig };
-export { params, models, getModelParamBasicData, getParams };
+export {
+  getParamDefinitions,
+  params,
+  models,
+  getModelParamBasicData,
+  getParams,
+};
 
 export function ControlParamItem(props: {
   title: string;

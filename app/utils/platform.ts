@@ -1,5 +1,4 @@
 import { showToast } from "./toast";
-import Locale from "../locales";
 import { fetch as tauriStreamFetch } from "./stream";
 
 export function fetch(
@@ -101,23 +100,25 @@ export function getOperationId(operation: {
 }
 
 export function clientUpdate() {
+  // Lazy import to avoid circular dep: platform → locales → platform
+  const Locale = require("../locales").default;
   // this a wild for updating client app
   return window.__TAURI__?.updater
     .checkUpdate()
-    .then((updateResult) => {
+    .then((updateResult: { shouldUpdate: boolean }) => {
       if (updateResult.shouldUpdate) {
         window.__TAURI__?.updater
           .installUpdate()
-          .then((result) => {
+          .then(() => {
             showToast(Locale.Settings.Update.Success);
           })
-          .catch((e) => {
+          .catch((e: unknown) => {
             console.error("[Install Update Error]", e);
             showToast(Locale.Settings.Update.Failed);
           });
       }
     })
-    .catch((e) => {
+    .catch((e: unknown) => {
       console.error("[Check Update Error]", e);
       showToast(Locale.Settings.Update.Failed);
     });

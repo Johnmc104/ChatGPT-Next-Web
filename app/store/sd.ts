@@ -29,18 +29,21 @@ export interface SdDrawItem {
 
 type SdModelRef = Pick<SdModelConfig, "name" | "value">;
 
-const defaultModel = {
+const defaultModel: SdModelRef = {
   name: models[0].name,
   value: models[0].value,
 };
 
-const defaultParams = getModelParamBasicData(models[0].params({}), {});
+// Lazy — models[0].params() reads Locale which is unavailable during SSR
+function getDefaultParams(): SdFormData {
+  return getModelParamBasicData(models[0].params({}), {});
+}
 
 const DEFAULT_SD_STATE = {
   currentId: 0,
-  draw: [],
+  draw: [] as SdDrawItem[],
   currentModel: defaultModel,
-  currentParams: defaultParams,
+  currentParams: {} as SdFormData,
 };
 
 export const useSdStore = createPersistStore<
