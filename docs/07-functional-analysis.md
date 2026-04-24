@@ -589,14 +589,14 @@ usePluginStore → OpenAPIClientAxios → 解析 YAML → FunctionToolItem[]
 
 ### Sprint H — 性能优化
 
-| 序号 | 任务 | 涉及文件 | 预期收益 |
-|------|------|----------|----------|
-| H-01 | 流式 `onUpdate` 改用 `messages[index] = newMsg` 替代 concat | chat-actions.ts | O(n)→O(1) per token |
-| H-02 | `imageCaches` 添加 LRU 上限（如 50 条） | utils/chat.ts | 防内存泄漏 |
-| H-03 | `collectModelTable()` 添加 memo 缓存 | utils/model.ts | 减少重复解析 |
-| H-04 | rAF 动画改为 `setTimeout` 按需触发 | utils/chat.ts | 减少空闲 CPU |
-| H-05 | IndexedDB 写入添加 debounce（300ms） | indexedDB-storage.ts | 减少序列化频率 |
-| H-06 | `mermaid` 加入 `optimizePackageImports` | next.config.mjs | bundle 体积优化 |
+| 序号 | 任务 | 涉及文件 | 预期收益 | 状态 |
+|------|------|----------|----------|------|
+| H-01 | 流式 `onUpdate` 改用 `messages[index] = newMsg` 替代 concat | chat-actions.ts | O(n)→O(1) per token | ⏭ 跳过（需深度重构） |
+| H-02 | `imageCaches` 添加 LRU 上限（50 条） | utils/chat.ts | 防内存泄漏 | ✅ 已完成 |
+| H-03 | `collectModelTable()` 添加 memo 缓存 | utils/model.ts | 减少重复解析 | ✅ 已完成 |
+| H-04 | rAF 动画改为 `setTimeout` 按需触发 | utils/chat.ts | 减少空闲 CPU | ⏭ 跳过（影响范围需评估） |
+| H-05 | IndexedDB 写入添加 debounce（300ms） | indexedDB-storage.ts | 减少序列化频率 | ✅ 已完成 |
+| H-06 | `mermaid` 加入 `optimizePackageImports` | next.config.mjs | bundle 体积优化 | ✅ 已完成 |
 
 ---
 
