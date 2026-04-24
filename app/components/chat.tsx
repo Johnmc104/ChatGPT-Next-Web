@@ -71,7 +71,7 @@ import { ExportMessageModal } from "./exporter";
 import { getClientConfig } from "../config/client";
 import { ClientApi, MultimodalContent } from "../client/api";
 import { createTTSPlayer } from "../utils/audio";
-import { MsEdgeTTS, OUTPUT_FORMAT } from "../utils/ms_edge_tts";
+import { MsEdgeTTS, OUTPUT_FORMAT } from "../utils/edge-tts";
 
 import isEmpty from "lodash-es/isEmpty";
 import { RealtimeChat } from "@/app/components/realtime-chat";
