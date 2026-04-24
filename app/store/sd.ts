@@ -8,8 +8,26 @@ import { getBearerToken } from "@/app/client/api";
 import { createPersistStore } from "@/app/utils/store";
 import { nanoid } from "nanoid";
 import { cacheBase64Image } from "@/app/utils/chat";
-import { models, getModelParamBasicData } from "@/app/components/sd/sd-panel";
+import {
+  models,
+  getModelParamBasicData,
+  SdFormData,
+  SdModelConfig,
+} from "@/app/components/sd/sd-panel";
 import { useAccessStore } from "./access";
+
+export interface SdDrawItem {
+  id: string;
+  status: "running" | "wait" | "success" | "error";
+  model: string;
+  model_name: string;
+  params: SdFormData;
+  created_at: string;
+  img_data: string;
+  error?: string;
+}
+
+type SdModelRef = Pick<SdModelConfig, "name" | "value">;
 
 const defaultModel = {
   name: models[0].name,
@@ -28,16 +46,19 @@ const DEFAULT_SD_STATE = {
 export const useSdStore = createPersistStore<
   {
     currentId: number;
-    draw: any[];
-    currentModel: typeof defaultModel;
-    currentParams: any;
+    draw: SdDrawItem[];
+    currentModel: SdModelRef;
+    currentParams: SdFormData;
   },
   {
     getNextId: () => number;
-    sendTask: (data: any, okCall?: Function) => void;
-    updateDraw: (draw: any) => void;
-    setCurrentModel: (model: any) => void;
-    setCurrentParams: (data: any) => void;
+    sendTask: (
+      data: Omit<SdDrawItem, "id" | "status">,
+      okCall?: () => void,
+    ) => void;
+    updateDraw: (draw: SdDrawItem) => void;
+    setCurrentModel: (model: SdModelRef) => void;
+    setCurrentParams: (data: SdFormData) => void;
   }
 >(
   DEFAULT_SD_STATE,
@@ -55,14 +76,18 @@ export const useSdStore = createPersistStore<
         set({ currentId: id });
         return id;
       },
-      sendTask(data: any, okCall?: Function) {
-        data = { ...data, id: nanoid(), status: "running" };
-        set({ draw: [data, ..._get().draw] });
+      sendTask(data: Omit<SdDrawItem, "id" | "status">, okCall?: () => void) {
+        const item: SdDrawItem = {
+          ...data,
+          id: nanoid(),
+          status: "running" as const,
+        };
+        set({ draw: [item, ..._get().draw] });
         this.getNextId();
-        this.stabilityRequestCall(data);
+        this.stabilityRequestCall(item);
         okCall?.();
       },
-      stabilityRequestCall(data: any) {
+      stabilityRequestCall(data: SdDrawItem) {
         const accessStore = useAccessStore.getState();
         let prefix: string = ApiPath.Stability as string;
         let bearerToken = "";
@@ -82,7 +107,7 @@ export const useSdStore = createPersistStore<
         const path = `${prefix}/${StabilityConfig.GeneratePath}/${data.model}`;
         const formData = new FormData();
         for (let paramsKey in data.params) {
-          formData.append(paramsKey, data.params[paramsKey]);
+          formData.append(paramsKey, String(data.params[paramsKey]));
         }
         fetch(path, {
           method: "POST",
@@ -134,7 +159,7 @@ export const useSdStore = createPersistStore<
             this.getNextId();
           });
       },
-      updateDraw(_draw: any) {
+      updateDraw(_draw: SdDrawItem) {
         const draw = _get().draw || [];
         draw.some((item, index) => {
           if (item.id === _draw.id) {
@@ -144,10 +169,10 @@ export const useSdStore = createPersistStore<
           }
         });
       },
-      setCurrentModel(model: any) {
+      setCurrentModel(model: SdModelRef) {
         set({ currentModel: model });
       },
-      setCurrentParams(data: any) {
+      setCurrentParams(data: SdFormData) {
         set({
           currentParams: data,
         });

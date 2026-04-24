@@ -18,7 +18,7 @@ import {
   useHotKey,
 } from "@/app/components/sidebar";
 
-import { getParams, getModelParamBasicData } from "./sd-panel";
+import { getParams, getModelParamBasicData, SdFormData } from "./sd-panel";
 import { useSdStore } from "@/app/store/sd";
 import { showToast } from "@/app/components/ui-lib";
 import { useMobileScreen } from "@/app/utils";
@@ -42,7 +42,7 @@ export function SideBar(props: { className?: string }) {
 
   const handleSubmit = () => {
     const columns = getParams?.(currentModel, params);
-    const reqParams: any = {};
+    const reqParams: SdFormData = {};
     for (let i = 0; i < columns.length; i++) {
       const item = columns[i];
       reqParams[item.value] = params[item.value] ?? null;
@@ -53,10 +53,9 @@ export function SideBar(props: { className?: string }) {
         }
       }
     }
-    let data: any = {
+    const data = {
       model: currentModel.value,
       model_name: currentModel.name,
-      status: "wait",
       params: reqParams,
       created_at: new Date().toLocaleString(),
       img_data: "",

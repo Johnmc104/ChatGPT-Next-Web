@@ -158,12 +158,12 @@
 | `plugin.ts` | 7 | OpenAPI response 类型 |
 | `ui-lib.tsx` | 5 | R-05 解决 |
 
-| 子任务 | 说明 |
-|--------|------|
-| R-07a | 随 R-01 一起消除 `utils/chat.ts` 的 29 个 `any` |
-| R-07b | SD 组件类型化（`SdParams`, `SdTask`, `SdResult`） |
-| R-07c | `base.ts` 类型化 accessStore lookup |
-| R-07d | 剩余零散 `any` 清理 |
+| 子任务 | 说明 | 状态 |
+|--------|------|------|
+| R-07a | 随 R-01 一起消除 `utils/chat.ts` 的 29 个 `any` | |
+| R-07b | SD 组件类型化（`SdParamConfig`, `SdDrawItem`, `SdFormData`） | ✅ −30 any |
+| R-07c | `base.ts` 类型化 accessStore lookup | |
+| R-07d | 剩余零散 `any` 清理 | |
 
 ---
 

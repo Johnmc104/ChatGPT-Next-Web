@@ -7,11 +7,7 @@ import ReturnIcon from "@/app/icons/return.svg";
 import Locale from "@/app/locales";
 import { Path } from "@/app/constant";
 import React, { useEffect, useMemo, useRef, useState } from "react";
-import {
-  copyToClipboard,
-  getMessageTextContent,
-  useMobileScreen,
-} from "@/app/utils";
+import { copyToClipboard, useMobileScreen } from "@/app/utils";
 import { useNavigate, useLocation } from "react-router-dom";
 import { useAppConfig } from "@/app/store";
 import MinIcon from "@/app/icons/min.svg";
@@ -36,9 +32,10 @@ import { removeImage } from "@/app/utils/chat";
 import { SideBar } from "./sd-sidebar";
 import { WindowContent } from "@/app/components/home";
 import { params } from "./sd-panel";
+import { SdDrawItem } from "@/app/store/sd";
 import clsx from "clsx";
 
-function getSdTaskStatus(item: any) {
+function getSdTaskStatus(item: SdDrawItem) {
   let s: string;
   let color: Property.Color | undefined = undefined;
   switch (item.status) {
@@ -58,8 +55,10 @@ function getSdTaskStatus(item: any) {
       s = Locale.Sd.Status.Running;
       color = "blue";
       break;
-    default:
-      s = item.status.toUpperCase();
+    default: {
+      const _exhaustiveCheck: never = item.status;
+      s = String(_exhaustiveCheck).toUpperCase();
+    }
   }
   return (
     <p className={styles["line-1"]} title={item.error} style={{ color: color }}>
@@ -154,7 +153,7 @@ export function Sd() {
           <div className={chatStyles["chat-body"]} ref={scrollRef}>
             <div className={styles["sd-img-list"]}>
               {sdImages.length > 0 ? (
-                sdImages.map((item: any) => {
+                sdImages.map((item: SdDrawItem) => {
                   return (
                     <div
                       key={item.id}
@@ -197,7 +196,7 @@ export function Sd() {
                           {Locale.SdPanel.Prompt}:{" "}
                           <span
                             className="clickable"
-                            title={item.params.prompt}
+                            title={String(item.params.prompt)}
                             onClick={() => {
                               showModal({
                                 title: Locale.Sd.Detail,
@@ -229,7 +228,8 @@ export function Sd() {
                                     <div style={{ userSelect: "text" }}>
                                       {Object.keys(item.params).map((key) => {
                                         let label = key;
-                                        let value = item.params[key];
+                                        let value: string | number =
+                                          item.params[key];
                                         switch (label) {
                                           case "prompt":
                                             label = Locale.SdPanel.Prompt;
@@ -247,18 +247,20 @@ export function Sd() {
                                             break;
                                           case "output_format":
                                             label = Locale.SdPanel.OutFormat;
-                                            value = value?.toUpperCase();
+                                            value = String(value).toUpperCase();
                                             break;
                                           case "style":
                                             label = Locale.SdPanel.ImageStyle;
-                                            value = params
-                                              .find(
-                                                (item) =>
-                                                  item.value === "style",
-                                              )
-                                              ?.options?.find(
-                                                (item) => item.value === value,
-                                              )?.name;
+                                            value =
+                                              params
+                                                .find(
+                                                  (item) =>
+                                                    item.value === "style",
+                                                )
+                                                ?.options?.find(
+                                                  (item) =>
+                                                    item.value === value,
+                                                )?.name ?? value;
                                             break;
                                           default:
                                             break;
@@ -283,12 +285,7 @@ export function Sd() {
                               text={Locale.Sd.Actions.Copy}
                               icon={<CopyIcon />}
                               onClick={() =>
-                                copyToClipboard(
-                                  getMessageTextContent({
-                                    role: "user",
-                                    content: item.params.prompt,
-                                  }),
-                                )
+                                copyToClipboard(String(item.params.prompt))
                               }
                             />
                             <ChatAction
@@ -316,7 +313,7 @@ export function Sd() {
                                   // remove img_data + remove item in list
                                   removeImage(item.img_data).finally(() => {
                                     sdStore.draw = sdImages.filter(
-                                      (i: any) => i.id !== item.id,
+                                      (i: SdDrawItem) => i.id !== item.id,
                                     );
                                     sdStore.getNextId();
                                   });

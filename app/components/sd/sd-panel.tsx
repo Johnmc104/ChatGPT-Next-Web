@@ -6,7 +6,35 @@ import Locale from "@/app/locales";
 import { useSdStore } from "@/app/store/sd";
 import clsx from "clsx";
 
-export const params = [
+export interface SdParamOption {
+  name: string;
+  value: string;
+}
+
+export interface SdParamConfig {
+  name: string;
+  value: string;
+  type: string;
+  placeholder?: string;
+  required?: boolean;
+  rows?: number;
+  sub?: string;
+  options?: SdParamOption[];
+  min?: number;
+  max?: number;
+  default?: string | number;
+  support?: string[];
+}
+
+export type SdFormData = Record<string, string | number>;
+
+export interface SdModelConfig {
+  name: string;
+  value: string;
+  params: (data: SdFormData) => SdParamConfig[];
+}
+
+export const params: SdParamConfig[] = [
   {
     name: Locale.SdPanel.Prompt,
     value: "prompt",
@@ -99,27 +127,27 @@ export const params = [
   },
 ];
 
-const sdCommonParams = (model: string, data: any) => {
+const sdCommonParams = (model: string, data: SdFormData) => {
   return params.filter((item) => {
     return !(item.support && !item.support.includes(model));
   });
 };
 
-export const models = [
+export const models: SdModelConfig[] = [
   {
     name: "Stable Image Ultra",
     value: "ultra",
-    params: (data: any) => sdCommonParams("ultra", data),
+    params: (data: SdFormData) => sdCommonParams("ultra", data),
   },
   {
     name: "Stable Image Core",
     value: "core",
-    params: (data: any) => sdCommonParams("core", data),
+    params: (data: SdFormData) => sdCommonParams("core", data),
   },
   {
     name: "Stable Diffusion 3",
     value: "sd3",
-    params: (data: any) => {
+    params: (data: SdFormData) => {
       return sdCommonParams("sd3", data).filter((item) => {
         return !(
           data.model === "sd3-large-turbo" && item.value == "negative_prompt"
@@ -157,9 +185,9 @@ export function ControlParamItem(props: {
 }
 
 export function ControlParam(props: {
-  columns: any[];
-  data: any;
-  onChange: (field: string, val: any) => void;
+  columns: SdParamConfig[];
+  data: SdFormData;
+  onChange: (field: string, val: string | number) => void;
 }) {
   return (
     <>
@@ -199,7 +227,7 @@ export function ControlParam(props: {
                     props.onChange(item.value, e.currentTarget.value);
                   }}
                 >
-                  {item.options.map((opt: any) => {
+                  {item.options?.map((opt: SdParamOption) => {
                     return (
                       <option value={opt.value} key={opt.value}>
                         {opt.name}
@@ -256,23 +284,26 @@ export function ControlParam(props: {
 }
 
 export const getModelParamBasicData = (
-  columns: any[],
-  data: any,
+  columns: SdParamConfig[],
+  data: SdFormData,
   clearText?: boolean,
 ) => {
-  const newParams: any = {};
-  columns.forEach((item: any) => {
+  const newParams: SdFormData = {};
+  columns.forEach((item: SdParamConfig) => {
     if (clearText && ["text", "textarea", "number"].includes(item.type)) {
       newParams[item.value] = item.default || "";
     } else {
-      // @ts-ignore
-      newParams[item.value] = data[item.value] || item.default || "";
+      newParams[item.value] =
+        (data[item.value] as string | number) || item.default || "";
     }
   });
   return newParams;
 };
 
-export const getParams = (model: any, params: any) => {
+export const getParams = (
+  model: Pick<SdModelConfig, "value">,
+  params: SdFormData,
+) => {
   return models.find((m) => m.value === model.value)?.params(params) || [];
 };
 
@@ -283,13 +314,13 @@ export function SdPanel() {
   const params = sdStore.currentParams;
   const setParams = sdStore.setCurrentParams;
 
-  const handleValueChange = (field: string, val: any) => {
+  const handleValueChange = (field: string, val: string | number) => {
     setParams({
       ...params,
       [field]: val,
     });
   };
-  const handleModelChange = (model: any) => {
+  const handleModelChange = (model: SdModelConfig) => {
     setCurrentModel(model);
     setParams(getModelParamBasicData(model.params({}), params));
   };
@@ -312,7 +343,7 @@ export function SdPanel() {
         </div>
       </ControlParamItem>
       <ControlParam
-        columns={getParams?.(currentModel, params) as any[]}
+        columns={getParams?.(currentModel, params)}
         data={params}
         onChange={handleValueChange}
       ></ControlParam>
