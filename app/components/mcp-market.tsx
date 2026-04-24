@@ -13,7 +13,7 @@ import { ListToolsResponse, PresetServer } from "../mcp/types";
 import clsx from "clsx";
 import PlayIcon from "../icons/play.svg";
 import StopIcon from "../icons/pause.svg";
-import { useMcpServerManager } from "./mcp-market-hooks";
+import { useMcpServerManager } from "../hooks/useMcpServerManager";
 
 interface ConfigProperty {
   type: string;

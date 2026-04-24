@@ -89,7 +89,7 @@ import {
   ClearContextDivider,
   RenderPrompt,
 } from "./chat-input";
-import { useScrollToBottom } from "./chat-hooks";
+import { useScrollToBottom } from "../hooks/useChatScroll";
 import { ChatMessageItem } from "./chat-message-item";
 import { ChatHeader } from "./chat-header";
 

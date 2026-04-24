@@ -45,7 +45,7 @@ import {
 import type { ImageQuality, ImageOutputFormat, ModelSize } from "../typing";
 import { ChatControllerPool } from "../client/controller";
 import { ModelProvider, Path, ServiceProvider } from "../constant";
-import { useAllModels } from "../utils/hooks";
+import { useAllModels } from "../hooks/useAllModels";
 import { ModelSelector } from "./model-selector";
 import { Selector, showToast } from "./ui-lib";
 

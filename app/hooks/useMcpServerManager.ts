@@ -17,7 +17,7 @@ import {
   ServerConfig,
   ServerStatusResponse,
 } from "../mcp/types";
-import { showToast } from "./ui-lib";
+import { showToast } from "../components/ui-lib";
 import { Path } from "../constant";
 
 /**

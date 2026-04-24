@@ -4,7 +4,7 @@ import { ModalConfigValidator, ModelConfig } from "../store";
 import Locale from "../locales";
 import { InputRange } from "./input-range";
 import { ListItem, Select } from "./ui-lib";
-import { useAllModels } from "../utils/hooks";
+import { useAllModels } from "../hooks/useAllModels";
 import groupBy from "lodash-es/groupBy";
 import styles from "./model-config.module.scss";
 import { getModelProvider } from "../utils/model";
