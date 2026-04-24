@@ -443,6 +443,14 @@ export class ChatGPTApi implements LLMApi {
         );
       }
       const customBaseUrl = this.getCustomBaseUrl();
+
+      // For image generation via our own server proxy (not custom BASE_URL),
+      // route through /api/image-gen which uses Node.js runtime (300s limit)
+      // instead of Edge Runtime (25s limit). This prevents Vercel timeout.
+      if (isImageGen && !customBaseUrl) {
+        chatPath = "/api/image-gen";
+      }
+
       if (shouldStream) {
         let index = -1;
         const [tools, funcs] = usePluginStore
