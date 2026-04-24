@@ -3,6 +3,7 @@ import { nanoid } from "nanoid";
 import { StoreKey } from "../constant";
 import { getLang } from "../locales";
 import { createPersistStore } from "../utils/store";
+import { fetchJSON } from "../utils/fetch";
 
 export interface Prompt {
   id: string;
@@ -156,8 +157,7 @@ export const usePromptStore = createPersistStore(
 
       type PromptList = Array<[string, string]>;
 
-      fetch(PROMPT_URL)
-        .then((res) => res.json())
+      fetchJSON(PROMPT_URL)
         .then((res) => {
           let fetchPrompts = [res.en, res.tw, res.cn];
           if (getLang() === "cn") {
@@ -183,6 +183,9 @@ export const usePromptStore = createPersistStore(
           SearchService.count.builtin =
             res.en.length + res.cn.length + res.tw.length;
           SearchService.init(allPromptsForSearch, userPrompts);
+        })
+        .catch(() => {
+          console.error("[Prompt] failed to fetch prompts");
         });
     },
   },

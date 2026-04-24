@@ -91,27 +91,23 @@
 
 ---
 
-### R-04 — Store 层 `fetch()` 调用抽取 ★★☆
+### R-04 — Store 层 `fetch()` 调用抽取 ★★☆ ✅
 
 **位置**: 5 个 Store 文件直接调用 `fetch()`  
-**问题**: `access.ts`、`plugin.ts`、`sd.ts`、`prompt.ts`、`update.ts` 各自独立调用 `fetch()`，错误处理、JSON 解析模式分散。
+**问题**: `access.ts`、`plugin.ts`、`sd.ts`、`prompt.ts`、`update.ts` 各自独立调用 `fetch()`，错误处理、JSON 解析模式分散。无 HTTP 状态检查、无超时、`prompt.ts` 缺少 `.catch()`。
 
-| Store 文件 | fetch 调用 | 用途 |
-|-----------|-----------|------|
-| `access.ts:120` | `fetch("/api/config")` | 加载服务端配置 |
-| `plugin.ts:239` | `fetch("./plugins.json")` | 加载插件列表 |
-| `sd.ts:87` | `fetch(path, ...)` | SD 图片生成 |
-| `prompt.ts:159` | `fetch(PROMPT_URL)` | 加载提示词 |
-| `update.ts:34` | `fetch(FETCH_COMMIT_URL)` | 版本检查 |
+**方案**: 新建 `app/utils/fetch.ts` 提供 `fetchJSON<T>()` / `fetchText()` 工具函数（含超时、状态检查、类型安全），迁移 4 个 store 的 fetch 调用。`sd.ts` 因业务逻辑与 fetch 深度耦合暂保留原样。
 
-**方案**: 新建 `app/services/` 目录，每个业务域一个 service 文件。Store 仅负责状态 CRUD，业务逻辑委托给 service。
+| 子任务 | 说明 | 状态 |
+|--------|------|------|
+| R-04a | 新建 `utils/fetch.ts` — `fetchJSON` / `fetchText`（超时、状态检查） | ✅ |
+| R-04b | `access.ts` — 使用 `fetchJSON<DangerConfig>` | ✅ |
+| R-04c | `prompt.ts` — 使用 `fetchJSON` + 补充缺失的 `.catch()` | ✅ |
+| R-04d | `update.ts` — 使用 `fetchJSON<T>` 替代双重 await | ✅ |
+| R-04e | `plugin.ts` — 使用 `fetchJSON` + `fetchText` | ✅ |
+| R-04f | `sd.ts` — 暂保留（业务逻辑与 fetch 深度耦合） | — |
 
-| 子任务 | 说明 |
-|--------|------|
-| R-04a | 新建 `services/api-client.ts` — 统一 fetch 封装（超时、JSON 解析、错误处理） |
-| R-04b | 逐个迁移 store 的 fetch 调用到对应 service |
-
-**预估**: 新增 `services/` ~150 行，5 个 store 各减少 10-30 行
+**实际**: 新增 `utils/fetch.ts`（60 行），4 个 store 统一使用，修复 `prompt.ts` 缺失的错误处理
 
 ---
 

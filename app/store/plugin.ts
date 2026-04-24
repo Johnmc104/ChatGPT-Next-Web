@@ -3,6 +3,7 @@ import { StoreKey } from "../constant";
 import { nanoid } from "nanoid";
 import { createPersistStore } from "../utils/store";
 import { getClientConfig } from "../config/client";
+import { fetchJSON, fetchText } from "../utils/fetch";
 import yaml from "js-yaml";
 import { adapter, getOperationId } from "../utils";
 import { useAccessStore } from "./access";
@@ -236,36 +237,33 @@ export const usePluginStore = createPersistStore(
         return;
       }
 
-      fetch("./plugins.json")
-        .then((res) => res.json())
-        .then((res) => {
-          Promise.all(
-            res.map((item: any) =>
-              // skip get schema
-              state.get(item.id)
-                ? item
-                : fetch(item.schema)
-                    .then((res) => res.text())
-                    .then((content) => ({
-                      ...item,
-                      content,
-                    }))
-                    .catch((e) => item),
-            ),
-          ).then((builtinPlugins: any) => {
-            builtinPlugins
-              .filter((item: any) => item?.content)
-              .forEach((item: any) => {
-                const plugin = state.create(item);
-                state.updatePlugin(plugin.id, (plugin) => {
-                  const tool = FunctionToolService.add(plugin, true);
-                  plugin.title = tool.api.definition.info.title;
-                  plugin.version = tool.api.definition.info.version;
-                  plugin.builtin = true;
-                });
+      fetchJSON("./plugins.json").then((res) => {
+        Promise.all(
+          res.map((item: any) =>
+            // skip get schema
+            state.get(item.id)
+              ? item
+              : fetchText(item.schema)
+                  .then((content) => ({
+                    ...item,
+                    content,
+                  }))
+                  .catch((e) => item),
+          ),
+        ).then((builtinPlugins: any) => {
+          builtinPlugins
+            .filter((item: any) => item?.content)
+            .forEach((item: any) => {
+              const plugin = state.create(item);
+              state.updatePlugin(plugin.id, (plugin) => {
+                const tool = FunctionToolService.add(plugin, true);
+                plugin.title = tool.api.definition.info.title;
+                plugin.version = tool.api.definition.info.version;
+                plugin.builtin = true;
               });
-          });
+            });
         });
+      });
     },
   },
 );

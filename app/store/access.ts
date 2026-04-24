@@ -11,6 +11,7 @@ import { createPersistStore } from "../utils/store";
 import { ensure } from "../utils/clone";
 import { DEFAULT_CONFIG } from "./config";
 import { getModelProvider } from "../utils/model";
+import { fetchJSON } from "../utils/fetch";
 
 let fetchState = 0; // 0 not fetch, 1 fetching, 2 done
 
@@ -117,14 +118,13 @@ export const useAccessStore = createPersistStore(
     fetch() {
       if (fetchState > 0 || getClientConfig()?.buildMode === "export") return;
       fetchState = 1;
-      fetch("/api/config", {
+      fetchJSON<DangerConfig>("/api/config", {
         method: "post",
         body: null,
         headers: {
           ...getHeaders(),
         },
       })
-        .then((res) => res.json())
         .then((res) => {
           const defaultModel = res.defaultModel ?? "";
           if (defaultModel !== "") {
@@ -132,10 +132,6 @@ export const useAccessStore = createPersistStore(
             DEFAULT_CONFIG.modelConfig.model = model;
             DEFAULT_CONFIG.modelConfig.providerName = providerName as any;
           }
-
-          return res;
-        })
-        .then((res: DangerConfig) => {
           console.log("[Config] got config from server", res);
           set(() => ({ ...res }));
         })

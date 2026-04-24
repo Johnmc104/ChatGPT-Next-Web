@@ -7,6 +7,7 @@ import {
 import { getClientConfig } from "../config/client";
 import { createPersistStore } from "../utils/store";
 import { clientUpdate } from "../utils";
+import { fetchJSON } from "../utils/fetch";
 import ChatGptIcon from "../icons/chatgpt.png";
 import Locale from "../locales";
 import { ClientApi } from "../client/api";
@@ -31,20 +32,24 @@ type VersionType = "date" | "tag";
 
 async function getVersion(type: VersionType) {
   if (type === "date") {
-    const data = (await (await fetch(FETCH_COMMIT_URL)).json()) as {
-      commit: {
-        author: { name: string; date: string };
-      };
-      sha: string;
-    }[];
+    const data = await fetchJSON<
+      {
+        commit: {
+          author: { name: string; date: string };
+        };
+        sha: string;
+      }[]
+    >(FETCH_COMMIT_URL);
     const remoteCommitTime = data[0].commit.author.date;
     const remoteId = new Date(remoteCommitTime).getTime().toString();
     return remoteId;
   } else if (type === "tag") {
-    const data = (await (await fetch(FETCH_TAG_URL)).json()) as {
-      commit: { sha: string; url: string };
-      name: string;
-    }[];
+    const data = await fetchJSON<
+      {
+        commit: { sha: string; url: string };
+        name: string;
+      }[]
+    >(FETCH_TAG_URL);
     return data.at(0)?.name;
   }
 }
