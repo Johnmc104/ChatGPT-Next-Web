@@ -346,9 +346,12 @@ app/
 | **R10** | 补充 `getMessageTextContent()`/`getMessageImages()` 防御性测试 | 1 新测试文件 | +120 | ✅ 完成 |
 | **R11** | 提取 `useImageConfig` hook | 2 文件 | +65, -15 | ✅ 完成 |
 | **R12** | `extractMessage()` base64 异步化 + 并行缓存 | 2 文件 | +30, -25 | ✅ 完成 |
+| **R13** | 提取 `ChatMessageItem` 组件（React.memo） | 2 文件 | +335, -240 | ✅ 完成 |
+| **R14** | 提取 `ChatHeader` 组件 | 2 文件 | +137, -80 | ✅ 完成 |
 
-> R1–R12 已全部完成，build 通过，15 套件 206 测试全部通过。  
-> 剩余 P2: 2.6 模型检测统一、2.8 chat.tsx 子组件拆分，需专项 PR。
+> R1–R14 已全部完成，build 通过，15 套件 206 测试全部通过。  
+> chat.tsx 从 1301 行缩减至 990 行，消息行渲染 React.memo 化。  
+> 剩余 P2: 2.6 模型检测统一（需专项 PR，涉及全站调用点）。
 
 ---
 
@@ -360,4 +363,4 @@ app/
 | ~~getMessageImages() 重复调用~~ | ~~每条消息渲染 3x 遍历~~ | ~~局部变量缓存~~ | ✅ 已修复 (R7) |
 | ~~extractMessage() 同步 base64~~ | ~~大图阻塞 UI ~200ms~~ | ~~base64Image2BlobAsync + Promise.all~~ | ✅ 已修复 (R12) |
 | ~~图片配置面板每次展开重新计算~~ | ~~5 个条件分支 × 每次 render~~ | ~~useImageConfig hook~~ | ✅ 已修复 (R11) |
-| chat.tsx 1326 行单组件 | 任何 state 变更导致全量 re-render | 拆分子组件 + memo | P2 |
+| ~~chat.tsx 1326 行单组件~~ | ~~任何 state 变更导致全量 re-render~~ | ~~ChatMessageItem + ChatHeader 拆分~~ | ✅ 已修复 (R13-R14) |
