@@ -794,7 +794,9 @@ export const useChatStore = createPersistStore(
               providerName,
             },
             onUpdate(message) {
-              session.memoryPrompt = message;
+              if (typeof message === "string") {
+                session.memoryPrompt = message;
+              }
             },
             onFinish(message, responseRes) {
               if (responseRes?.status === 200) {

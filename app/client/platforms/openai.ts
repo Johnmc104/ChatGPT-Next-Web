@@ -84,6 +84,7 @@ export interface DalleRequestPayload {
   size: ModelSize;
   quality?: ImageQuality;
   style?: DalleStyle;
+  partial_images?: number;
 }
 
 export class ChatGPTApi implements LLMApi {
@@ -367,6 +368,10 @@ export class ChatGPTApi implements LLMApi {
                 : "auto",
             }
           : {}),
+        // partial_images: request progressive preview images during generation.
+        // Only supported by GPT Image models, not DALL-E or others.
+        // Skipped for image edits (not supported by /v1/images/edits).
+        ...(isGptImageModel && !isImageEdit ? { partial_images: 2 } : {}),
       };
     } else {
       const visionModel = isVisionModel(options.config.model);
@@ -643,7 +648,99 @@ export class ChatGPTApi implements LLMApi {
         // If the server wrapped the response in SSE heartbeat stream,
         // parse out the actual data payload (skip `: heartbeat` comments).
         const contentType = res.headers.get("content-type") ?? "";
-        if (isImageGen && contentType.includes("text/event-stream")) {
+
+        // Detect partial_images streaming: GPT Image model with partial_images
+        // in the request payload. The server will passthrough upstream SSE events.
+        const hasPartialImages =
+          isGptImageModel &&
+          !isImageEdit &&
+          (requestPayload as DalleRequestPayload).partial_images &&
+          (requestPayload as DalleRequestPayload).partial_images! > 0;
+
+        if (
+          hasPartialImages &&
+          isImageGen &&
+          contentType.includes("text/event-stream") &&
+          res.body
+        ) {
+          // Incremental SSE parsing for partial_images streaming
+          const reader = res.body.getReader();
+          const decoder = new TextDecoder();
+          let buffer = "";
+          let prevBlobUrl = "";
+          let finalJson: any = null;
+
+          while (true) {
+            const { done, value } = await reader.read();
+            if (done) break;
+            buffer += decoder.decode(value, { stream: true });
+
+            // Process complete SSE events (delimited by \n\n)
+            while (buffer.includes("\n\n")) {
+              const idx = buffer.indexOf("\n\n");
+              const eventBlock = buffer.slice(0, idx);
+              buffer = buffer.slice(idx + 2);
+
+              // Skip heartbeat comments and empty blocks
+              if (!eventBlock.trim() || eventBlock.trim().startsWith(":"))
+                continue;
+
+              // Parse SSE event lines
+              let eventData = "";
+              for (const line of eventBlock.split("\n")) {
+                if (line.startsWith("data: ")) {
+                  const payload = line.slice(6);
+                  if (payload === "[DONE]") continue;
+                  eventData += payload;
+                }
+              }
+
+              if (!eventData) continue;
+
+              try {
+                const json = JSON.parse(eventData);
+
+                if (json.type === "partial_image" && json.b64_json) {
+                  // Convert partial preview to blob URL for display
+                  const fmt = json.output_format || "png";
+                  const blob = base64Image2Blob(json.b64_json, `image/${fmt}`);
+                  const blobUrl = URL.createObjectURL(blob);
+
+                  // Revoke previous preview to free memory
+                  if (prevBlobUrl) URL.revokeObjectURL(prevBlobUrl);
+                  prevBlobUrl = blobUrl;
+
+                  // Update UI with progressive preview
+                  const parts: MultimodalContent[] = [
+                    { type: "image_url", image_url: { url: blobUrl } },
+                  ];
+                  options.onUpdate?.(parts, "");
+                } else if (json.type === "completed" && json.b64_json) {
+                  // Final completed image — wrap in extractMessage-compatible format
+                  finalJson = {
+                    data: [
+                      {
+                        b64_json: json.b64_json,
+                        revised_prompt: json.revised_prompt,
+                      },
+                    ],
+                  };
+                } else if (json.data) {
+                  // Standard wrapped JSON (fallback if partial_images not honored)
+                  finalJson = json;
+                }
+              } catch (e) {
+                console.warn("[SSE] failed to parse event data", e);
+              }
+            }
+          }
+
+          // Clean up last preview blob (extractMessage creates a persistent SW URL)
+          if (prevBlobUrl) URL.revokeObjectURL(prevBlobUrl);
+
+          resJson = finalJson || {};
+        } else if (isImageGen && contentType.includes("text/event-stream")) {
+          // Non-partial SSE: collect-all mode (heartbeat-wrapped JSON)
           const text = await res.text();
           const lines = text.split("\n");
           let jsonPayload = "";

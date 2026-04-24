@@ -47,7 +47,6 @@
 
 | Phase | 功能 | 状态 |
 |-------|------|------|
-| Phase 2 | partial_images 流式预览 | ❌ 未开始 |
 | Phase 3 | Mask 蒙版编辑 + 多轮编辑 | ❌ 未开始 |
 
 ---
@@ -435,18 +434,29 @@ export const OpenaiPath = {
 
 **后续优化**: 单元测试 (`test/image-edit.test.ts`)、图片大小限制提示、编辑路径跳过 256KB 压缩。
 
-### Phase 2: partial_images 流式预览 ← 当前阶段
+### Phase 2: partial_images 流式预览 ✅ 已完成
 
-**理由**: 涉及 SSE 管道改造，需要更仔细的实测验证（尤其是 Vercel AI Gateway 和 Cloudflare 透传问题）。
+已实现核心功能并提交。
 
-| 步骤 | 文件 | 说明 |
-|------|------|------|
-| 1 | `app/api/common.ts` | Heartbeat wrapper 支持 SSE 透传模式 |
-| 2 | `app/client/platforms/openai.ts` | payload 增加 `partial_images`，SSE 增量解析 |
-| 3 | `app/store/chat.ts` | `onUpdate` 支持 `MultimodalContent[]` |
-| 4 | `app/components/chat.tsx` | 可选: 渐进过渡动画 |
-| 5 | 配置 & UI | `partial_images` 数量选择（在 image config panel 中） |
-| 6 | 实测 | Vercel / Cloudflare SSE 透传验证 |
+**已完成**:
+| 文件 | 改动 |
+|------|------|
+| `app/api/common.ts` | Heartbeat wrapper 双模式: 检测 upstream SSE → 直接 passthrough; JSON → 收集包装 |
+| `app/client/platforms/openai.ts` | payload 增加 `partial_images: 2`; 增量 SSE 解析（partial_image → blob URL → onUpdate, completed → extractMessage → onFinish） |
+| `app/client/api.ts` | `onUpdate` 类型扩展: `string \| MultimodalContent[]` |
+| `app/store/chat.ts` | memory summarize 的 `onUpdate` 增加 string 类型守卫 |
+
+**工作原理**:
+1. GPT Image 模型请求自动携带 `partial_images: 2`
+2. 上游返回 SSE 流: `ImageGenPartialImageEvent` × N + `ImageGenCompletedEvent`
+3. 服务端 heartbeat wrapper 检测 upstream Content-Type 为 SSE → 直接转发（附加定期心跳）
+4. 客户端增量读取 SSE 事件，每收到 partial_image → base64 转 blob URL → `onUpdate()` 更新 UI 预览
+5. 收到 completed → 缓存到 ServiceWorker → `onFinish()` 显示最终图
+6. 自动回收前一个 preview blob URL，避免内存泄漏
+
+**待验证**: Vercel AI Gateway / Cloudflare 是否透传 SSE（如缓冲可降级为 heartbeat 模式）。
+
+**后续优化**: 配置面板增加 partial_images 数量选择、渐进过渡动画。
 
 ### Phase 3: 高级编辑（后续迭代）
 

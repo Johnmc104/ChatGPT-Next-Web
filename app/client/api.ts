@@ -61,7 +61,7 @@ export interface ChatOptions {
   messages: RequestMessage[];
   config: LLMConfig;
 
-  onUpdate?: (message: string, chunk: string) => void;
+  onUpdate?: (message: string | MultimodalContent[], chunk: string) => void;
   // `message` may be a plain string for text completions, or a
   // MultimodalContent[] for image-generation responses (DALL-E /
   // gpt-image / OpenRouter image models). Callers must handle both.
