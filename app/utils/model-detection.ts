@@ -13,7 +13,6 @@ import {
   VISION_MODEL_REGEXES,
   EXCLUDE_VISION_MODEL_REGEXES,
 } from "@/app/constant";
-import { useAccessStore } from "@/app/store/access";
 import { ModelSize } from "@/app/typing";
 import { ModelCapability } from "@/app/api/model-info/types";
 import { hasCapability } from "@/app/hooks/useModelInfo";
@@ -84,9 +83,10 @@ export function isVisionModel(model: string) {
   if (hasCapability(model, ModelCapability.ImageInput)) {
     return true;
   }
-  // Env-based override
+  // Env-based override (lazy import to avoid circular dep: barrel → store → barrel)
+  const { useAccessStore } = require("@/app/store/access");
   const visionModels = useAccessStore.getState().visionModels;
-  const envVisionModels = visionModels?.split(",").map((m) => m.trim());
+  const envVisionModels = visionModels?.split(",").map((m: string) => m.trim());
   if (envVisionModels?.includes(model)) {
     return true;
   }
