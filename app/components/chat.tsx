@@ -668,6 +668,30 @@ function _Chat() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
+  const MAX_ATTACH_IMAGES = 3;
+
+  /**
+   * Upload image files and append to attachImages state.
+   * Shared by handlePaste and the file picker dialog.
+   */
+  async function appendImageFiles(files: File[]) {
+    if (files.length === 0) return;
+    setUploading(true);
+    try {
+      const results = await Promise.all(
+        files.slice(0, MAX_ATTACH_IMAGES).map((f) => uploadImageRemote(f)),
+      );
+      setAttachImages((prev) => {
+        const merged = [...prev, ...results];
+        return merged.slice(0, MAX_ATTACH_IMAGES);
+      });
+    } catch (e) {
+      console.error("[Image Upload] failed", e);
+    } finally {
+      setUploading(false);
+    }
+  }
+
   const handlePaste = useCallback(
     async (event: React.ClipboardEvent<HTMLTextAreaElement>) => {
       const currentModel = chatStore.currentSession().mask.modelConfig.model;
@@ -675,84 +699,32 @@ function _Chat() {
         return;
       }
       const items = (event.clipboardData || window.clipboardData).items;
+      const files: File[] = [];
       for (const item of items) {
         if (item.kind === "file" && item.type.startsWith("image/")) {
           event.preventDefault();
           const file = item.getAsFile();
-          if (file) {
-            const images: string[] = [];
-            images.push(...attachImages);
-            images.push(
-              ...(await new Promise<string[]>((res, rej) => {
-                setUploading(true);
-                const imagesData: string[] = [];
-                uploadImageRemote(file)
-                  .then((dataUrl) => {
-                    imagesData.push(dataUrl);
-                    setUploading(false);
-                    res(imagesData);
-                  })
-                  .catch((e) => {
-                    setUploading(false);
-                    rej(e);
-                  });
-              })),
-            );
-            const imagesLength = images.length;
-            if (imagesLength > 3) {
-              images.splice(3, imagesLength - 3);
-            }
-            setAttachImages(images);
-          }
+          if (file) files.push(file);
         }
       }
+      if (files.length > 0) {
+        appendImageFiles(files);
+      }
     },
-    [attachImages, chatStore],
+    [chatStore],
   );
 
   async function uploadImage() {
-    const images: string[] = [];
-    images.push(...attachImages);
-
-    images.push(
-      ...(await new Promise<string[]>((res, rej) => {
-        const fileInput = document.createElement("input");
-        fileInput.type = "file";
-        fileInput.accept =
-          "image/png, image/jpeg, image/webp, image/heic, image/heif";
-        fileInput.multiple = true;
-        fileInput.onchange = (event: any) => {
-          setUploading(true);
-          const files = event.target.files;
-          const imagesData: string[] = [];
-          for (let i = 0; i < files.length; i++) {
-            const file = event.target.files[i];
-            uploadImageRemote(file)
-              .then((dataUrl) => {
-                imagesData.push(dataUrl);
-                if (
-                  imagesData.length === 3 ||
-                  imagesData.length === files.length
-                ) {
-                  setUploading(false);
-                  res(imagesData);
-                }
-              })
-              .catch((e) => {
-                setUploading(false);
-                rej(e);
-              });
-          }
-        };
-        fileInput.click();
-      })),
-    );
-
-    const imagesLength = images.length;
-    if (imagesLength > 3) {
-      images.splice(3, imagesLength - 3);
-    }
-    setAttachImages(images);
+    const fileInput = document.createElement("input");
+    fileInput.type = "file";
+    fileInput.accept =
+      "image/png, image/jpeg, image/webp, image/heic, image/heif";
+    fileInput.multiple = true;
+    fileInput.onchange = (event: any) => {
+      const files: File[] = Array.from(event.target.files ?? []);
+      appendImageFiles(files);
+    };
+    fileInput.click();
   }
 
   // shortcut keys
@@ -1130,42 +1102,45 @@ function _Chat() {
                             parentRef={scrollRef}
                             defaultShow={i >= messages.length - 6}
                           />
-                          {getMessageImages(message).length == 1 && (
-                            <ChatImage
-                              src={getMessageImages(message)[0]}
-                              allImages={getMessageImages(message)}
-                              index={0}
-                              className={styles["chat-message-item-image"]}
-                            />
-                          )}
-                          {getMessageImages(message).length > 1 && (
-                            <div
-                              className={styles["chat-message-item-images"]}
-                              style={
-                                {
-                                  "--image-count":
-                                    getMessageImages(message).length,
-                                } as React.CSSProperties
-                              }
-                            >
-                              {getMessageImages(message).map(
-                                (image, imgIdx) => {
-                                  return (
+                          {(() => {
+                            const images = getMessageImages(message);
+                            if (images.length === 1) {
+                              return (
+                                <ChatImage
+                                  src={images[0]}
+                                  allImages={images}
+                                  index={0}
+                                  className={styles["chat-message-item-image"]}
+                                />
+                              );
+                            }
+                            if (images.length > 1) {
+                              return (
+                                <div
+                                  className={styles["chat-message-item-images"]}
+                                  style={
+                                    {
+                                      "--image-count": images.length,
+                                    } as React.CSSProperties
+                                  }
+                                >
+                                  {images.map((image, imgIdx) => (
                                     <ChatImage
                                       key={imgIdx}
                                       src={image}
-                                      allImages={getMessageImages(message)}
+                                      allImages={images}
                                       index={imgIdx}
                                       multi
                                       className={
                                         styles["chat-message-item-image-multi"]
                                       }
                                     />
-                                  );
-                                },
-                              )}
-                            </div>
-                          )}
+                                  ))}
+                                </div>
+                              );
+                            }
+                            return null;
+                          })()}
                         </div>
                         {message?.audio_url && (
                           <div className={styles["chat-message-audio"]}>
