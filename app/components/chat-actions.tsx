@@ -39,13 +39,14 @@ import { useTokenCount } from "../hooks/useTokenCount";
 import { Theme, useAppConfig, useChatStore, usePluginStore } from "../store";
 import {
   isDalle3,
+  isImageModel,
   isVisionModel,
   getModelSizes,
   supportsCustomSize,
   useMobileScreen,
   showPlugins,
 } from "../utils";
-import { DalleQuality, DalleStyle, ModelSize } from "../typing";
+import { DalleQuality, DalleStyle, ImageQuality, ModelSize } from "../typing";
 import { ChatControllerPool } from "../client/controller";
 import { ModelProvider, Path, ServiceProvider } from "../constant";
 import { useAllModels } from "../utils/hooks";
@@ -257,11 +258,18 @@ export function ChatActions(props: {
   const [showQualitySelector, setShowQualitySelector] = useState(false);
   const [showStyleSelector, setShowStyleSelector] = useState(false);
   const modelSizes = getModelSizes(currentModel);
-  const dalle3Qualitys: DalleQuality[] = ["standard", "hd"];
+  const isCurrentImageModel = isImageModel(currentModel);
+  const isCurrentDalle3 = isDalle3(currentModel);
+  const isCurrentGptImage = currentModel.toLowerCase().includes("gpt-image");
+  const qualityOptions: ImageQuality[] = isCurrentGptImage
+    ? ["low", "medium", "high", "auto"]
+    : ["standard", "hd"];
   const dalle3Styles: DalleStyle[] = ["vivid", "natural"];
   const currentSize =
     session.mask.modelConfig?.size ?? ("1024x1024" as ModelSize);
-  const currentQuality = session.mask.modelConfig?.quality ?? "standard";
+  const currentQuality: ImageQuality =
+    session.mask.modelConfig?.quality ??
+    (isCurrentGptImage ? "auto" : "standard");
   const currentStyle = session.mask.modelConfig?.style ?? "vivid";
 
   const isMobileScreen = useMobileScreen();
@@ -423,7 +431,7 @@ export function ChatActions(props: {
           />
         )}
 
-        {isDalle3(currentModel) && (
+        {isCurrentImageModel && (
           <ChatAction
             onClick={() => setShowQualitySelector(true)}
             text={currentQuality}
@@ -434,14 +442,14 @@ export function ChatActions(props: {
         {showQualitySelector && (
           <Selector
             defaultSelectedValue={currentQuality}
-            items={dalle3Qualitys.map((m) => ({
+            items={qualityOptions.map((m) => ({
               title: m,
               value: m,
             }))}
             onClose={() => setShowQualitySelector(false)}
             onSelection={(q) => {
               if (q.length === 0) return;
-              const quality = q[0];
+              const quality = q[0] as ImageQuality;
               chatStore.updateTargetSession(session, (session) => {
                 session.mask.modelConfig.quality = quality;
               });
@@ -450,7 +458,7 @@ export function ChatActions(props: {
           />
         )}
 
-        {isDalle3(currentModel) && (
+        {isCurrentDalle3 && (
           <ChatAction
             onClick={() => setShowStyleSelector(true)}
             text={currentStyle}

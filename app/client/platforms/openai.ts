@@ -24,7 +24,7 @@ import {
   streamWithThink,
 } from "@/app/utils/chat";
 import { cloudflareAIGatewayUrl } from "@/app/utils/cloudflare";
-import { ModelSize, DalleQuality, DalleStyle } from "@/app/typing";
+import { ModelSize, DalleStyle, ImageQuality } from "@/app/typing";
 
 import {
   ChatOptions,
@@ -80,7 +80,7 @@ export interface DalleRequestPayload {
   output_format?: "png" | "jpeg" | "webp";
   n: number;
   size: ModelSize;
-  quality?: DalleQuality | "low" | "medium" | "high" | "auto";
+  quality?: ImageQuality;
   style?: DalleStyle;
 }
 
@@ -332,7 +332,8 @@ export class ChatGPTApi implements LLMApi {
           : { response_format: "b64_json" as const }),
         // DALL-E 3: quality (standard/hd) + style (vivid/natural)
         // GPT Image: quality (low/medium/high/auto), no style param
-        // Config stores DALL-E values ("standard"/"hd"), so remap for GPT Image
+        // For GPT Image, the UI now provides native values directly;
+        // for safety, still remap any stale DALL-E values from config
         ...(isDalle3
           ? {
               quality: options.config?.quality ?? "standard",
@@ -340,12 +341,13 @@ export class ChatGPTApi implements LLMApi {
             }
           : isGptImageModel
           ? {
-              quality:
-                options.config?.quality === "hd"
-                  ? "high"
-                  : options.config?.quality === "standard"
-                  ? "auto"
-                  : options.config?.quality ?? "auto",
+              quality: (["low", "medium", "high", "auto"] as string[]).includes(
+                options.config?.quality ?? "",
+              )
+                ? options.config!.quality
+                : options.config?.quality === "hd"
+                ? "high"
+                : "auto",
             }
           : {}),
       };
@@ -541,11 +543,18 @@ export class ChatGPTApi implements LLMApi {
           options,
         );
       } else {
+        const headers = getHeaders(false, customBaseUrl);
+        // For image generation, ask the server to wrap the response in SSE
+        // with heartbeat comments to keep the connection alive through
+        // Cloudflare and other reverse proxies (100s timeout).
+        if (isImageGen) {
+          headers["X-Stream-Heartbeat"] = "1";
+        }
         const chatPayload = {
           method: "POST",
           body: JSON.stringify(requestPayload),
           signal: controller.signal,
-          headers: getHeaders(false, customBaseUrl),
+          headers,
         };
 
         // make a fetch request
@@ -557,7 +566,25 @@ export class ChatGPTApi implements LLMApi {
         const res = await fetch(chatPath, chatPayload);
         clearTimeout(requestTimeoutId);
 
-        const resJson = await res.json();
+        let resJson: any;
+
+        // If the server wrapped the response in SSE heartbeat stream,
+        // parse out the actual data payload (skip `: heartbeat` comments).
+        const contentType = res.headers.get("content-type") ?? "";
+        if (isImageGen && contentType.includes("text/event-stream")) {
+          const text = await res.text();
+          const lines = text.split("\n");
+          let jsonPayload = "";
+          for (const line of lines) {
+            if (line.startsWith("data: ") && line !== "data: [DONE]") {
+              jsonPayload += line.slice(6);
+            }
+          }
+          resJson = JSON.parse(jsonPayload || "{}");
+        } else {
+          resJson = await res.json();
+        }
+
         const message = await this.extractMessage(resJson);
         // Extract usage from non-streaming response
         const usage = resJson.usage

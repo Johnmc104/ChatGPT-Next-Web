@@ -1,5 +1,5 @@
 import { LLMModel } from "../client/api";
-import { DalleQuality, DalleStyle, ModelSize } from "../typing";
+import { DalleQuality, DalleStyle, ImageQuality, ModelSize } from "../typing";
 import { getClientConfig } from "../config/client";
 import {
   DEFAULT_INPUT_TEMPLATE,
@@ -79,7 +79,7 @@ export const DEFAULT_CONFIG = {
     enableInjectSystemPrompts: true,
     template: config?.template ?? DEFAULT_INPUT_TEMPLATE,
     size: "1024x1024" as ModelSize,
-    quality: "standard" as DalleQuality,
+    quality: "standard" as ImageQuality,
     style: "vivid" as DalleStyle,
   },
 

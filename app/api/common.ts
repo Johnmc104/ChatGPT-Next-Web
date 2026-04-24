@@ -196,6 +196,12 @@ export async function requestOpenai(req: NextRequest, authResult?: AuthResult) {
     }
   }
 
+  // Should we wrap this long-running request with SSE heartbeats?
+  // The client opts in by sending X-Stream-Heartbeat: 1 for image generation
+  // requests. This prevents Cloudflare (and other proxies) from timing out
+  // on requests that can take 30s–2min (e.g. gpt-image-2).
+  const wantHeartbeat = req.headers.get("X-Stream-Heartbeat") === "1";
+
   try {
     const res = await fetchWithRetry(fetchUrl, fetchOptions);
 
@@ -204,6 +210,73 @@ export async function requestOpenai(req: NextRequest, authResult?: AuthResult) {
     // Keep OpenAI-Organization header only if configured
     if (!serverConfig.openaiOrgId || serverConfig.openaiOrgId.trim() === "") {
       newHeaders.delete("OpenAI-Organization");
+    }
+
+    // If the client requested heartbeat wrapping AND the upstream succeeded,
+    // wrap the response body in an SSE stream that first collects the entire
+    // upstream body while emitting `: heartbeat\n\n` every 15 s, then sends
+    // the payload as `data: <json>\n\n` followed by `data: [DONE]\n\n`.
+    if (wantHeartbeat && res.ok && res.body) {
+      const upstream = res.body;
+      const HEARTBEAT_INTERVAL_MS = 15_000;
+
+      const stream = new ReadableStream({
+        async start(ctrl) {
+          const encoder = new TextEncoder();
+          const heartbeat = encoder.encode(": heartbeat\n\n");
+
+          // Start heartbeat timer
+          const timer = setInterval(() => {
+            try {
+              ctrl.enqueue(heartbeat);
+            } catch {
+              clearInterval(timer);
+            }
+          }, HEARTBEAT_INTERVAL_MS);
+
+          try {
+            // Collect the full upstream body
+            const reader = upstream.getReader();
+            const chunks: Uint8Array[] = [];
+            while (true) {
+              const { done, value } = await reader.read();
+              if (done) break;
+              if (value) chunks.push(value);
+            }
+
+            clearInterval(timer);
+
+            // Concatenate chunks
+            const totalLen = chunks.reduce((n, c) => n + c.length, 0);
+            const body = new Uint8Array(totalLen);
+            let offset = 0;
+            for (const chunk of chunks) {
+              body.set(chunk, offset);
+              offset += chunk.length;
+            }
+
+            // Send the actual payload as an SSE data event
+            const payload = new TextDecoder().decode(body);
+            ctrl.enqueue(encoder.encode(`data: ${payload}\n\n`));
+            ctrl.enqueue(encoder.encode("data: [DONE]\n\n"));
+            ctrl.close();
+          } catch (e) {
+            clearInterval(timer);
+            ctrl.error(e);
+          }
+        },
+      });
+
+      newHeaders.set("Content-Type", "text/event-stream; charset=utf-8");
+      newHeaders.set("Cache-Control", "no-cache");
+      newHeaders.set("Connection", "keep-alive");
+      newHeaders.delete("content-length");
+
+      return new Response(stream, {
+        status: res.status,
+        statusText: res.statusText,
+        headers: newHeaders,
+      });
     }
 
     return new Response(res.body, {

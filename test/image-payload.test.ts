@@ -8,6 +8,7 @@
 function buildImagePayload(model: string, configQuality?: string, configStyle?: string, configSize?: string) {
   const isDalle3 = model.includes("dall-e-3");
   const isGptImageModel = model.toLowerCase().includes("gpt-image");
+  const gptImageValidQualities = ["low", "medium", "high", "auto"];
 
   return {
     model,
@@ -26,12 +27,11 @@ function buildImagePayload(model: string, configQuality?: string, configStyle?: 
         }
       : isGptImageModel
         ? {
-            quality:
-              configQuality === "hd"
+            quality: gptImageValidQualities.includes(configQuality ?? "")
+              ? configQuality
+              : configQuality === "hd"
                 ? "high"
-                : configQuality === "standard"
-                  ? "auto"
-                  : (configQuality ?? "auto"),
+                : "auto",
           }
         : {}),
   };

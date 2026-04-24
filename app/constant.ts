@@ -356,7 +356,8 @@ const defaultModels = [
   "xai/grok-4.1-fast",
 
   // DeepSeek - 国产性价比
-  "deepseek/deepseek-v3.2",
+  "deepseek/deepseek-v4-pro",
+  "deepseek/deepseek-v4-flash",
 
   // Moonshot - 国产新秀
   "moonshotai/kimi-k2.5",
