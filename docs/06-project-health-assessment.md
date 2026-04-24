@@ -380,7 +380,7 @@ update.ts (独立)
 | 组件文件 | kebab-case (`.tsx`) | ✅ 100% |
 | Store 文件 | kebab-case (`.ts`) | ✅ 100% |
 | API 路由目录 | kebab-case | ✅ 100% |
-| 工具函数 | kebab-case (`.ts`) | 🟡 98% (`ms_edge_tts.ts` 异常) |
+| 工具函数 | kebab-case (`.ts`) | ✅ 100% |
 | Hooks 文件 | camelCase (`use*.ts`) | ✅ 100% (仅 hooks/ 目录) |
 | SCSS 模块 | kebab-case (`.module.scss`) | ✅ 100% |
 | 组件导出 | PascalCase | ✅ 100% |
@@ -390,38 +390,45 @@ update.ts (独立)
 
 ## 8. 改进建议优先级
 
-### 短期 (Sprint E 建议)
+### 短期 (Sprint E 建议) — ✅ 已完成
 
-1. **合并 `app/utils.ts` 到 `app/utils/` 目录**
-   - 将 442 行根级工具拆分到对应子文件
-   - 消除 P1 问题
+1. **✅ 合并 `app/utils.ts` 到 `app/utils/` 目录** (P1)
+   - 将 442 行根级工具拆分到 `message.ts` / `responsive.ts` / `file-io.ts` / `dom.ts` / `platform.ts`
+   - `app/utils.ts` 仅保留 thin barrel re-export（78 行）
+   - commit: `00f93b00`
 
-2. **统一 Hooks 存放位置**
-   - 将 `components/mcp-market-hooks.ts` → `hooks/useMcpServerManager.ts`
-   - 将 `components/chat-hooks.tsx` → `hooks/useChatScroll.ts`
-   - 将 `utils/hooks.ts` 内容合并到 `hooks/`
-   - 消除 M1 问题
+2. **✅ 统一 Hooks 存放位置** (M1)
+   - `components/mcp-market-hooks.ts` → `hooks/useMcpServerManager.ts`
+   - `components/chat-hooks.tsx` → `hooks/useChatScroll.ts`
+   - `utils/hooks.ts` 内容合并到 `hooks/useAllModels.ts`
+   - commit: `71c7ba19`
 
-3. **补全 Store barrel 导出**
-   - `store/index.ts` 添加 mask/sd/sync/prompt 导出
-   - 消除 P3 问题
+3. **✅ 补全 Store barrel 导出** (P3)
+   - `store/index.ts` 添加 mask/sd/sync/prompt 导出（5→9 个）
+   - commit: `9897581f`
 
-### 中期
+4. **✅ 重命名 `ms_edge_tts.ts` → `edge-tts.ts`** (M2)
+   - 统一 kebab-case 命名
+   - commit: `fb77f4a0`
 
-4. **消除 Store → Component 反向依赖** (P2)
-   - `showToast` 改为事件总线或回调注入模式
-   - `sd.ts` 导入 `sd-panel.tsx` 类型改为共享 types 文件
+5. **✅ 消除 Store → Component 反向依赖** (P2)
+   - 创建 `app/utils/toast.ts` delegate proxy，store/utils 层通过代理调用 showToast
+   - SD 类型/配置从 `sd-panel.tsx` 提取到 `store/sd-config.ts`
+   - store/ 目录现在零组件导入
+   - commit: `81f51b3e`
 
-5. **重命名 `ms_edge_tts.ts` → `edge-tts.ts`** (M2)
+### 中期（待实施）
 
 6. **评估移除 react-router-dom** (M3)
    - 检查实际使用范围，可能仅限 sidebar 导航
 
+7. **进一步拆分 chat.tsx** (M4)
+   - 当前约 900 行，可继续拆分渲染逻辑
+
 ### 长期
 
-7. **组件测试体系** (L1)
-8. **框架升级路径** (Next.js 15, React 19, Zustand 5)
-9. **进一步拆分 chat.tsx** (M4)
+8. **组件测试体系** (L1)
+9. **框架升级路径** (Next.js 15, React 19, Zustand 5)
 
 ---
 
@@ -429,13 +436,13 @@ update.ts (独立)
 
 | 维度 | 评分 | 说明 |
 |------|------|------|
-| 目录结构 | ⭐⭐⭐⭐ | 层次清晰，个别文件位置有争议 |
-| 命名规范 | ⭐⭐⭐⭐ | 98% 一致，1 处异常 |
+| 目录结构 | ⭐⭐⭐⭐½ | 层次清晰，hooks 统一，utils 拆分完成 |
+| 命名规范 | ⭐⭐⭐⭐⭐ | 100% 一致，ms_edge_tts 已修正 |
 | 类型安全 | ⭐⭐⭐ | 已清理 90 处 any，剩 50 处 |
-| 依赖管理 | ⭐⭐⭐ | 少数冗余依赖，整体合理 |
+| 依赖管理 | ⭐⭐⭐⭐ | store 反向依赖已消除，barrel 完整 |
 | 测试覆盖 | ⭐⭐ | API 层覆盖好，组件/Store 缺失 |
-| 架构分层 | ⭐⭐⭐ | 存在反向依赖，需重构 |
+| 架构分层 | ⭐⭐⭐⭐ | store→component 反向依赖已修复 |
 | 文档完整度 | ⭐⭐⭐⭐ | 有系统化文档，README 链接已修正 |
 | 冗余清理 | ⭐⭐⭐⭐⭐ | 多语言已精简为 CN+EN，死代码已清除 |
 
-**综合评分：⭐⭐⭐½ (3.5/5)** — 中上水平，经过系统重构后架构明显改善，还有明确的优化路径。
+**综合评分：⭐⭐⭐⭐ (4.0/5)** — 经过 Sprint E 系统重构后架构显著改善，分层更清晰，反向依赖消除，命名 100% 统一。剩余改进空间主要在测试覆盖和组件拆分。
