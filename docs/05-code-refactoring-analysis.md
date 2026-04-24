@@ -160,7 +160,7 @@
 
 | 子任务 | 说明 | 状态 |
 |--------|------|------|
-| R-07a | 随 R-01 一起消除 `utils/chat.ts` 的 29 个 `any` | |
+| R-07a | `utils/chat.ts` stream/streamWithThink 类型化 | ✅ −25 any |
 | R-07b | SD 组件类型化（`SdParamConfig`, `SdDrawItem`, `SdFormData`） | ✅ −30 any |
 | R-07c | `base.ts` 类型化 accessStore lookup + processToolMessage + buildPayload | ✅ −8 any |
 | R-07d | 剩余零散 `any` 清理 | |

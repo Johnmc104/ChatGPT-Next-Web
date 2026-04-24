@@ -3,7 +3,12 @@ import {
   UPLOAD_URL,
   REQUEST_TIMEOUT_MS,
 } from "@/app/constant";
-import { MultimodalContent, RequestMessage } from "@/app/client/api";
+import {
+  MultimodalContent,
+  RequestMessage,
+  ChatOptions,
+} from "@/app/client/api";
+import { ChatMessageTool } from "@/app/store";
 import Locale from "@/app/locales";
 import {
   EventStreamContentType,
@@ -15,7 +20,7 @@ import { fetch as tauriFetch } from "./stream";
 export function compressImage(file: Blob, maxSize: number): Promise<string> {
   return new Promise((resolve, reject) => {
     const reader = new FileReader();
-    reader.onload = (readerEvent: any) => {
+    reader.onload = (readerEvent: ProgressEvent<FileReader>) => {
       const image = new Image();
       image.onload = () => {
         let canvas = document.createElement("canvas");
@@ -47,7 +52,7 @@ export function compressImage(file: Blob, maxSize: number): Promise<string> {
         resolve(dataUrl);
       };
       image.onerror = reject;
-      image.src = readerEvent.target.result;
+      image.src = readerEvent.target?.result as string;
     };
     reader.onerror = reject;
 
@@ -58,7 +63,7 @@ export function compressImage(file: Blob, maxSize: number): Promise<string> {
           .then((blob: Blob) => {
             reader.readAsDataURL(blob);
           })
-          .catch((e: any) => {
+          .catch((e: Error) => {
             reject(e);
           });
       } catch (e) {
@@ -72,7 +77,7 @@ export function compressImage(file: Blob, maxSize: number): Promise<string> {
 
 export async function preProcessImageContentBase(
   content: RequestMessage["content"],
-  transformImageUrl: (url: string) => Promise<{ [key: string]: any }>,
+  transformImageUrl: (url: string) => Promise<MultimodalContent>,
 ) {
   if (typeof content === "string") {
     return content;
@@ -206,18 +211,18 @@ export function removeImage(imageUrl: string) {
 
 export function stream(
   chatPath: string,
-  requestPayload: any,
-  headers: any,
-  tools: any[],
+  requestPayload: object,
+  headers: Record<string, string>,
+  tools: ChatMessageTool[],
   funcs: Record<string, Function>,
   controller: AbortController,
-  parseSSE: (text: string, runTools: any[]) => string | undefined,
+  parseSSE: (text: string, runTools: ChatMessageTool[]) => string | undefined,
   processToolMessage: (
-    requestPayload: any,
-    toolCallMessage: any,
-    toolCallResult: any[],
+    requestPayload: object,
+    toolCallMessage: Record<string, unknown>,
+    toolCallResult: Record<string, unknown>[],
   ) => void,
-  options: any,
+  options: ChatOptions,
 ) {
   // Delegate to streamWithThink by wrapping the simple parseSSE callback
   // into the { isThinking, content } format. Thinking markers are never
@@ -229,7 +234,7 @@ export function stream(
     tools,
     funcs,
     controller,
-    (text: string, runTools: any[]) => ({
+    (text: string, runTools: ChatMessageTool[]) => ({
       isThinking: false,
       content: parseSSE(text, runTools),
     }),
@@ -240,30 +245,30 @@ export function stream(
 
 export function streamWithThink(
   chatPath: string,
-  requestPayload: any,
-  headers: any,
-  tools: any[],
+  requestPayload: object,
+  headers: Record<string, string>,
+  tools: ChatMessageTool[],
   funcs: Record<string, Function>,
   controller: AbortController,
   parseSSE: (
     text: string,
-    runTools: any[],
+    runTools: ChatMessageTool[],
   ) => {
     isThinking: boolean;
     content: string | undefined;
   },
   processToolMessage: (
-    requestPayload: any,
-    toolCallMessage: any,
-    toolCallResult: any[],
+    requestPayload: object,
+    toolCallMessage: Record<string, unknown>,
+    toolCallResult: Record<string, unknown>[],
   ) => void,
-  options: any,
+  options: ChatOptions,
 ) {
   let responseText = "";
   let remainText = "";
   let finished = false;
   let running = false;
-  let runTools: any[] = [];
+  let runTools: ChatMessageTool[] = [];
   let responseRes: Response;
   let isInThinkingMode = false;
   let lastIsThinking = false;
@@ -347,7 +352,7 @@ export function streamWithThink(
                 return e.toString();
               })
               .then((content) => ({
-                name: tool.function.name,
+                name: tool.function!.name,
                 role: "tool",
                 content,
                 tool_call_id: tool.id,
@@ -381,9 +386,9 @@ export function streamWithThink(
 
   function chatApi(
     chatPath: string,
-    headers: any,
-    requestPayload: any,
-    tools: any,
+    headers: Record<string, string>,
+    requestPayload: object,
+    tools: ChatMessageTool[],
   ) {
     const chatPayload = {
       method: "POST",
@@ -399,7 +404,7 @@ export function streamWithThink(
       REQUEST_TIMEOUT_MS,
     );
     fetchEventSource(chatPath, {
-      fetch: tauriFetch as any,
+      fetch: tauriFetch as typeof globalThis.fetch,
       ...chatPayload,
       async onopen(res) {
         clearTimeout(requestTimeoutId);

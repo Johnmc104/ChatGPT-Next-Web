@@ -323,7 +323,7 @@ export class BaseOpenAICompatibleApi implements LLMApi {
     toolCallMessage: Record<string, unknown>,
     toolCallResult: Record<string, unknown>[],
   ): void {
-    (requestPayload.messages as Record<string, unknown>[]).splice(
+    (requestPayload.messages as unknown[]).splice(
       requestPayload.messages.length,
       0,
       toolCallMessage,
@@ -399,10 +399,15 @@ export class BaseOpenAICompatibleApi implements LLMApi {
           controller,
           parseSSEFn,
           (
-            rp: RequestPayload,
+            rp: object,
             toolCallMessage: Record<string, unknown>,
             toolCallResult: Record<string, unknown>[],
-          ) => this.processToolMessage(rp, toolCallMessage, toolCallResult),
+          ) =>
+            this.processToolMessage(
+              rp as RequestPayload,
+              toolCallMessage,
+              toolCallResult,
+            ),
           options,
         );
       } else {
