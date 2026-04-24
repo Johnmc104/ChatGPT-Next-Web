@@ -77,16 +77,6 @@ import isEmpty from "lodash-es/isEmpty";
 import { RealtimeChat } from "@/app/components/realtime-chat";
 import clsx from "clsx";
 
-// --- Re-export extracted components for backward compatibility ---
-export { ChatAction, ChatActions } from "./chat-actions";
-export {
-  SessionConfigModel,
-  EditMessageModal,
-  DeleteImageButton,
-  ShortcutKeyModal,
-} from "./chat-modals";
-export { PromptHints, type RenderPrompt } from "./chat-input";
-
 // --- Import extracted components for internal use ---
 import { ChatAction } from "./chat-actions";
 import { ChatActions } from "./chat-actions";
