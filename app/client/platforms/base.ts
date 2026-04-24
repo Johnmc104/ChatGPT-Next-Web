@@ -18,8 +18,9 @@ import {
   useChatStore,
   ChatMessageTool,
   usePluginStore,
+  ModelConfig,
 } from "@/app/store";
-import { stream, streamWithThink } from "@/app/utils/chat";
+import { streamWithThink } from "@/app/utils/chat";
 import {
   ChatOptions,
   getHeaders,
@@ -128,7 +129,10 @@ export class BaseOpenAICompatibleApi implements LLMApi {
     let baseUrl = "";
 
     if (accessStore.useCustomConfig) {
-      baseUrl = (accessStore as any)[this.config.urlConfigKey] ?? "";
+      baseUrl =
+        (accessStore as unknown as Record<string, string>)[
+          this.config.urlConfigKey
+        ] ?? "";
     }
 
     if (baseUrl.length === 0) {
@@ -153,7 +157,7 @@ export class BaseOpenAICompatibleApi implements LLMApi {
 
   // ---- Response extraction -----------------------------------------------
 
-  extractMessage(res: any): string | Promise<string | any[]> {
+  extractMessage(res: any): string | Promise<string | MultimodalContent[]> {
     return res.choices?.at(0)?.message?.content ?? "";
   }
 
@@ -183,7 +187,7 @@ export class BaseOpenAICompatibleApi implements LLMApi {
         isVisionModel(modelName));
 
     for (const v of messages) {
-      let content: any;
+      let content: string | MultimodalContent[];
       if (v.role === "assistant" && this.config.stripAssistantThinking) {
         content = getMessageTextContentWithoutThinking(v);
       } else if (useVision) {
@@ -201,7 +205,14 @@ export class BaseOpenAICompatibleApi implements LLMApi {
 
   protected buildPayload(
     messages: RequestPayload["messages"],
-    modelConfig: any,
+    modelConfig: Pick<
+      ModelConfig,
+      | "model"
+      | "temperature"
+      | "presence_penalty"
+      | "frequency_penalty"
+      | "top_p"
+    >,
     shouldStream: boolean,
   ): RequestPayload {
     const payload: RequestPayload = {
@@ -309,13 +320,11 @@ export class BaseOpenAICompatibleApi implements LLMApi {
 
   protected processToolMessage(
     requestPayload: RequestPayload,
-    toolCallMessage: any,
-    toolCallResult: any[],
+    toolCallMessage: Record<string, unknown>,
+    toolCallResult: Record<string, unknown>[],
   ): void {
-    // @ts-ignore
-    requestPayload?.messages?.splice(
-      // @ts-ignore
-      requestPayload?.messages?.length,
+    (requestPayload.messages as Record<string, unknown>[]).splice(
+      requestPayload.messages.length,
       0,
       toolCallMessage,
       ...toolCallResult,
@@ -333,10 +342,8 @@ export class BaseOpenAICompatibleApi implements LLMApi {
     const modelConfig = {
       ...useAppConfig.getState().modelConfig,
       ...useChatStore.getState().currentSession().mask.modelConfig,
-      ...{
-        model: options.config.model,
-        providerName: options.config.providerName,
-      },
+      model: options.config.model,
+      providerName: options.config.providerName,
     };
 
     const shouldStream = !!options.config.stream;
@@ -375,26 +382,27 @@ export class BaseOpenAICompatibleApi implements LLMApi {
             useChatStore.getState().currentSession().mask?.plugin || [],
           );
 
-        const streamFn = this.config.supportsThinking
-          ? streamWithThink
-          : stream;
-
         const parseSSEFn = this.config.supportsThinking
           ? (text: string, runTools: ChatMessageTool[]) =>
               this.parseSSEWithThink(text, runTools)
-          : (text: string, runTools: ChatMessageTool[]) =>
-              this.parseSSE(text, runTools);
+          : (text: string, runTools: ChatMessageTool[]) => ({
+              isThinking: false as const,
+              content: this.parseSSE(text, runTools),
+            });
 
-        return streamFn(
+        return streamWithThink(
           chatPath,
           requestPayload,
           getHeaders(),
-          tools as any,
+          tools as ChatMessageTool[],
           funcs,
           controller,
-          parseSSEFn as any,
-          (rp: RequestPayload, toolCallMessage: any, toolCallResult: any[]) =>
-            this.processToolMessage(rp, toolCallMessage, toolCallResult),
+          parseSSEFn,
+          (
+            rp: RequestPayload,
+            toolCallMessage: Record<string, unknown>,
+            toolCallResult: Record<string, unknown>[],
+          ) => this.processToolMessage(rp, toolCallMessage, toolCallResult),
           options,
         );
       } else {
