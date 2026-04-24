@@ -579,13 +579,13 @@ usePluginStore → OpenAPIClientAxios → 解析 YAML → FunctionToolItem[]
 
 ### Sprint G — 安全与正确性
 
-| 序号 | 任务 | 涉及文件 | 预期收益 |
-|------|------|----------|----------|
-| G-01 | MD5 → SHA-256 (access code hashing) | api/auth.ts | 安全性提升 |
-| G-02 | 实时语音 API Key 走服务端代理 | realtime-chat/ | 消除密钥暴露 |
-| G-03 | MCP 工具调用添加 JSON schema 验证 | chat-actions.ts, mcp/ | 防注入 |
-| G-04 | `forkSession()` 深拷贝 mask.context | store/chat.ts | 修复共享引用 bug |
-| G-05 | `mask.search()` 实现文本过滤 | store/mask.ts | 修复搜索功能 |
+| 序号 | 任务 | 涉及文件 | 预期收益 | 状态 |
+|------|------|----------|----------|------|
+| G-01 | MD5 → SHA-256 (access code hashing) | api/auth.ts, config/server.ts | 安全性提升 | ✅ 已完成 |
+| G-02 | 实时语音 API Key 走服务端代理 | realtime-chat/ | 消除密钥暴露 | ⏭ 跳过（需架构调整） |
+| G-03 | MCP 工具调用添加 JSON schema 验证 | chat-actions.ts, mcp/ | 防注入 | ⏭ 跳过（需架构调整） |
+| G-04 | `forkSession()` 深拷贝 mask.context | store/chat.ts | 修复共享引用 bug | ✅ 已完成 |
+| G-05 | `mask.search()` 实现文本过滤 | store/mask.ts | 修复搜索功能 | ✅ 已完成 |
 
 ### Sprint H — 性能优化
 
