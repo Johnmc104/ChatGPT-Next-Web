@@ -35,16 +35,12 @@ import {
 
 import {
   autoGrowTextArea,
-  copyToClipboard,
   getMessageImages,
   getMessageTextContent,
-  isVisionModel,
   safeLocalStorage,
   useMobileScreen,
   selectOrCopy,
 } from "../utils";
-
-import { uploadImage as uploadImageRemote } from "@/app/utils/chat";
 
 import { ChatControllerPool } from "../client/controller";
 import { usePromptStore } from "../store/prompt";
@@ -57,8 +53,6 @@ import { showConfirm, showToast } from "./ui-lib";
 import { useNavigate } from "react-router-dom";
 import {
   CHAT_PAGE_SIZE,
-  DEFAULT_TTS_ENGINE,
-  ModelProvider,
   Path,
   REQUEST_TIMEOUT_MS,
   ServiceProvider,
@@ -69,9 +63,7 @@ import { ChatCommandPrefix, useChatCommand, useCommand } from "../command";
 import { prettyObject } from "../utils/format";
 import { ExportMessageModal } from "./exporter";
 import { getClientConfig } from "../config/client";
-import { ClientApi, MultimodalContent } from "../client/api";
-import { createTTSPlayer } from "../utils/audio";
-import { MsEdgeTTS, OUTPUT_FORMAT } from "../utils/edge-tts";
+import { MultimodalContent } from "../client/api";
 
 import isEmpty from "lodash-es/isEmpty";
 import { RealtimeChat } from "@/app/components/realtime-chat";
@@ -83,6 +75,9 @@ import { ChatActions } from "./chat-actions";
 import { EditMessageModal as EditMessageModalComponent } from "./chat-modals";
 import { DeleteImageButton as DeleteImageButtonComponent } from "./chat-modals";
 import { ShortcutKeyModal as ShortcutKeyModalComponent } from "./chat-modals";
+import { useChatTTS } from "./chat-tts";
+import { useChatKeyboardShortcuts } from "./chat-keyboard-shortcuts";
+import { useChatImages } from "./chat-images";
 import {
   useSubmitHandler,
   PromptHints as PromptHintsComponent,
@@ -96,7 +91,6 @@ import { ChatHeader } from "./chat-header";
 // --- Module-level singletons ---
 
 const localStorage = safeLocalStorage();
-const ttsPlayer = createTTSPlayer();
 
 // ---------------------------------------------------------------------------
 // _Chat — the main chat view (1 instance per session via key={session.id})
@@ -163,8 +157,14 @@ function _Chat() {
   const [hitBottom, setHitBottom] = useState(true);
   const isMobileScreen = useMobileScreen();
   const navigate = useNavigate();
-  const [attachImages, setAttachImages] = useState<string[]>([]);
-  const [uploading, setUploading] = useState(false);
+  const {
+    attachImages,
+    setAttachImages,
+    uploading,
+    setUploading,
+    handlePaste,
+    uploadImage,
+  } = useChatImages();
 
   // prompt hints
   const promptStore = usePromptStore();
@@ -421,51 +421,7 @@ function _Chat() {
   );
 
   const accessStore = useAccessStore();
-  const [speechStatus, setSpeechStatus] = useState(false);
-  const [speechLoading, setSpeechLoading] = useState(false);
-
-  async function openaiSpeech(text: string) {
-    if (speechStatus) {
-      ttsPlayer.stop();
-      setSpeechStatus(false);
-    } else {
-      var api: ClientApi;
-      api = new ClientApi(ModelProvider.GPT);
-      const config = useAppConfig.getState();
-      setSpeechLoading(true);
-      ttsPlayer.init();
-      let audioBuffer: ArrayBuffer;
-      const { markdownToTxt } = require("markdown-to-txt");
-      const textContent = markdownToTxt(text);
-      if (config.ttsConfig.engine !== DEFAULT_TTS_ENGINE) {
-        const edgeVoiceName = accessStore.edgeVoiceName();
-        const tts = new MsEdgeTTS();
-        await tts.setMetadata(
-          edgeVoiceName,
-          OUTPUT_FORMAT.AUDIO_24KHZ_96KBITRATE_MONO_MP3,
-        );
-        audioBuffer = await tts.toArrayBuffer(textContent);
-      } else {
-        audioBuffer = await api.llm.speech({
-          model: config.ttsConfig.model,
-          input: textContent,
-          voice: config.ttsConfig.voice,
-          speed: config.ttsConfig.speed,
-        });
-      }
-      setSpeechStatus(true);
-      ttsPlayer
-        .play(audioBuffer, () => {
-          setSpeechStatus(false);
-        })
-        .catch((e) => {
-          console.error("[OpenAI Speech]", e);
-          showToast(prettyObject(e));
-          setSpeechStatus(false);
-        })
-        .finally(() => setSpeechLoading(false));
-    }
-  }
+  const { speechStatus, speechLoading, openaiSpeech } = useChatTTS();
 
   const context: RenderMessage[] = useMemo(() => {
     return session.mask.hideContext ? [] : session.mask.context.slice();
@@ -642,132 +598,15 @@ function _Chat() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  const MAX_ATTACH_IMAGES = 3;
-
-  /**
-   * Upload image files and append to attachImages state.
-   * Shared by handlePaste and the file picker dialog.
-   */
-  async function appendImageFiles(files: File[]) {
-    if (files.length === 0) return;
-    setUploading(true);
-    try {
-      const results = await Promise.all(
-        files.slice(0, MAX_ATTACH_IMAGES).map((f) => uploadImageRemote(f)),
-      );
-      setAttachImages((prev) => {
-        const merged = [...prev, ...results];
-        return merged.slice(0, MAX_ATTACH_IMAGES);
-      });
-    } catch (e) {
-      console.error("[Image Upload] failed", e);
-    } finally {
-      setUploading(false);
-    }
-  }
-
-  const handlePaste = useCallback(
-    async (event: React.ClipboardEvent<HTMLTextAreaElement>) => {
-      const currentModel = chatStore.currentSession().mask.modelConfig.model;
-      if (!isVisionModel(currentModel)) {
-        return;
-      }
-      const items = (event.clipboardData || window.clipboardData).items;
-      const files: File[] = [];
-      for (const item of items) {
-        if (item.kind === "file" && item.type.startsWith("image/")) {
-          event.preventDefault();
-          const file = item.getAsFile();
-          if (file) files.push(file);
-        }
-      }
-      if (files.length > 0) {
-        appendImageFiles(files);
-      }
-    },
-    [chatStore],
-  );
-
-  async function uploadImage() {
-    const fileInput = document.createElement("input");
-    fileInput.type = "file";
-    fileInput.accept =
-      "image/png, image/jpeg, image/webp, image/heic, image/heif";
-    fileInput.multiple = true;
-    fileInput.onchange = (event: any) => {
-      const files: File[] = Array.from(event.target.files ?? []);
-      appendImageFiles(files);
-    };
-    fileInput.click();
-  }
-
   // shortcut keys
   const [showShortcutKeyModal, setShowShortcutKeyModal] = useState(false);
 
-  useEffect(() => {
-    const handleKeyDown = (event: KeyboardEvent) => {
-      if (
-        (event.metaKey || event.ctrlKey) &&
-        event.shiftKey &&
-        event.key.toLowerCase() === "o"
-      ) {
-        event.preventDefault();
-        setTimeout(() => {
-          chatStore.newSession();
-          navigate(Path.Chat);
-        }, 10);
-      } else if (event.shiftKey && event.key.toLowerCase() === "escape") {
-        event.preventDefault();
-        inputRef.current?.focus();
-      } else if (
-        (event.metaKey || event.ctrlKey) &&
-        event.shiftKey &&
-        event.code === "Semicolon"
-      ) {
-        event.preventDefault();
-        const copyCodeButton =
-          document.querySelectorAll<HTMLElement>(".copy-code-button");
-        if (copyCodeButton.length > 0) {
-          copyCodeButton[copyCodeButton.length - 1].click();
-        }
-      } else if (
-        (event.metaKey || event.ctrlKey) &&
-        event.shiftKey &&
-        event.key.toLowerCase() === "c"
-      ) {
-        event.preventDefault();
-        const lastNonUserMessage = messages
-          .filter((message) => message.role !== "user")
-          .pop();
-        if (lastNonUserMessage) {
-          const lastMessageContent = getMessageTextContent(lastNonUserMessage);
-          copyToClipboard(lastMessageContent);
-        }
-      } else if ((event.metaKey || event.ctrlKey) && event.key === "/") {
-        event.preventDefault();
-        setShowShortcutKeyModal(true);
-      } else if (
-        (event.metaKey || event.ctrlKey) &&
-        event.shiftKey &&
-        event.key.toLowerCase() === "backspace"
-      ) {
-        event.preventDefault();
-        chatStore.updateTargetSession(session, (session) => {
-          if (session.clearContextIndex === session.messages.length) {
-            session.clearContextIndex = undefined;
-          } else {
-            session.clearContextIndex = session.messages.length;
-            session.memoryPrompt = "";
-          }
-        });
-      }
-    };
-
-    document.addEventListener("keydown", handleKeyDown);
-    return () => {
-      document.removeEventListener("keydown", handleKeyDown);
-    };
-  }, [messages, chatStore, navigate, session]);
+  useChatKeyboardShortcuts({
+    inputRef,
+    messages,
+    setShowShortcutKeyModal,
+    session,
+  });
 
   const [showChatSidePanel, setShowChatSidePanel] = useState(false);
 
