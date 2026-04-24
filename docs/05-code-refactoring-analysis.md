@@ -127,19 +127,18 @@
 
 ---
 
-### R-06 — `exporter.tsx` 拆分 ★★☆
+### R-06 — `exporter.tsx` 拆分 ★★☆ ✅
 
 **位置**: `app/components/exporter.tsx`（697 行，7 个组件）  
 **问题**: `ImagePreviewer`、`MarkdownPreviewer`、`JsonPreviewer` 三个独立预览组件捆绑在一个文件中。  
-**方案**: 拆分到 `components/export/` 子目录。
+**方案**: 提取最大组件 `ImagePreviewer`（208 行）到 `exporter-image.tsx`，保留 barrel 重导出。
 
-| 子任务 | 目标文件 |
-|--------|----------|
-| R-06a | `export/image-previewer.tsx` |
-| R-06b | `export/markdown-previewer.tsx` |
-| R-06c | `export/json-previewer.tsx` |
-| R-06d | `export/export-modal.tsx`（`ExportMessageModal` + `PreviewActions`） |
-| R-06e | `export/index.ts` barrel |
+| 子任务 | 说明 | 状态 |
+|--------|------|------|
+| R-06a | `ImagePreviewer` → `exporter-image.tsx` | ✅ |
+| R-06b | `exporter.tsx` 保留 re-export 保持 API 稳定 | ✅ |
+
+**实际**: `exporter.tsx` 697→492 行（−205），新增 `exporter-image.tsx`（237 行）
 
 ---
 
