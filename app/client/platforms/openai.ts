@@ -41,6 +41,7 @@ import {
   getMessageTextContent,
   isVisionModel,
   isDalle3 as _isDalle3,
+  isImageModel as _isImageModel,
   getTimeoutMSByModel,
 } from "@/app/utils";
 import { fetch } from "@/app/utils/stream";
@@ -68,6 +69,7 @@ export interface RequestPayload {
   top_p: number;
   max_tokens?: number;
   max_completion_tokens?: number;
+  modalities?: string[];
 }
 
 export interface DalleRequestPayload {
@@ -176,7 +178,53 @@ export class ChatGPTApi implements LLMApi {
         },
       ];
     }
-    return res.choices?.at(0)?.message?.content ?? res;
+
+    const message = res.choices?.at(0)?.message;
+    if (!message) return res;
+
+    // Handle image generation responses:
+    // 1. OpenRouter format: message.images[].image_url.url
+    // 2. Multimodal content: message.content as array with image_url items
+    const images: MultimodalContent[] = [];
+    let textContent = "";
+
+    // Check for OpenRouter-style images field
+    if (Array.isArray(message.images)) {
+      for (const img of message.images) {
+        const url = img?.image_url?.url ?? img?.url ?? "";
+        if (url) {
+          images.push({ type: "image_url", image_url: { url } });
+        }
+      }
+    }
+
+    // Check if content is multimodal array (may contain images + text)
+    if (Array.isArray(message.content)) {
+      for (const part of message.content) {
+        if (part.type === "image_url" && part.image_url?.url) {
+          images.push({
+            type: "image_url",
+            image_url: { url: part.image_url.url },
+          });
+        } else if (part.type === "text" && part.text) {
+          textContent += part.text;
+        }
+      }
+    } else if (typeof message.content === "string") {
+      textContent = message.content;
+    }
+
+    // If we have images, return as MultimodalContent array
+    if (images.length > 0) {
+      const parts: MultimodalContent[] = [];
+      if (textContent) {
+        parts.push({ type: "text", text: textContent });
+      }
+      parts.push(...images);
+      return parts;
+    }
+
+    return textContent || res;
   }
 
   async speech(options: SpeechOptions): Promise<ArrayBuffer> {
@@ -231,6 +279,7 @@ export class ChatGPTApi implements LLMApi {
     let requestPayload: RequestPayload | DalleRequestPayload;
 
     const isDalle3 = _isDalle3(options.config.model);
+    const isImageGen = _isImageModel(options.config.model);
     const isO1OrO3 =
       options.config.model.startsWith("o1") ||
       options.config.model.startsWith("o3") ||
@@ -299,11 +348,16 @@ export class ChatGPTApi implements LLMApi {
       if (visionModel && !isO1OrO3 && !isGpt5) {
         requestPayload["max_tokens"] = Math.max(modelConfig.max_tokens, 4000);
       }
+
+      // add modalities for image generation models (e.g. gpt-image, gpt-5.4-image)
+      if (isImageGen && !isDalle3) {
+        requestPayload["modalities"] = ["text", "image"];
+      }
     }
 
     console.log("[Request] openai payload: ", requestPayload);
 
-    const shouldStream = !isDalle3 && !!options.config.stream;
+    const shouldStream = !isDalle3 && !isImageGen && !!options.config.stream;
     const controller = new AbortController();
     options.onController?.(controller);
 

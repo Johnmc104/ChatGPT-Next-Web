@@ -324,11 +324,21 @@ export function isDalle3(model: string) {
   return "dall-e-3" === model;
 }
 
+export function isImageModel(model: string) {
+  model = model.toLowerCase();
+  return (
+    model.includes("gpt-image") ||
+    model.includes("image-2") ||
+    model.includes("dall-e") ||
+    model.includes("dalle") ||
+    model.includes("cogview")
+  );
+}
+
 export function getTimeoutMSByModel(model: string) {
   model = model.toLowerCase();
   if (
-    model.startsWith("dall-e") ||
-    model.startsWith("dalle") ||
+    isImageModel(model) ||
     model.startsWith("o1") ||
     model.startsWith("o3") ||
     model.includes("deepseek-r") ||
@@ -342,16 +352,13 @@ export function getModelSizes(model: string): ModelSize[] {
   if (isDalle3(model)) {
     return ["1024x1024", "1792x1024", "1024x1792"];
   }
-  if (model.toLowerCase().includes("cogview")) {
-    return [
-      "1024x1024",
-      "768x1344",
-      "864x1152",
-      "1344x768",
-      "1152x864",
-      "1440x720",
-      "720x1440",
-    ];
+  const lower = model.toLowerCase();
+  if (
+    lower.includes("gpt-image") ||
+    lower.includes("image-2") ||
+    lower.includes("cogview")
+  ) {
+    return ["1024x1024", "1024x1536", "1536x1024"];
   }
   return [];
 }
