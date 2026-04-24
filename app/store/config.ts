@@ -1,5 +1,11 @@
 import { LLMModel } from "../client/api";
-import { DalleQuality, DalleStyle, ImageQuality, ModelSize } from "../typing";
+import {
+  DalleQuality,
+  DalleStyle,
+  ImageOutputFormat,
+  ImageQuality,
+  ModelSize,
+} from "../typing";
 import { getClientConfig } from "../config/client";
 import {
   DEFAULT_INPUT_TEMPLATE,
@@ -81,6 +87,7 @@ export const DEFAULT_CONFIG = {
     size: "1024x1024" as ModelSize,
     quality: "standard" as ImageQuality,
     style: "vivid" as DalleStyle,
+    outputFormat: "png" as ImageOutputFormat,
   },
 
   ttsConfig: {

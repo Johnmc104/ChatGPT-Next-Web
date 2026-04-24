@@ -407,11 +407,20 @@ export function getModelSizes(model: string): ModelSize[] {
     return ["1024x1024", "1792x1024", "1024x1792"];
   }
   const lower = model.toLowerCase();
-  if (
-    lower.includes("gpt-image") ||
-    lower.includes("image-2") ||
-    lower.includes("cogview")
-  ) {
+  if (lower.includes("gpt-image")) {
+    return [
+      "auto",
+      "1024x1024",
+      "1024x1536",
+      "1536x1024",
+      "2048x2048",
+      "2048x1152",
+      "1152x2048",
+      "3840x2160",
+      "2160x3840",
+    ];
+  }
+  if (lower.includes("cogview")) {
     return ["1024x1024", "1024x1536", "1536x1024"];
   }
   return [];

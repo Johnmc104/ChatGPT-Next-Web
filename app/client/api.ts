@@ -45,6 +45,7 @@ export interface LLMConfig {
   size?: DalleRequestPayload["size"];
   quality?: DalleRequestPayload["quality"];
   style?: DalleRequestPayload["style"];
+  outputFormat?: DalleRequestPayload["output_format"];
 }
 
 export interface SpeechOptions {

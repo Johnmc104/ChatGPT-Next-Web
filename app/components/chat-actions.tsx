@@ -46,7 +46,13 @@ import {
   useMobileScreen,
   showPlugins,
 } from "../utils";
-import { DalleQuality, DalleStyle, ImageQuality, ModelSize } from "../typing";
+import {
+  DalleQuality,
+  DalleStyle,
+  ImageOutputFormat,
+  ImageQuality,
+  ModelSize,
+} from "../typing";
 import { ChatControllerPool } from "../client/controller";
 import { ModelProvider, Path, ServiceProvider } from "../constant";
 import { useAllModels } from "../utils/hooks";
@@ -257,6 +263,7 @@ export function ChatActions(props: {
   const [showSizeSelector, setShowSizeSelector] = useState(false);
   const [showQualitySelector, setShowQualitySelector] = useState(false);
   const [showStyleSelector, setShowStyleSelector] = useState(false);
+  const [showFormatSelector, setShowFormatSelector] = useState(false);
   const modelSizes = getModelSizes(currentModel);
   const isCurrentImageModel = isImageModel(currentModel);
   const isCurrentDalle3 = isDalle3(currentModel);
@@ -264,6 +271,7 @@ export function ChatActions(props: {
   const qualityOptions: ImageQuality[] = isCurrentGptImage
     ? ["low", "medium", "high", "auto"]
     : ["standard", "hd"];
+  const formatOptions: ImageOutputFormat[] = ["png", "jpeg", "webp"];
   const dalle3Styles: DalleStyle[] = ["vivid", "natural"];
   const currentSize =
     session.mask.modelConfig?.size ?? ("1024x1024" as ModelSize);
@@ -271,6 +279,8 @@ export function ChatActions(props: {
     session.mask.modelConfig?.quality ??
     (isCurrentGptImage ? "auto" : "standard");
   const currentStyle = session.mask.modelConfig?.style ?? "vivid";
+  const currentFormat: ImageOutputFormat =
+    session.mask.modelConfig?.outputFormat ?? "png";
 
   const isMobileScreen = useMobileScreen();
 
@@ -454,6 +464,33 @@ export function ChatActions(props: {
                 session.mask.modelConfig.quality = quality;
               });
               showToast(quality);
+            }}
+          />
+        )}
+
+        {isCurrentGptImage && (
+          <ChatAction
+            onClick={() => setShowFormatSelector(true)}
+            text={currentFormat}
+            icon={<ImageIcon />}
+          />
+        )}
+
+        {showFormatSelector && (
+          <Selector
+            defaultSelectedValue={currentFormat}
+            items={formatOptions.map((f) => ({
+              title: f,
+              value: f,
+            }))}
+            onClose={() => setShowFormatSelector(false)}
+            onSelection={(s) => {
+              if (s.length === 0) return;
+              const fmt = s[0] as ImageOutputFormat;
+              chatStore.updateTargetSession(session, (session) => {
+                session.mask.modelConfig.outputFormat = fmt;
+              });
+              showToast(fmt);
             }}
           />
         )}

@@ -78,6 +78,7 @@ export interface DalleRequestPayload {
   prompt: string;
   response_format?: "url" | "b64_json";
   output_format?: "png" | "jpeg" | "webp";
+  output_compression?: number;
   n: number;
   size: ModelSize;
   quality?: ImageQuality;
@@ -326,7 +327,14 @@ export class ChatGPTApi implements LLMApi {
         // GPT Image models (gpt-image-1/1.5/2) use output_format (png/jpeg/webp)
         // and always return b64. DALL-E uses response_format (url/b64_json).
         ...(isGptImageModel
-          ? { output_format: "png" }
+          ? {
+              output_format: options.config?.outputFormat ?? "png",
+              // jpeg/webp support output_compression (0-100)
+              ...((options.config?.outputFormat === "jpeg" ||
+                options.config?.outputFormat === "webp") && {
+                output_compression: 100,
+              }),
+            }
           : isDalle3
           ? { response_format: "b64_json" as const }
           : { response_format: "b64_json" as const }),
