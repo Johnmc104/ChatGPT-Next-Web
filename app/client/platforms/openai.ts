@@ -182,7 +182,10 @@ export class ChatGPTApi implements LLMApi {
     }
 
     const message = res.choices?.at(0)?.message;
-    if (!message) return res;
+    if (!message) {
+      // No choices — return stringified response, never a raw object
+      return typeof res === "string" ? res : JSON.stringify(res);
+    }
 
     // Handle image generation responses:
     // 1. OpenRouter format: message.images[].image_url.url
@@ -244,7 +247,9 @@ export class ChatGPTApi implements LLMApi {
       return parts;
     }
 
-    return textContent || res;
+    // Always return a string — never a raw API response object,
+    // which would break getMessageTextContent ("content is not iterable")
+    return textContent || (typeof res === "string" ? res : JSON.stringify(res));
   }
 
   async speech(options: SpeechOptions): Promise<ArrayBuffer> {

@@ -239,6 +239,12 @@ export function getMessageTextContent(message: RequestMessage) {
   if (typeof message.content === "string") {
     return message.content;
   }
+  if (!Array.isArray(message.content)) {
+    // Guard against corrupt/unexpected content (e.g. raw API response objects)
+    return typeof message.content === "object" && message.content !== null
+      ? JSON.stringify(message.content)
+      : String(message.content ?? "");
+  }
   for (const c of message.content) {
     if (c.type === "text") {
       return c.text ?? "";
@@ -252,13 +258,18 @@ export function getMessageTextContentWithoutThinking(message: RequestMessage) {
 
   if (typeof message.content === "string") {
     content = message.content;
-  } else {
+  } else if (Array.isArray(message.content)) {
     for (const c of message.content) {
       if (c.type === "text") {
         content = c.text ?? "";
         break;
       }
     }
+  } else {
+    content =
+      typeof message.content === "object" && message.content !== null
+        ? JSON.stringify(message.content)
+        : String(message.content ?? "");
   }
 
   // New format: strip content between <!--THINKING--> and <!--/THINKING--> markers
@@ -298,7 +309,7 @@ export function getMessageTextContentWithoutThinking(message: RequestMessage) {
 }
 
 export function getMessageImages(message: RequestMessage): string[] {
-  if (typeof message.content === "string") {
+  if (typeof message.content === "string" || !Array.isArray(message.content)) {
     return [];
   }
   const urls: string[] = [];
