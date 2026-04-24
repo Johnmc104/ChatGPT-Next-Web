@@ -395,7 +395,9 @@ update.ts (独立)
 1. **✅ 合并 `app/utils.ts` 到 `app/utils/` 目录** (P1)
    - 将 442 行根级工具拆分到 `message.ts` / `responsive.ts` / `file-io.ts` / `dom.ts` / `platform.ts`
    - `app/utils.ts` 仅保留 thin barrel re-export（78 行）
-   - commit: `00f93b00`
+   - ⚠️ 拆分引入循环依赖（barrel → model-detection → store → barrel），导致 SSR 预渲染失败
+   - 修复：`model-detection.ts` 中 `useAccessStore` 改为函数内懒加载 `require()`，打破循环
+   - commits: `00f93b00`, `583f7821`
 
 2. **✅ 统一 Hooks 存放位置** (M1)
    - `components/mcp-market-hooks.ts` → `hooks/useMcpServerManager.ts`
@@ -448,7 +450,7 @@ update.ts (独立)
 | 目录结构 | ⭐⭐⭐⭐½ | 层次清晰，hooks 统一，utils 拆分完成 |
 | 命名规范 | ⭐⭐⭐⭐⭐ | 100% 一致，ms_edge_tts 已修正 |
 | 类型安全 | ⭐⭐⭐ | 已清理 90 处 any，剩 50 处 |
-| 依赖管理 | ⭐⭐⭐⭐ | store 反向依赖已消除，barrel 完整 |
+| 依赖管理 | ⭐⭐⭐⭐ | store 反向依赖已消除，barrel 循环依赖已修复 |
 | 测试覆盖 | ⭐⭐ | API 层覆盖好，组件/Store 缺失 |
 | 架构分层 | ⭐⭐⭐⭐ | store→component 反向依赖已修复 |
 | 文档完整度 | ⭐⭐⭐⭐ | 有系统化文档，README 链接已修正 |
