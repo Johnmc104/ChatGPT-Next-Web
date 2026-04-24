@@ -166,17 +166,17 @@ export class ChatGPTApi implements LLMApi {
       let url = res.data?.at(0)?.url ?? "";
       const b64_json = res.data?.at(0)?.b64_json ?? "";
       if (!url && b64_json) {
-        // uploadImage
+        // uploadImage — cache in ServiceWorker
         url = await uploadImage(base64Image2Blob(b64_json, "image/png"));
       }
-      return [
-        {
-          type: "image_url",
-          image_url: {
-            url,
-          },
-        },
-      ];
+      const parts: MultimodalContent[] = [];
+      // Capture revised_prompt from DALL-E
+      const revisedPrompt = res.data?.at(0)?.revised_prompt;
+      if (revisedPrompt) {
+        parts.push({ type: "text", text: revisedPrompt });
+      }
+      parts.push({ type: "image_url", image_url: { url } });
+      return parts;
     }
 
     const message = res.choices?.at(0)?.message;
@@ -191,7 +191,16 @@ export class ChatGPTApi implements LLMApi {
     // Check for OpenRouter-style images field
     if (Array.isArray(message.images)) {
       for (const img of message.images) {
-        const url = img?.image_url?.url ?? img?.url ?? "";
+        let url = img?.image_url?.url ?? img?.url ?? "";
+        // Cache base64 data URIs to ServiceWorker for persistence
+        if (url && url.startsWith("data:")) {
+          try {
+            const mime = url.split(";")[0].split(":")[1] || "image/png";
+            url = await uploadImage(base64Image2Blob(url.split(",")[1], mime));
+          } catch (e) {
+            console.warn("[Image] failed to cache base64 image", e);
+          }
+        }
         if (url) {
           images.push({ type: "image_url", image_url: { url } });
         }
@@ -202,10 +211,19 @@ export class ChatGPTApi implements LLMApi {
     if (Array.isArray(message.content)) {
       for (const part of message.content) {
         if (part.type === "image_url" && part.image_url?.url) {
-          images.push({
-            type: "image_url",
-            image_url: { url: part.image_url.url },
-          });
+          let url = part.image_url.url;
+          // Cache base64 data URIs
+          if (url.startsWith("data:")) {
+            try {
+              const mime = url.split(";")[0].split(":")[1] || "image/png";
+              url = await uploadImage(
+                base64Image2Blob(url.split(",")[1], mime),
+              );
+            } catch (e) {
+              console.warn("[Image] failed to cache base64 image", e);
+            }
+          }
+          images.push({ type: "image_url", image_url: { url } });
         } else if (part.type === "text" && part.text) {
           textContent += part.text;
         }

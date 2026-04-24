@@ -40,6 +40,8 @@ import ConfirmIcon from "../icons/confirm.svg";
 import CloseIcon from "../icons/close.svg";
 import StopIcon from "../icons/pause.svg";
 
+import { ChatImage } from "./image-preview";
+
 import { useTokenCount } from "../hooks/useTokenCount";
 import { useCostEstimate, formatCost } from "../hooks/useCostEstimate";
 import { useModelInfo } from "../hooks/useModelInfo";
@@ -1129,12 +1131,11 @@ function _Chat() {
                             defaultShow={i >= messages.length - 6}
                           />
                           {getMessageImages(message).length == 1 && (
-                            // eslint-disable-next-line @next/next/no-img-element
-                            <img
-                              className={styles["chat-message-item-image"]}
+                            <ChatImage
                               src={getMessageImages(message)[0]}
-                              alt=""
-                              loading="lazy"
+                              allImages={getMessageImages(message)}
+                              index={0}
+                              className={styles["chat-message-item-image"]}
                             />
                           )}
                           {getMessageImages(message).length > 1 && (
@@ -1147,20 +1148,22 @@ function _Chat() {
                                 } as React.CSSProperties
                               }
                             >
-                              {getMessageImages(message).map((image, index) => {
-                                return (
-                                  // eslint-disable-next-line @next/next/no-img-element
-                                  <img
-                                    className={
-                                      styles["chat-message-item-image-multi"]
-                                    }
-                                    key={index}
-                                    src={image}
-                                    alt=""
-                                    loading="lazy"
-                                  />
-                                );
-                              })}
+                              {getMessageImages(message).map(
+                                (image, imgIdx) => {
+                                  return (
+                                    <ChatImage
+                                      key={imgIdx}
+                                      src={image}
+                                      allImages={getMessageImages(message)}
+                                      index={imgIdx}
+                                      multi
+                                      className={
+                                        styles["chat-message-item-image-multi"]
+                                      }
+                                    />
+                                  );
+                                },
+                              )}
                             </div>
                           )}
                         </div>
