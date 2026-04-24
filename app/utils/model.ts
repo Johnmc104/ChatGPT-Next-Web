@@ -51,10 +51,25 @@ export function getModelProvider(modelWithProvider: string): [string, string?] {
   return [model, provider];
 }
 
+let _collectCache: {
+  key: string;
+  result: ReturnType<typeof _collectModelTable>;
+} | null = null;
+
 export function collectModelTable(
   models: readonly LLMModel[],
   customModels: string,
 ) {
+  const cacheKey = `${models.length}:${customModels}`;
+  if (_collectCache && _collectCache.key === cacheKey) {
+    return _collectCache.result;
+  }
+  const result = _collectModelTable(models, customModels);
+  _collectCache = { key: cacheKey, result };
+  return result;
+}
+
+function _collectModelTable(models: readonly LLMModel[], customModels: string) {
   const modelTable: Record<
     string,
     {
