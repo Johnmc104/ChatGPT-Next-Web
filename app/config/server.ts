@@ -1,4 +1,4 @@
-import md5 from "spark-md5";
+import { sha256 } from "../utils/hash";
 import { DEFAULT_MODELS, DEFAULT_GA_ID } from "../constant";
 import { isGPT4Model } from "../utils/model";
 import { logger } from "@/app/utils/logger";
@@ -53,18 +53,29 @@ declare global {
   }
 }
 
-const ACCESS_CODES = (function getAccessCodes(): Set<string> {
-  const code = process.env.CODE;
+let _accessCodesPromise: Promise<Set<string>> | null = null;
 
-  try {
-    const codes = (code?.split(",") ?? [])
-      .filter((v) => !!v)
-      .map((v) => md5.hash(v.trim()));
-    return new Set(codes);
-  } catch (e) {
-    return new Set();
-  }
-})();
+/**
+ * Lazily compute SHA-256 hashed access codes (async, cached after first call).
+ * Used only by auth() — other callers use the sync getServerSideConfig().
+ */
+export function getAccessCodeSet(): Promise<Set<string>> {
+  if (_accessCodesPromise) return _accessCodesPromise;
+  _accessCodesPromise = (async () => {
+    const code = process.env.CODE;
+    try {
+      const codes = await Promise.all(
+        (code?.split(",") ?? [])
+          .filter((v) => !!v)
+          .map((v) => sha256(v.trim())),
+      );
+      return new Set(codes);
+    } catch (e) {
+      return new Set<string>();
+    }
+  })();
+  return _accessCodesPromise;
+}
 
 function getApiKey(keys?: string) {
   const apiKeyEnvVar = keys ?? "";
@@ -138,9 +149,8 @@ export const getServerSideConfig = () => {
     gtmId: process.env.GTM_ID,
     gaId: process.env.GA_ID || DEFAULT_GA_ID,
 
-    needCode: ACCESS_CODES.size > 0,
+    needCode: !!process.env.CODE,
     code: process.env.CODE,
-    codes: ACCESS_CODES,
 
     proxyUrl: process.env.PROXY_URL,
     isVercel: !!process.env.VERCEL,

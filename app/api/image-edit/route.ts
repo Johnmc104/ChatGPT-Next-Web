@@ -24,7 +24,7 @@ export const maxDuration = 60;
 export async function POST(req: NextRequest) {
   logger.debug("[Image-Edit Route] request received");
 
-  const authResult = auth(req, ModelProvider.GPT);
+  const authResult = await auth(req, ModelProvider.GPT);
   if (authResult.error) {
     return NextResponse.json(authResult, { status: 401 });
   }

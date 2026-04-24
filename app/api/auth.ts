@@ -1,6 +1,6 @@
 import { NextRequest } from "next/server";
-import { getServerSideConfig } from "../config/server";
-import md5 from "spark-md5";
+import { getServerSideConfig, getAccessCodeSet } from "../config/server";
+import { sha256 } from "../utils/hash";
 import { ACCESS_CODE_PREFIX, ModelProvider } from "../constant";
 import { logger } from "@/app/utils/logger";
 
@@ -31,23 +31,24 @@ export interface AuthResult {
   systemApiKey?: string;
 }
 
-export function auth(
+export async function auth(
   req: NextRequest,
   modelProvider: ModelProvider,
-): AuthResult {
+): Promise<AuthResult> {
   const authToken = req.headers.get("Authorization") ?? "";
 
   // check if it is openai api key or user token
   const { accessCode, apiKey } = parseApiKey(authToken);
 
-  const hashedCode = md5.hash(accessCode ?? "").trim();
+  const hashedCode = await sha256(accessCode ?? "");
 
   const serverConfig = getServerSideConfig();
-  logger.debug("[Auth] code count:", serverConfig.codes.size);
+  const accessCodes = await getAccessCodeSet();
+  logger.debug("[Auth] code count:", accessCodes.size);
   logger.debug("[Auth] has access code:", !!accessCode);
   logger.debug("[User IP]", getIP(req));
 
-  if (serverConfig.needCode && !serverConfig.codes.has(hashedCode) && !apiKey) {
+  if (serverConfig.needCode && !accessCodes.has(hashedCode) && !apiKey) {
     return {
       error: true,
       msg: !accessCode ? "empty access code" : "wrong access code",
