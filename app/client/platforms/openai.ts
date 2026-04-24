@@ -44,6 +44,8 @@ import {
   isVisionModel,
   isDalle3 as _isDalle3,
   isImageModel as _isImageModel,
+  isGptImageModel as _isGptImageModel,
+  isGpt5Model,
   isReasoningModel,
   getTimeoutMSByModel,
 } from "@/app/utils";
@@ -453,10 +455,8 @@ export class ChatGPTApi implements LLMApi {
     const isDalle3 = _isDalle3(options.config.model);
     const isImageGen = _isImageModel(options.config.model);
     const isO1OrO3 = isReasoningModel(options.config.model);
-    const isGpt5 = options.config.model.startsWith("gpt-5");
-    const isGptImageModel = options.config.model
-      .toLowerCase()
-      .includes("gpt-image");
+    const isGpt5 = isGpt5Model(options.config.model);
+    const isGptImageModel = _isGptImageModel(options.config.model);
 
     // Detect image edit: last message has attached images + is a GPT Image model
     const lastMessage = options.messages[options.messages.length - 1];

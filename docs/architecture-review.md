@@ -145,7 +145,7 @@ export interface ImageConfig {
 
 ---
 
-#### 2.6 模型检测：硬编码字符串 vs 能力系统并存
+#### 2.6 模型检测：硬编码字符串 vs 能力系统并存 ✅ R15
 
 当前有 3 种模型检测方式混用：
 
@@ -164,7 +164,7 @@ const isO1OrO3 = ...
 const isGpt5 = ...
 ```
 
-**修复**: 统一使用能力系统作为唯一来源，`isDalle3` 等字符串检测仅作为能力系统的 fallback，并在使用时打印 warning 日志。
+**修复**: ✅ R15 — 新增 `isGptImageModel()`、`isCogViewModel()`、`isGpt5Model()` 共享工具函数，替换 `openai.ts`、`useImageConfig.ts`、`getModelSizes()` 中所有内联字符串检测。能力系统仍作为首选路径，字符串检测函数统一封装为 fallback。新增 29 条测试覆盖所有模型检测函数。
 
 ---
 
@@ -348,10 +348,11 @@ app/
 | **R12** | `extractMessage()` base64 异步化 + 并行缓存 | 2 文件 | +30, -25 | ✅ 完成 |
 | **R13** | 提取 `ChatMessageItem` 组件（React.memo） | 2 文件 | +335, -240 | ✅ 完成 |
 | **R14** | 提取 `ChatHeader` 组件 | 2 文件 | +137, -80 | ✅ 完成 |
+| **R15** | 模型检测统一：共享工具函数替换内联检测 | 4 文件 | +210, -15 | ✅ 完成 |
 
-> R1–R14 已全部完成，build 通过，15 套件 206 测试全部通过。  
+> R1–R15 已全部完成，build 通过，16 套件 235 测试全部通过。  
 > chat.tsx 从 1301 行缩减至 990 行，消息行渲染 React.memo 化。  
-> 剩余 P2: 2.6 模型检测统一（需专项 PR，涉及全站调用点）。
+> 所有 P0/P1/P2 项已完成（R1-R15）。
 
 ---
 

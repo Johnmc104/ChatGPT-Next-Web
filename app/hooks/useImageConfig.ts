@@ -9,6 +9,7 @@ import { useMemo } from "react";
 import {
   isDalle3,
   isImageModel,
+  isGptImageModel,
   getModelSizes,
   supportsCustomSize,
 } from "../utils";
@@ -43,7 +44,7 @@ export function useImageConfig(model: string): ImageConfigOptions {
     const sizes = getModelSizes(model);
     const imageGen = isImageModel(model);
     const dalle3 = isDalle3(model);
-    const gptImage = model.toLowerCase().includes("gpt-image");
+    const gptImage = isGptImageModel(model);
 
     const qualityOptions: ImageQuality[] = gptImage
       ? ["low", "medium", "high", "auto"]

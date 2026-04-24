@@ -321,8 +321,30 @@ export function getMessageImages(message: RequestMessage): string[] {
   return urls;
 }
 
-export function isDalle3(model: string) {
+export function isDalle3(model: string): boolean {
   return "dall-e-3" === model;
+}
+
+/**
+ * Check if a model is a GPT Image family model (gpt-image-1, gpt-image-2, etc.)
+ */
+export function isGptImageModel(model: string): boolean {
+  return model.toLowerCase().includes("gpt-image");
+}
+
+/**
+ * Check if a model is a CogView family model.
+ */
+export function isCogViewModel(model: string): boolean {
+  return model.toLowerCase().includes("cogview");
+}
+
+/**
+ * Check if a model is GPT-5 family.
+ * GPT-5 uses max_completion_tokens instead of max_tokens.
+ */
+export function isGpt5Model(model: string): boolean {
+  return model.toLowerCase().startsWith("gpt-5");
 }
 
 /**
@@ -330,14 +352,14 @@ export function isDalle3(model: string) {
  * Used as fallback when model-info cache is not yet loaded.
  */
 function isImageModelByName(model: string): boolean {
-  model = model.toLowerCase();
   return (
-    model.includes("gpt-image") ||
-    model.includes("image-2") ||
-    model.includes("dall-e") ||
-    model.includes("dalle") ||
-    model.includes("cogview") ||
-    model.includes("-image-preview")
+    isGptImageModel(model) ||
+    isDalle3(model) ||
+    isCogViewModel(model) ||
+    model.toLowerCase().includes("dall-e") ||
+    model.toLowerCase().includes("dalle") ||
+    model.toLowerCase().includes("image-2") ||
+    model.toLowerCase().includes("-image-preview")
   );
 }
 
@@ -406,8 +428,7 @@ export function getModelSizes(model: string): ModelSize[] {
   if (isDalle3(model)) {
     return ["1024x1024", "1792x1024", "1024x1792"];
   }
-  const lower = model.toLowerCase();
-  if (lower.includes("gpt-image")) {
+  if (isGptImageModel(model)) {
     return [
       "auto",
       "1024x1024",
@@ -420,7 +441,7 @@ export function getModelSizes(model: string): ModelSize[] {
       "2160x3840",
     ];
   }
-  if (lower.includes("cogview")) {
+  if (isCogViewModel(model)) {
     return ["1024x1024", "1024x1536", "1536x1024"];
   }
   return [];
