@@ -1,6 +1,6 @@
 import { StateStorage } from "zustand/middleware";
 import { get, set, del, clear } from "idb-keyval";
-import { safeLocalStorage } from "@/app/utils";
+import { safeLocalStorage } from "./platform";
 
 const localStorage = safeLocalStorage();
 

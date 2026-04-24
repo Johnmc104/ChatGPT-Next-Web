@@ -1,7 +1,7 @@
 import cn from "./cn";
 import en from "./en";
 import { merge } from "../utils/merge";
-import { safeLocalStorage } from "@/app/utils";
+import { safeLocalStorage } from "../utils/platform";
 
 import type { LocaleType } from "./cn";
 export type { LocaleType, PartialLocaleType } from "./cn";
