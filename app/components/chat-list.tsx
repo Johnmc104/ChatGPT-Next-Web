@@ -103,15 +103,14 @@ export function ChatItem(props: {
 }
 
 export function ChatList(props: { narrow?: boolean }) {
-  const [sessions, selectedIndex, selectSession, moveSession] = useChatStore(
-    (state) => [
+  const [sessions, selectedIndex, selectSession, moveSession, deleteSession] =
+    useChatStore((state) => [
       state.sessions,
       state.currentSessionIndex,
       state.selectSession,
       state.moveSession,
-    ],
-  );
-  const chatStore = useChatStore();
+      state.deleteSession,
+    ]);
   const navigate = useNavigate();
   const isMobileScreen = useMobileScreen();
 
@@ -158,7 +157,7 @@ export function ChatList(props: { narrow?: boolean }) {
                     (!props.narrow && !isMobileScreen) ||
                     (await showConfirm(Locale.Home.DeleteChat))
                   ) {
-                    chatStore.deleteSession(i);
+                    deleteSession(i);
                   }
                 }}
                 narrow={props.narrow}
