@@ -15,9 +15,9 @@ import { auth } from "../auth";
 import { requestOpenai } from "../common";
 import { logger } from "@/app/utils/logger";
 
-// Node.js runtime — supports up to 300s on Vercel Pro (60s on Hobby)
+// Node.js runtime — supports up to 60s on Vercel Hobby, 300s on Pro
 export const runtime = "nodejs";
-export const maxDuration = 300;
+export const maxDuration = 60;
 
 export async function POST(req: NextRequest) {
   logger.debug("[Image-Gen Route] request received");
