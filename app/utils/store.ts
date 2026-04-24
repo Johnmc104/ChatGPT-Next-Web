@@ -1,7 +1,6 @@
 import { create } from "zustand";
 import { combine, persist, createJSONStorage } from "zustand/middleware";
 import { Updater } from "../typing";
-import { deepClone } from "./clone";
 import { indexedDBStorage } from "@/app/utils/indexedDB-storage";
 
 type SecondParam<T> = T extends (
@@ -59,7 +58,7 @@ export function createPersistStore<T extends object, M>(
               >);
             },
             update(updater) {
-              const state = deepClone(get());
+              const state = { ...get() };
               updater(state);
               set({
                 ...state,
