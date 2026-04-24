@@ -40,6 +40,9 @@ jest.mock("@/app/utils/chat", () => ({
   base64Image2Blob: jest.fn(
     (b64: string, mime: string) => new Blob([b64], { type: mime }),
   ),
+  base64Image2BlobAsync: jest.fn(
+    async (b64: string, mime: string) => new Blob([b64], { type: mime }),
+  ),
   streamWithThink: jest.fn(),
 }));
 

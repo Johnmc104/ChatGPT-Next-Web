@@ -133,6 +133,26 @@ export function base64Image2Blob(base64Data: string, contentType: string) {
   return new Blob([byteArray], { type: contentType });
 }
 
+/**
+ * Async, non-blocking version of base64Image2Blob.
+ * Uses the browser's native fetch to decode base64 off the main thread,
+ * avoiding UI jank for large images (gpt-image-2 4K output can be 10MB+).
+ * Falls back to the synchronous version if fetch-based decoding fails.
+ */
+export async function base64Image2BlobAsync(
+  base64Data: string,
+  contentType: string,
+): Promise<Blob> {
+  try {
+    const dataUri = `data:${contentType};base64,${base64Data}`;
+    const res = await fetch(dataUri);
+    return await res.blob();
+  } catch {
+    // Fallback: some environments may not support fetch with data URIs
+    return base64Image2Blob(base64Data, contentType);
+  }
+}
+
 export function uploadImage(file: Blob): Promise<string> {
   if (!window._SW_ENABLED) {
     // if serviceWorker register error, using compressImage

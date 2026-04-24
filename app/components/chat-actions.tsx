@@ -34,22 +34,15 @@ import LightningIcon from "../icons/lightning.svg";
 import LoadingButtonIcon from "../icons/loading.svg";
 
 import { useTokenCount } from "../hooks/useTokenCount";
+import { useImageConfig } from "../hooks/useImageConfig";
 import { Theme, useAppConfig, useChatStore, usePluginStore } from "../store";
 import {
-  isDalle3,
-  isImageModel,
   isVisionModel,
-  getModelSizes,
-  supportsCustomSize,
+  isImageModel,
   useMobileScreen,
   showPlugins,
 } from "../utils";
-import {
-  DalleStyle,
-  ImageOutputFormat,
-  ImageQuality,
-  ModelSize,
-} from "../typing";
+import type { ImageQuality, ImageOutputFormat, ModelSize } from "../typing";
 import { ChatControllerPool } from "../client/controller";
 import { ModelProvider, Path, ServiceProvider } from "../constant";
 import { useAllModels } from "../utils/hooks";
@@ -258,15 +251,16 @@ export function ChatActions(props: {
   const [showUploadImage, setShowUploadImage] = useState(false);
 
   const [showImageConfig, setShowImageConfig] = useState(false);
-  const modelSizes = getModelSizes(currentModel);
-  const isCurrentImageModel = isImageModel(currentModel);
-  const isCurrentDalle3 = isDalle3(currentModel);
-  const isCurrentGptImage = currentModel.toLowerCase().includes("gpt-image");
-  const qualityOptions: ImageQuality[] = isCurrentGptImage
-    ? ["low", "medium", "high", "auto"]
-    : ["standard", "hd"];
-  const formatOptions: ImageOutputFormat[] = ["png", "jpeg", "webp"];
-  const dalle3Styles: DalleStyle[] = ["vivid", "natural"];
+  const {
+    showConfig: showImageConfigButton,
+    modelSizes,
+    isImageGen: isCurrentImageModel,
+    isDalle3: isCurrentDalle3,
+    isGptImage: isCurrentGptImage,
+    qualityOptions,
+    formatOptions,
+    styleOptions: dalle3Styles,
+  } = useImageConfig(currentModel);
   const currentSize =
     session.mask.modelConfig?.size ?? ("1024x1024" as ModelSize);
   const currentQuality: ImageQuality =
@@ -408,7 +402,7 @@ export function ChatActions(props: {
           />
         )}
 
-        {supportsCustomSize(currentModel) && (
+        {showImageConfigButton && (
           <ChatAction
             onClick={() => setShowImageConfig(true)}
             text={currentSize}

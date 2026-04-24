@@ -21,6 +21,7 @@ import {
   preProcessImageContent,
   uploadImage,
   base64Image2Blob,
+  base64Image2BlobAsync,
   streamWithThink,
 } from "@/app/utils/chat";
 import { cloudflareAIGatewayUrl } from "@/app/utils/cloudflare";
@@ -171,8 +172,10 @@ export class ChatGPTApi implements LLMApi {
       let url = res.data?.at(0)?.url ?? "";
       const b64_json = res.data?.at(0)?.b64_json ?? "";
       if (!url && b64_json) {
-        // uploadImage — cache in ServiceWorker
-        url = await uploadImage(base64Image2Blob(b64_json, "image/png"));
+        // uploadImage — cache in ServiceWorker (async blob conversion)
+        url = await uploadImage(
+          await base64Image2BlobAsync(b64_json, "image/png"),
+        );
       }
       const parts: MultimodalContent[] = [];
       // Capture revised_prompt from DALL-E
@@ -193,25 +196,16 @@ export class ChatGPTApi implements LLMApi {
     // Handle image generation responses:
     // 1. OpenRouter format: message.images[].image_url.url
     // 2. Multimodal content: message.content as array with image_url items
-    const images: MultimodalContent[] = [];
     let textContent = "";
+
+    // Collect raw image URLs from both formats
+    const rawUrls: string[] = [];
 
     // Check for OpenRouter-style images field
     if (Array.isArray(message.images)) {
       for (const img of message.images) {
-        let url = img?.image_url?.url ?? img?.url ?? "";
-        // Cache base64 data URIs to ServiceWorker for persistence
-        if (url && url.startsWith("data:")) {
-          try {
-            const mime = url.split(";")[0].split(":")[1] || "image/png";
-            url = await uploadImage(base64Image2Blob(url.split(",")[1], mime));
-          } catch (e) {
-            console.warn("[Image] failed to cache base64 image", e);
-          }
-        }
-        if (url) {
-          images.push({ type: "image_url", image_url: { url } });
-        }
+        const url = img?.image_url?.url ?? img?.url ?? "";
+        if (url) rawUrls.push(url);
       }
     }
 
@@ -219,19 +213,7 @@ export class ChatGPTApi implements LLMApi {
     if (Array.isArray(message.content)) {
       for (const part of message.content) {
         if (part.type === "image_url" && part.image_url?.url) {
-          let url = part.image_url.url;
-          // Cache base64 data URIs
-          if (url.startsWith("data:")) {
-            try {
-              const mime = url.split(";")[0].split(":")[1] || "image/png";
-              url = await uploadImage(
-                base64Image2Blob(url.split(",")[1], mime),
-              );
-            } catch (e) {
-              console.warn("[Image] failed to cache base64 image", e);
-            }
-          }
-          images.push({ type: "image_url", image_url: { url } });
+          rawUrls.push(part.image_url.url);
         } else if (part.type === "text" && part.text) {
           textContent += part.text;
         }
@@ -240,8 +222,30 @@ export class ChatGPTApi implements LLMApi {
       textContent = message.content;
     }
 
-    // If we have images, return as MultimodalContent array
-    if (images.length > 0) {
+    // Cache all base64 data URIs in parallel (non-blocking blob conversion)
+    if (rawUrls.length > 0) {
+      const cachedUrls = await Promise.all(
+        rawUrls.map(async (url) => {
+          if (url.startsWith("data:")) {
+            try {
+              const mime = url.split(";")[0].split(":")[1] || "image/png";
+              return await uploadImage(
+                await base64Image2BlobAsync(url.split(",")[1], mime),
+              );
+            } catch (e) {
+              console.warn("[Image] failed to cache base64 image", e);
+              return url; // keep original data URI as fallback
+            }
+          }
+          return url;
+        }),
+      );
+
+      const images: MultimodalContent[] = cachedUrls.map((url) => ({
+        type: "image_url" as const,
+        image_url: { url },
+      }));
+
       const parts: MultimodalContent[] = [];
       if (textContent) {
         parts.push({ type: "text", text: textContent });

@@ -267,8 +267,8 @@ const images = useMemo(() => getMessageImages(message), [message.content]);
 |--------|--------|----------|
 | ✅ ~~P0~~ | ~~`extractMessage()` 单元测试~~ | **已完成 R4** — 14 个用例覆盖 DALL-E / gpt-image / OpenRouter |
 | ✅ ~~P0~~ | ~~SSE 心跳包装测试~~ | **已完成 R4** — 8 个用例覆盖 passthrough + collect + 错误 |
-| 🟡 P1 | `resolveAuthHeaderValue()` 测试 | 用户 key → 系统 key → fallback 优先级 |
-| 🟡 P1 | `getMessageTextContent()` 防御性测试 | null / undefined / 非数组 content 处理 |
+| ✅ ~~P1~~ | ~~`resolveAuthHeaderValue()` 测试~~ | **已完成 R9** — 14 个用例覆盖优先级链 + access code 过滤 |
+| ✅ ~~P1~~ | ~~`getMessageTextContent()` 防御性测试~~ | **已完成 R10** — 16 个用例覆盖 string/array/null/object |
 | 🟡 P1 | 图片编辑 FormData 构建测试 | image-edit 端点的请求格式 |
 | 🟢 P2 | `isImageModel()` + `isVisionModel()` | 能力系统 + 字符串 fallback 一致性 |
 | 🟢 P2 | chat store `onUpdate`/`onFinish` | MultimodalContent[] 正确赋值到 botMessage |
@@ -340,11 +340,15 @@ app/
 | **R4** | 补充 `extractMessage()` + 心跳包装单元测试 | 2 新测试文件 | +270 | ✅ 完成 |
 | **R5** | 拆分 `chat()` 为 `buildImageGenPayload` + `parsePartialImageStream` | 1 文件 | ±0（内部重组） | ✅ 完成 |
 | **R6** | `LLMConfig` 解耦 `ImageGenerationPayload` 索引类型 | 1 文件 | ±5 | ✅ 完成 |
-| **R7** | 提取图片上传工具函数 | 3 文件 | +40, -80 | 📋 待实施 |
-| **R8** | 拆分 `chat.tsx` 子组件 | 4+ 文件 | ±0（内部重组） | 📋 待实施 |
+| **R7** | `getMessageImages()` 缓存 + 图片上传合并 | 1 文件 | +20, -40 | ✅ 完成 |
+| **R8** | `handlePaste`/`uploadImage` 合并为 `appendImageFiles()` | 1 文件 | +30, -60 | ✅ 完成 |
+| **R9** | 补充 `resolveAuthHeaderValue()` 单元测试 | 1 新测试文件 | +130 | ✅ 完成 |
+| **R10** | 补充 `getMessageTextContent()`/`getMessageImages()` 防御性测试 | 1 新测试文件 | +120 | ✅ 完成 |
+| **R11** | 提取 `useImageConfig` hook | 2 文件 | +65, -15 | ✅ 完成 |
+| **R12** | `extractMessage()` base64 异步化 + 并行缓存 | 2 文件 | +30, -25 | ✅ 完成 |
 
-> R1–R6 已全部完成，build 通过，13 套件 176 测试全部通过。  
-> R7–R8 为 P2 架构改善，需逐步进行以降低风险。
+> R1–R12 已全部完成，build 通过，15 套件 206 测试全部通过。  
+> 剩余 P2: 2.6 模型检测统一、2.8 chat.tsx 子组件拆分，需专项 PR。
 
 ---
 
@@ -353,7 +357,7 @@ app/
 | 问题 | 当前影响 | 修复 | 优先级 |
 |------|----------|------|--------|
 | ~~Blob URL 泄漏~~ | ~~每张图片 ~5MB 内存永久占用~~ | ~~onFinish 中 revokeObjectURL~~ | ✅ 已修复 |
-| getMessageImages() 重复调用 | 每条消息渲染 3x 遍历 | useMemo 缓存 | P1 |
-| extractMessage() 同步 base64 | 大图阻塞 UI ~200ms | 异步化或 Worker | P2 |
+| ~~getMessageImages() 重复调用~~ | ~~每条消息渲染 3x 遍历~~ | ~~局部变量缓存~~ | ✅ 已修复 (R7) |
+| ~~extractMessage() 同步 base64~~ | ~~大图阻塞 UI ~200ms~~ | ~~base64Image2BlobAsync + Promise.all~~ | ✅ 已修复 (R12) |
+| ~~图片配置面板每次展开重新计算~~ | ~~5 个条件分支 × 每次 render~~ | ~~useImageConfig hook~~ | ✅ 已修复 (R11) |
 | chat.tsx 1326 行单组件 | 任何 state 变更导致全量 re-render | 拆分子组件 + memo | P2 |
-| 图片配置面板每次展开重新计算 | 5 个条件分支 × 每次 render | useImageConfig hook | P3 |
