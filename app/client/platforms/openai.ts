@@ -39,6 +39,7 @@ import Locale from "../../locales";
 import { getClientConfig } from "@/app/config/client";
 import {
   getMessageTextContent,
+  getMessageImages,
   isVisionModel,
   isDalle3 as _isDalle3,
   isImageModel as _isImageModel,
@@ -313,6 +314,14 @@ export class ChatGPTApi implements LLMApi {
     const isGptImageModel = options.config.model
       .toLowerCase()
       .includes("gpt-image");
+
+    // Detect image edit: last message has attached images + is a GPT Image model
+    const lastMessage = options.messages[options.messages.length - 1];
+    const attachedImages = lastMessage
+      ? getMessageImages(lastMessage as any)
+      : [];
+    const isImageEdit =
+      isImageGen && isGptImageModel && attachedImages.length > 0;
     if (isImageGen) {
       // ALL image-generation-only models (dall-e-3, gpt-image-1/2, cogview, etc.)
       // use /v1/images/generations. They do NOT support chat completions.
@@ -447,16 +456,20 @@ export class ChatGPTApi implements LLMApi {
         );
       } else {
         chatPath = this.path(
-          isImageGen ? OpenaiPath.ImagePath : OpenaiPath.ChatPath,
+          isImageEdit
+            ? OpenaiPath.ImageEditPath
+            : isImageGen
+            ? OpenaiPath.ImagePath
+            : OpenaiPath.ChatPath,
         );
       }
       const customBaseUrl = this.getCustomBaseUrl();
 
-      // For image generation via our own server proxy (not custom BASE_URL),
-      // route through /api/image-gen which uses Node.js runtime (300s limit)
-      // instead of Edge Runtime (25s limit). This prevents Vercel timeout.
+      // For image generation/edit via our own server proxy (not custom BASE_URL),
+      // route through /api/image-gen or /api/image-edit which use Node.js runtime
+      // (60s limit) instead of Edge Runtime (25s limit). This prevents Vercel timeout.
       if (isImageGen && !customBaseUrl) {
-        chatPath = "/api/image-gen";
+        chatPath = isImageEdit ? "/api/image-edit" : "/api/image-gen";
       }
 
       if (shouldStream) {
@@ -566,12 +579,55 @@ export class ChatGPTApi implements LLMApi {
         if (isImageGen) {
           headers["X-Stream-Heartbeat"] = "1";
         }
-        const chatPayload = {
-          method: "POST",
-          body: JSON.stringify(requestPayload),
-          signal: controller.signal,
-          headers,
-        };
+
+        let chatPayload: RequestInit;
+
+        if (isImageEdit) {
+          // Image edit: build FormData with image files + text params.
+          // Fetch raw blobs from ServiceWorker cache (don't compress).
+          const formData = new FormData();
+          for (const imageUrl of attachedImages) {
+            const resp = await globalThis.fetch(imageUrl);
+            const blob = await resp.blob();
+            const ext =
+              blob.type.split("/")[1]?.replace("jpeg", "jpg") || "png";
+            formData.append("image[]", blob, `image.${ext}`);
+          }
+          formData.append(
+            "prompt",
+            (requestPayload as DalleRequestPayload).prompt,
+          );
+          formData.append("model", options.config.model);
+          formData.append("n", "1");
+          const size = options.config?.size ?? "1024x1024";
+          if (size !== "auto") {
+            formData.append("size", size);
+          }
+          const quality = (requestPayload as DalleRequestPayload).quality;
+          if (quality) {
+            formData.append("quality", quality);
+          }
+          const outputFormat =
+            (requestPayload as DalleRequestPayload).output_format ?? "png";
+          formData.append("output_format", outputFormat);
+
+          // Don't set Content-Type — browser will add multipart boundary
+          delete headers["Content-Type"];
+
+          chatPayload = {
+            method: "POST",
+            body: formData,
+            signal: controller.signal,
+            headers,
+          };
+        } else {
+          chatPayload = {
+            method: "POST",
+            body: JSON.stringify(requestPayload),
+            signal: controller.signal,
+            headers,
+          };
+        }
 
         // make a fetch request
         const requestTimeoutId = setTimeout(

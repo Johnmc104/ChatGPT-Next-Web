@@ -280,7 +280,7 @@ export function ChatActions(props: {
 
   const { setAttachImages, setUploading } = props;
   useEffect(() => {
-    const show = isVisionModel(currentModel);
+    const show = isVisionModel(currentModel) || isImageModel(currentModel);
     setShowUploadImage(show);
     if (!show) {
       setAttachImages([]);
