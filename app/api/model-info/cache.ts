@@ -1,4 +1,5 @@
 import type { ModelInfo, OpenRouterModel } from "./types";
+import { ModelCapability } from "./types";
 import { logger } from "@/app/utils/logger";
 
 const OPENROUTER_MODELS_URL = "https://openrouter.ai/api/v1/models";
@@ -9,23 +10,69 @@ let lastUpdated: string | null = null;
 let fetchPromise: Promise<void> | null = null;
 
 /**
+ * Derive capabilities from OpenRouter model metadata.
+ * Maps architecture modalities + supported_parameters → ModelCapability[].
+ */
+function deriveCapabilities(m: OpenRouterModel): ModelCapability[] {
+  const caps: ModelCapability[] = [];
+  const arch = m.architecture ?? {};
+  const inputMods = arch.input_modalities ?? [];
+  const outputMods = arch.output_modalities ?? [];
+  const params = m.supported_parameters ?? [];
+
+  // Input modalities
+  if (inputMods.includes("text")) caps.push(ModelCapability.TextInput);
+  if (inputMods.includes("image")) caps.push(ModelCapability.ImageInput);
+  if (inputMods.includes("audio")) caps.push(ModelCapability.AudioInput);
+  if (inputMods.includes("video")) caps.push(ModelCapability.VideoInput);
+  if (inputMods.includes("file")) caps.push(ModelCapability.FileInput);
+
+  // Output modalities
+  if (outputMods.includes("text")) caps.push(ModelCapability.TextOutput);
+  if (outputMods.includes("image")) caps.push(ModelCapability.ImageOutput);
+  if (outputMods.includes("audio")) caps.push(ModelCapability.AudioOutput);
+
+  // Supported parameters
+  if (params.includes("reasoning") || params.includes("include_reasoning")) {
+    caps.push(ModelCapability.Reasoning);
+  }
+  if (params.includes("tools") || params.includes("tool_choice")) {
+    caps.push(ModelCapability.ToolUse);
+  }
+
+  // Web search: indicated by pricing or supported params
+  if (m.pricing?.web_search || params.includes("web_search_options")) {
+    caps.push(ModelCapability.WebSearch);
+  }
+
+  return caps;
+}
+
+/**
  * Parse a single OpenRouter model object into our ModelInfo shape
  */
 function parseModel(m: OpenRouterModel): ModelInfo {
   const pricing = m.pricing ?? {};
   const tp = m.top_provider ?? {};
 
+  const parsePrice = (v?: string): number | null =>
+    v != null ? parseFloat(v) || null : null;
+
   return {
     id: m.id,
     name: m.name,
     context_length: m.context_length ?? 0,
     max_output: tp.max_completion_tokens ?? null,
+    capabilities: deriveCapabilities(m),
     pricing: {
       input: parseFloat(pricing.prompt ?? "0"),
       output: parseFloat(pricing.completion ?? "0"),
-      cache_read: pricing.input_cache_read
-        ? parseFloat(pricing.input_cache_read)
-        : null,
+      cache_read: parsePrice(pricing.input_cache_read),
+      cache_write: parsePrice(pricing.input_cache_write),
+      image: parsePrice(pricing.image),
+      audio: parsePrice(pricing.audio),
+      web_search: parsePrice(pricing.web_search),
+      reasoning: parsePrice(pricing.internal_reasoning),
     },
   };
 }

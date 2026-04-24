@@ -42,6 +42,7 @@ import {
   isVisionModel,
   isDalle3 as _isDalle3,
   isImageModel as _isImageModel,
+  isReasoningModel,
   getTimeoutMSByModel,
 } from "@/app/utils";
 import { fetch } from "@/app/utils/stream";
@@ -298,10 +299,7 @@ export class ChatGPTApi implements LLMApi {
 
     const isDalle3 = _isDalle3(options.config.model);
     const isImageGen = _isImageModel(options.config.model);
-    const isO1OrO3 =
-      options.config.model.startsWith("o1") ||
-      options.config.model.startsWith("o3") ||
-      options.config.model.startsWith("o4-mini");
+    const isO1OrO3 = isReasoningModel(options.config.model);
     const isGpt5 = options.config.model.startsWith("gpt-5");
     if (isImageGen) {
       // ALL image-generation-only models (dall-e-3, gpt-image-1/2, cogview, etc.)

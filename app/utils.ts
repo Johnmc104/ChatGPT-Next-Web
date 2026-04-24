@@ -12,6 +12,8 @@ import { fetch as tauriStreamFetch } from "./utils/stream";
 import { VISION_MODEL_REGEXES, EXCLUDE_VISION_MODEL_REGEXES } from "./constant";
 import { useAccessStore } from "./store";
 import { ModelSize } from "./typing";
+import { ModelCapability } from "./api/model-info/types";
+import { hasCapability, getClientModelInfo } from "./hooks/useModelInfo";
 
 export function trimTopic(topic: string) {
   // Fix an issue where double quotes still show in the Indonesian language
@@ -308,42 +310,83 @@ export function getMessageImages(message: RequestMessage): string[] {
   return urls;
 }
 
-export function isVisionModel(model: string) {
-  const visionModels = useAccessStore.getState().visionModels;
-  const envVisionModels = visionModels?.split(",").map((m) => m.trim());
-  if (envVisionModels?.includes(model)) {
-    return true;
-  }
-  return (
-    !EXCLUDE_VISION_MODEL_REGEXES.some((regex) => regex.test(model)) &&
-    VISION_MODEL_REGEXES.some((regex) => regex.test(model))
-  );
-}
-
 export function isDalle3(model: string) {
   return "dall-e-3" === model;
 }
 
-export function isImageModel(model: string) {
+/**
+ * String-based heuristic for image generation models.
+ * Used as fallback when model-info cache is not yet loaded.
+ */
+function isImageModelByName(model: string): boolean {
   model = model.toLowerCase();
   return (
     model.includes("gpt-image") ||
     model.includes("image-2") ||
     model.includes("dall-e") ||
     model.includes("dalle") ||
-    model.includes("cogview")
+    model.includes("cogview") ||
+    model.includes("-image-preview")
+  );
+}
+
+/**
+ * Check if a model is an image generation model.
+ * Uses capability metadata from the model-info cache when available,
+ * falling back to string heuristics. This ensures correct routing
+ * regardless of provider-specific model naming conventions.
+ */
+export function isImageModel(model: string): boolean {
+  // Primary: capability-based check (provider-agnostic)
+  if (hasCapability(model, ModelCapability.ImageOutput)) {
+    return true;
+  }
+  // Fallback: string heuristic (works before model-info is loaded)
+  return isImageModelByName(model);
+}
+
+/**
+ * Check if a model supports vision (image input).
+ * Uses capability metadata when available, with regex fallback.
+ */
+export function isVisionModel(model: string) {
+  // Primary: capability-based check
+  if (hasCapability(model, ModelCapability.ImageInput)) {
+    return true;
+  }
+  // Env-based override
+  const visionModels = useAccessStore.getState().visionModels;
+  const envVisionModels = visionModels?.split(",").map((m) => m.trim());
+  if (envVisionModels?.includes(model)) {
+    return true;
+  }
+  // Fallback: regex heuristic
+  return (
+    !EXCLUDE_VISION_MODEL_REGEXES.some((regex) => regex.test(model)) &&
+    VISION_MODEL_REGEXES.some((regex) => regex.test(model))
+  );
+}
+
+/**
+ * Check if a model supports extended thinking / reasoning.
+ */
+export function isReasoningModel(model: string): boolean {
+  if (hasCapability(model, ModelCapability.Reasoning)) {
+    return true;
+  }
+  // Fallback: string heuristic
+  model = model.toLowerCase();
+  return (
+    model.startsWith("o1") ||
+    model.startsWith("o3") ||
+    model.startsWith("o4") ||
+    model.includes("deepseek-r") ||
+    model.includes("-thinking")
   );
 }
 
 export function getTimeoutMSByModel(model: string) {
-  model = model.toLowerCase();
-  if (
-    isImageModel(model) ||
-    model.startsWith("o1") ||
-    model.startsWith("o3") ||
-    model.includes("deepseek-r") ||
-    model.includes("-thinking")
-  )
+  if (isImageModel(model) || isReasoningModel(model))
     return REQUEST_TIMEOUT_MS_FOR_THINKING;
   return REQUEST_TIMEOUT_MS;
 }

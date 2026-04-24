@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback } from "react";
 import type { ModelInfo, ModelInfoResponse } from "../api/model-info/types";
+import { ModelCapability } from "../api/model-info/types";
 
 const MODEL_INFO_API = "/api/model-info";
 
@@ -101,4 +102,23 @@ export function getContextLength(
   }
 
   return DEFAULT_CONTEXT_LENGTH;
+}
+
+/**
+ * Check whether a model has a given capability.
+ * Can be called outside React components (uses the shared client cache).
+ */
+export function hasCapability(
+  modelId: string,
+  capability: ModelCapability,
+): boolean {
+  const info = clientCache?.[modelId];
+  return info?.capabilities?.includes(capability) ?? false;
+}
+
+/**
+ * Get model info from the shared client cache (non-hook, for use in non-React code).
+ */
+export function getClientModelInfo(modelId: string): ModelInfo | undefined {
+  return clientCache?.[modelId];
 }
