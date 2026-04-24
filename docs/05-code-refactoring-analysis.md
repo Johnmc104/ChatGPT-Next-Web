@@ -72,22 +72,22 @@
 
 ---
 
-### R-03 — `ChatGPTApi` 继承 `BaseOpenAICompatibleApi` ★★★
+### R-03 — `ChatGPTApi` 继承 `BaseOpenAICompatibleApi` ★★★ ✅
 
 **位置**: `app/client/platforms/openai.ts`（899 行）vs `base.ts`（402 行）  
 **问题**: `ChatGPTApi` 直接 `implements LLMApi`，未使用 `BaseOpenAICompatibleApi`。URL 构建、流式传输、错误处理与 `base.ts` 大量重复。URL 规范化逻辑出现 3 次。  
 **方案**:
-1. 提取 `normalizeBaseUrl()` 到 `utils/url.ts`
+1. `RequestPayload` 接口从 `openai.ts` 迁移到 `base.ts`（消除循环依赖）
 2. `ChatGPTApi extends BaseOpenAICompatibleApi`
-3. OpenAI/Azure 特有逻辑保留在子类 override 中
+3. 流式 `parseSSEWithThink` / `processToolMessage` 复用基类实现
 
-| 子任务 | 说明 |
-|--------|------|
-| R-03a | 提取 `normalizeBaseUrl()` 工具函数 |
-| R-03b | `ChatGPTApi` 改为继承 `BaseOpenAICompatibleApi` |
-| R-03c | 消除 `openai.ts` 中与 `base.ts` 重复的 URL/流式代码 |
+| 子任务 | 说明 | 状态 |
+|--------|------|------|
+| R-03a | `RequestPayload` 迁移到 `base.ts` 避免循环依赖 | ✅ |
+| R-03b | `ChatGPTApi` 改为继承 `BaseOpenAICompatibleApi` | ✅ |
+| R-03c | 消除 `openai.ts` 中 ~65 行重复的 parseSSE/processToolMessage | ✅ |
 
-**预估**: `openai.ts` 从 899 行缩减至 ~550 行，消除 8 个 `any`
+**实际**: `openai.ts` 899→820 行（−79），`base.ts` 402→423 行（+21，含 `RequestPayload`），消除 2 个 `@ts-ignore`
 
 ---
 

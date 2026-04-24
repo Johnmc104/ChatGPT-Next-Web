@@ -30,7 +30,6 @@ import { ModelSize, DalleStyle, ImageQuality } from "@/app/typing";
 import {
   ChatOptions,
   getHeaders,
-  LLMApi,
   LLMModel,
   LLMUsage,
   MultimodalContent,
@@ -50,6 +49,7 @@ import {
   getTimeoutMSByModel,
 } from "@/app/utils";
 import { fetch } from "@/app/utils/stream";
+import { BaseOpenAICompatibleApi } from "./base";
 
 export interface OpenAIListModelResponse {
   object: string;
@@ -60,22 +60,9 @@ export interface OpenAIListModelResponse {
   }>;
 }
 
-export interface RequestPayload {
-  messages: {
-    role: "developer" | "system" | "user" | "assistant";
-    content: string | MultimodalContent[];
-  }[];
-  stream?: boolean;
-  stream_options?: { include_usage: boolean };
-  model: string;
-  temperature: number;
-  presence_penalty: number;
-  frequency_penalty: number;
-  top_p: number;
-  max_tokens?: number;
-  max_completion_tokens?: number;
-  modalities?: string[];
-}
+// RequestPayload is defined in base.ts to avoid circular dependency
+export type { RequestPayload } from "./base";
+import type { RequestPayload } from "./base";
 
 export interface ImageGenerationPayload {
   model: string;
@@ -90,8 +77,21 @@ export interface ImageGenerationPayload {
   partial_images?: number;
 }
 
-export class ChatGPTApi implements LLMApi {
+export class ChatGPTApi extends BaseOpenAICompatibleApi {
   private disableListModels = true;
+
+  constructor() {
+    super({
+      providerName: "OpenAI",
+      urlConfigKey: "openaiUrl",
+      baseUrl: OPENAI_BASE_URL,
+      apiPath: ApiPath.OpenAI,
+      chatPath: OpenaiPath.ChatPath,
+      supportsThinking: true,
+      includeUsageInStream: true,
+      supportsVision: "auto",
+    });
+  }
 
   path(path: string, customHeaders?: Record<string, string>): string {
     const accessStore = useAccessStore.getState();
@@ -572,13 +572,11 @@ export class ChatGPTApi implements LLMApi {
       }
 
       if (shouldStream) {
-        let index = -1;
         const [tools, funcs] = usePluginStore
           .getState()
           .getAsTools(
             useChatStore.getState().currentSession().mask?.plugin || [],
           );
-        // console.log("getAsTools", tools, funcs);
         streamWithThink(
           chatPath,
           requestPayload,
@@ -586,88 +584,11 @@ export class ChatGPTApi implements LLMApi {
           tools as any,
           funcs,
           controller,
-          // parseSSE
-          (text: string, runTools: ChatMessageTool[]) => {
-            // console.log("parseSSE", text, runTools);
-            const json = JSON.parse(text);
-            const choices = json.choices as Array<{
-              delta: {
-                content: string;
-                tool_calls: ChatMessageTool[];
-                reasoning_content: string | null;
-              };
-            }>;
-
-            if (!choices?.length) return { isThinking: false, content: "" };
-
-            const tool_calls = choices[0]?.delta?.tool_calls;
-            if (tool_calls?.length > 0) {
-              const id = tool_calls[0]?.id;
-              const args = tool_calls[0]?.function?.arguments;
-              if (id) {
-                index += 1;
-                runTools.push({
-                  id,
-                  type: tool_calls[0]?.type,
-                  function: {
-                    name: tool_calls[0]?.function?.name as string,
-                    arguments: args,
-                  },
-                });
-              } else {
-                // @ts-ignore
-                runTools[index]["function"]["arguments"] += args;
-              }
-            }
-
-            const reasoning = choices[0]?.delta?.reasoning_content;
-            const content = choices[0]?.delta?.content;
-
-            // Skip if both content and reasoning_content are empty or null
-            if (
-              (!reasoning || reasoning.length === 0) &&
-              (!content || content.length === 0)
-            ) {
-              return {
-                isThinking: false,
-                content: "",
-              };
-            }
-
-            if (reasoning && reasoning.length > 0) {
-              return {
-                isThinking: true,
-                content: reasoning,
-              };
-            } else if (content && content.length > 0) {
-              return {
-                isThinking: false,
-                content: content,
-              };
-            }
-
-            return {
-              isThinking: false,
-              content: "",
-            };
-          },
-          // processToolMessage, include tool_calls message and tool call results
-          (
-            requestPayload: RequestPayload,
-            toolCallMessage: any,
-            toolCallResult: any[],
-          ) => {
-            // reset index value
-            index = -1;
-            // @ts-ignore
-            requestPayload?.messages?.splice(
-              // @ts-ignore
-              requestPayload?.messages?.length,
-              0,
-              toolCallMessage,
-              ...toolCallResult,
-            );
-          },
+          // Reuse base class parseSSE/processToolMessage (eliminates ~65 lines of duplication)
+          (text: string, runTools: ChatMessageTool[]) =>
+            this.parseSSEWithThink(text, runTools),
+          (rp: any, toolCallMessage: any, toolCallResult: any[]) =>
+            this.processToolMessage(rp, toolCallMessage, toolCallResult),
           options,
         );
       } else {

@@ -25,6 +25,7 @@ import {
   getHeaders,
   LLMApi,
   LLMModel,
+  MultimodalContent,
   SpeechOptions,
 } from "../api";
 import { getClientConfig } from "@/app/config/client";
@@ -35,8 +36,28 @@ import {
   isVisionModel,
 } from "@/app/utils";
 import { preProcessImageContent } from "@/app/utils/chat";
-import { RequestPayload } from "./openai";
 import { fetch } from "@/app/utils/stream";
+
+// ---------------------------------------------------------------------------
+// RequestPayload — shared by base and openai.ts (defined here to avoid cycle)
+// ---------------------------------------------------------------------------
+
+export interface RequestPayload {
+  messages: {
+    role: "developer" | "system" | "user" | "assistant";
+    content: string | MultimodalContent[];
+  }[];
+  stream?: boolean;
+  stream_options?: { include_usage: boolean };
+  model: string;
+  temperature: number;
+  presence_penalty: number;
+  frequency_penalty: number;
+  top_p: number;
+  max_tokens?: number;
+  max_completion_tokens?: number;
+  modalities?: string[];
+}
 
 // ---------------------------------------------------------------------------
 // Provider configuration — the only thing each subclass must supply
@@ -132,7 +153,7 @@ export class BaseOpenAICompatibleApi implements LLMApi {
 
   // ---- Response extraction -----------------------------------------------
 
-  extractMessage(res: any): string {
+  extractMessage(res: any): string | Promise<string | any[]> {
     return res.choices?.at(0)?.message?.content ?? "";
   }
 
@@ -381,7 +402,7 @@ export class BaseOpenAICompatibleApi implements LLMApi {
         clearTimeout(requestTimeoutId);
 
         const resJson = await res.json();
-        const message = this.extractMessage(resJson);
+        const message = await this.extractMessage(resJson);
         options.onFinish(message, res);
       }
     } catch (e) {
