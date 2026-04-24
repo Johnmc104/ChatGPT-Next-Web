@@ -204,11 +204,13 @@
 
 ---
 
-### R-10 — `mask.tsx` 提取 ContextPrompts ★☆☆
+### R-10 — `mask.tsx` 提取 ContextPrompts ★☆☆ ✅
 
 **位置**: `app/components/mask.tsx`（682 行）  
 **问题**: `ContextPrompts`（第 324-441 行，118 行）是独立的拖拽 prompt 列表组件，与 Mask 页面逻辑混合。  
 **方案**: 提取为 `components/context-prompts.tsx`
+
+**实际**: `mask.tsx` 682→498 行（−184），新增 `context-prompts.tsx`（198 行）。包含 `ContextPromptItem` + `ContextPrompts` + `reorder` helper。mask.tsx 保留 barrel re-export 保持 API 兼容。
 
 ---
 
