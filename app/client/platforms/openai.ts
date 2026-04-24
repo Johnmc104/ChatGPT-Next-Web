@@ -75,11 +75,11 @@ export interface RequestPayload {
 export interface DalleRequestPayload {
   model: string;
   prompt: string;
-  response_format: "url" | "b64_json";
+  response_format?: "url" | "b64_json";
   n: number;
   size: ModelSize;
-  quality: DalleQuality;
-  style: DalleStyle;
+  quality?: DalleQuality;
+  style?: DalleStyle;
 }
 
 export class ChatGPTApi implements LLMApi {
@@ -303,7 +303,9 @@ export class ChatGPTApi implements LLMApi {
       options.config.model.startsWith("o3") ||
       options.config.model.startsWith("o4-mini");
     const isGpt5 = options.config.model.startsWith("gpt-5");
-    if (isDalle3) {
+    if (isImageGen) {
+      // ALL image-generation-only models (dall-e-3, gpt-image-1/2, cogview, etc.)
+      // use /v1/images/generations. They do NOT support chat completions.
       const prompt = getMessageTextContent(
         options.messages.slice(-1)?.pop() as any,
       );
@@ -314,8 +316,13 @@ export class ChatGPTApi implements LLMApi {
         response_format: "b64_json", // using b64_json, and save image in CacheStorage
         n: 1,
         size: options.config?.size ?? "1024x1024",
-        quality: options.config?.quality ?? "standard",
-        style: options.config?.style ?? "vivid",
+        // quality & style are DALL-E 3 specific; omit for other models
+        ...(isDalle3
+          ? {
+              quality: options.config?.quality ?? "standard",
+              style: options.config?.style ?? "vivid",
+            }
+          : {}),
       };
     } else {
       const visionModel = isVisionModel(options.config.model);
@@ -366,23 +373,13 @@ export class ChatGPTApi implements LLMApi {
       if (visionModel && !isO1OrO3 && !isGpt5) {
         requestPayload["max_tokens"] = Math.max(modelConfig.max_tokens, 4000);
       }
-
-      // add modalities for image generation models (e.g. gpt-image, gpt-5.4-image)
-      if (isImageGen && !isDalle3) {
-        requestPayload["modalities"] = ["text", "image"];
-      }
     }
 
     console.log("[Request] openai payload: ", requestPayload);
 
-    // DALL-E and image-generation models do not support SSE streaming —
-    // even when the caller passes `stream: true` (the default for chat),
-    // we silently force a single non-streamed JSON response here. The
-    // payload's `stream` field has already been suppressed for DALL-E
-    // (DalleRequestPayload has no stream key) and is left untouched for
-    // image-gen models (most upstreams ignore it; OpenRouter accepts it
-    // but returns a single chunk anyway).
-    const shouldStream = !isDalle3 && !isImageGen && !!options.config.stream;
+    // ALL image-generation models (isImageGen covers DALL-E + gpt-image + cogview)
+    // use the non-streaming images/generations endpoint. Force non-stream here.
+    const shouldStream = !isImageGen && !!options.config.stream;
     const controller = new AbortController();
     options.onController?.(controller);
 
@@ -408,14 +405,14 @@ export class ChatGPTApi implements LLMApi {
             model?.provider?.providerName === ServiceProvider.Azure,
         );
         chatPath = this.path(
-          (isDalle3 ? Azure.ImagePath : Azure.ChatPath)(
+          (isImageGen ? Azure.ImagePath : Azure.ChatPath)(
             (model?.displayName ?? model?.name) as string,
             useCustomConfig ? useAccessStore.getState().azureApiVersion : "",
           ),
         );
       } else {
         chatPath = this.path(
-          isDalle3 ? OpenaiPath.ImagePath : OpenaiPath.ChatPath,
+          isImageGen ? OpenaiPath.ImagePath : OpenaiPath.ChatPath,
         );
       }
       const customBaseUrl = this.getCustomBaseUrl();
