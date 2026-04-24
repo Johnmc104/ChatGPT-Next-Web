@@ -66,6 +66,7 @@ export const useChatStore = createPersistStore(
         }));
         newSession.mask = {
           ...currentSession.mask,
+          context: currentSession.mask.context?.map((msg) => ({ ...msg })),
           modelConfig: {
             ...currentSession.mask.modelConfig,
           },
