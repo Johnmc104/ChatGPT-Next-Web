@@ -4,9 +4,19 @@ import { safeLocalStorage } from "./platform";
 
 const localStorage = safeLocalStorage();
 
+const WRITE_DEBOUNCE_MS = 300;
+
 class IndexedDBStorage implements StateStorage {
+  private pendingWrites = new Map<
+    string,
+    { timer: ReturnType<typeof setTimeout>; value: string }
+  >();
+
   public async getItem(name: string): Promise<string | null> {
     try {
+      // If there's a pending write, return that value for consistency
+      const pending = this.pendingWrites.get(name);
+      if (pending) return pending.value;
       const value = (await get(name)) || localStorage.getItem(name);
       return value;
     } catch (error) {
@@ -21,7 +31,14 @@ class IndexedDBStorage implements StateStorage {
         console.warn("skip setItem", name);
         return;
       }
-      await set(name, value);
+      // Debounce writes per key
+      const existing = this.pendingWrites.get(name);
+      if (existing) clearTimeout(existing.timer);
+      const timer = setTimeout(() => {
+        this.pendingWrites.delete(name);
+        set(name, value).catch(() => localStorage.setItem(name, value));
+      }, WRITE_DEBOUNCE_MS);
+      this.pendingWrites.set(name, { timer, value });
     } catch (error) {
       localStorage.setItem(name, value);
     }
