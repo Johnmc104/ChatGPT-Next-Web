@@ -44,7 +44,7 @@ A lightweight, fast AI assistant with a unified proxy architecture for LLM provi
 - **Realtime Chat** — voice-based conversation support
 - **Prompt templates (Masks)** — create, share, and debug chat tools
 - **Dark mode & PWA** — responsive design, installable as an app
-- **i18n** — 15 languages
+- **i18n** — English and Simplified Chinese
 
 <div align="center">
 
@@ -190,13 +190,13 @@ Fork this repo, then enable **Actions → Upstream Sync** on your fork for autom
 
 | Topic | Link |
 |-------|------|
-| FAQ | [English](./docs/faq-en.md) / [中文](./docs/faq-cn.md) |
-| Cloudflare Pages (Deprecated) | [English](./docs/cloudflare-pages-en.md) |
-| Chat Sync (UpStash) | [English](./docs/synchronise-chat-logs-en.md) / [中文](./docs/synchronise-chat-logs-cn.md) |
-| Vercel Deploy | [中文](./docs/vercel-cn.md) |
-| Translation Guide | [How to add a new translation](./docs/translation.md) |
-| Development Plan | [开发计划](./docs/development-plan.md) |
-| Project Analysis | [项目分析](./docs/project-analysis.md) |
+| FAQ | [English](./docs/guides/faq-en.md) / [中文](./docs/guides/faq-cn.md) |
+| Cloudflare Pages (Deprecated) | [English](./docs/guides/cloudflare-pages-en.md) |
+| Chat Sync (UpStash) | [English](./docs/guides/synchronise-chat-logs-en.md) / [中文](./docs/guides/synchronise-chat-logs-cn.md) |
+| Vercel Deploy | [中文](./docs/guides/vercel-cn.md) |
+| Translation Guide | [How to add a new translation](./docs/guides/translation.md) |
+| Development Plan | [开发计划](./docs/archive/development-plan.md) |
+| Project Analysis | [项目分析](./docs/01-project-analysis.md) |
 
 ## Screenshots
 

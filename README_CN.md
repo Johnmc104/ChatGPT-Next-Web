@@ -23,7 +23,7 @@
 - 测试体系：113 个测试用例
 - 新增功能：Token 用量追踪、成本估算、RAGFlow 知识库支持
 
-详见 [开发计划](./docs/development-plan.md) 和 [工程分析](./docs/project-analysis.md)。
+详见 [开发计划](./docs/archive/development-plan.md) 和 [工程分析](./docs/01-project-analysis.md)。
 
 ## 主要功能
 
@@ -73,7 +73,7 @@ code1,code2,code3
 
 ## 环境变量
 
-> 本项目大多数配置项都通过环境变量来设置，教程：[如何修改 Vercel 环境变量](./docs/vercel-cn.md)。
+> 本项目大多数配置项都通过环境变量来设置，教程：[如何修改 Vercel 环境变量](./docs/guides/vercel-cn.md)。
 
 ### `OPENAI_API_KEY` （必填项）
 
@@ -331,13 +331,13 @@ docs/             # 开发文档
 test/             # 测试用例（113 个）
 ```
 
-详细架构说明见 [工程分析报告](./docs/project-analysis.md)。
+详细架构说明见 [工程分析报告](./docs/01-project-analysis.md)。
 
 ## 部署
 
 ### 宝塔面板部署
 
-> [简体中文 > 如何通过宝塔一键部署](./docs/bt-cn.md)
+> [简体中文 > 如何通过宝塔一键部署](./docs/guides/bt-cn.md)
 
 ### 容器部署 （推荐）
 
