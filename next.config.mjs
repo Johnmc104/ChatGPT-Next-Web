@@ -51,6 +51,7 @@ const nextConfig = {
       "lodash-es",
       "emoji-picker-react",
       "react-router-dom",
+      "mermaid",
     ],
   },
 };
