@@ -327,13 +327,21 @@ export class ChatGPTApi implements LLMApi {
           : { response_format: "b64_json" as const }),
         // DALL-E 3: quality (standard/hd) + style (vivid/natural)
         // GPT Image: quality (low/medium/high/auto), no style param
+        // Config stores DALL-E values ("standard"/"hd"), so remap for GPT Image
         ...(isDalle3
           ? {
               quality: options.config?.quality ?? "standard",
               style: options.config?.style ?? "vivid",
             }
           : isGptImageModel
-          ? { quality: options.config?.quality ?? "auto" }
+          ? {
+              quality:
+                options.config?.quality === "hd"
+                  ? "high"
+                  : options.config?.quality === "standard"
+                  ? "auto"
+                  : options.config?.quality ?? "auto",
+            }
           : {}),
       };
     } else {
