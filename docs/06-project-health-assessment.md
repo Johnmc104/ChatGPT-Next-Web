@@ -288,7 +288,7 @@ update.ts (独立)
 
 | 文件 | 行数 | 风险 | 建议 |
 |------|------|------|------|
-| `components/chat.tsx` | 976 | 🔴 | 已部分拆分，仍需进一步分解 |
+| `components/chat.tsx` | 815 | 🟡 | 已拆分 TTS/快捷键/图片到独立文件 |
 | `client/platforms/openai.ts` | 827 | 🟡 | 含 OpenAI+Azure+Vision+ImageGen，可考虑按功能拆分 |
 | `locales/en.ts` | 690 | ⚪ | 翻译文件，体积正常 |
 | `locales/cn.ts` | 690 | ⚪ | 翻译文件，体积正常 |
@@ -417,18 +417,22 @@ update.ts (独立)
    - store/ 目录现在零组件导入
    - commit: `81f51b3e`
 
-### 中期（待实施）
+### 中期 — ✅ 已完成
 
 6. **✅ 评估移除 react-router-dom** (M3) — **结论：保留**
-   - 调查发现：项目使用 `HashRouter` 作为 SPA 路由（单 Next.js 页面内 8 条路由）
+   - 项目使用 `HashRouter` 作为 SPA 路由（单 Next.js 页面内 8 条路由）
    - 15+ 组件使用 `useNavigate()`，4+ 使用 `useLocation()`
    - 架构原因：支持 `output: "export"` 静态导出（Tauri 桌面端 + Cloudflare Pages）
-   - Next.js App Router 路由不支持 `#hash` 路径，无法替代
+   - Next.js App Router 不支持 `#hash` 路径，无法替代
    - 风险收益比极低，维持现状是正确的架构选择
-   - commit: 仅文档更新
+   - commit: `c2dce8bf`（仅文档）
 
-7. **进一步拆分 chat.tsx** (M4)
-   - 当前约 900 行，可继续拆分渲染逻辑
+7. **✅ 进一步拆分 chat.tsx** (M4)
+   - 提取 `chat-tts.ts`（TTS/语音，63 行）
+   - 提取 `chat-keyboard-shortcuts.ts`（快捷键，88 行）
+   - 提取 `chat-images.ts`（图片上传/粘贴，74 行）
+   - chat.tsx: 976 → 815 行（−17%）
+   - commit: `9e5f904d`
 
 ### 长期
 
