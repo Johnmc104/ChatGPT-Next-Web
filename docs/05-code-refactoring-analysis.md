@@ -189,16 +189,18 @@
 
 ---
 
-### R-09 — `mcp-market.tsx` 提取 hooks ★☆☆
+### R-09 — `mcp-market.tsx` 提取 hooks ★☆☆ ✅
 
 **位置**: `app/components/mcp-market.tsx`（755 行，6 个 `useEffect`）  
 **问题**: 单一组件函数承载服务器管理逻辑（add/pause/resume/restart）+ 列表渲染 + 搜索过滤。  
-**方案**:
+**方案**: 提取 `useMcpServerManager` hook 封装全部状态 + 副作用 + 操作函数。
 
-| 子任务 | 说明 |
-|--------|------|
-| R-09a | 提取 `useMcpServerManager` hook |
-| R-09b | 提取服务器列表项为 `McpServerItem` 组件 |
+| 子任务 | 说明 | 状态 |
+|--------|------|------|
+| R-09a | 提取 `useMcpServerManager` hook → `mcp-market-hooks.ts` | ✅ |
+| R-09b | `McpMarketPage` 仅保留渲染逻辑 | ✅ |
+
+**实际**: `mcp-market.tsx` 755→482 行（−273），新增 `mcp-market-hooks.ts`（324 行）
 
 ---
 
