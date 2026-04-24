@@ -57,7 +57,7 @@ export const usePromptStore = createPersistStore(
 
   (set, get) => ({
     add(prompt: Prompt) {
-      const prompts = get().prompts;
+      const prompts = { ...get().prompts };
       prompt.id = nanoid();
       prompt.isUser = true;
       prompt.createdAt = Date.now();
@@ -81,7 +81,7 @@ export const usePromptStore = createPersistStore(
     },
 
     remove(id: string) {
-      const prompts = get().prompts;
+      const prompts = { ...get().prompts };
       delete prompts[id];
 
       Object.entries(prompts).some(([key, prompt]) => {

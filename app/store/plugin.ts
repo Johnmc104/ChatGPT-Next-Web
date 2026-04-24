@@ -177,7 +177,7 @@ export const usePluginStore = createPersistStore(
 
   (set, get) => ({
     create(plugin?: Partial<Plugin>) {
-      const plugins = get().plugins;
+      const plugins = { ...get().plugins };
       const id = plugin?.id || nanoid();
       plugins[id] = {
         ...createEmptyPlugin(),
@@ -192,7 +192,7 @@ export const usePluginStore = createPersistStore(
       return plugins[id];
     },
     updatePlugin(id: string, updater: (plugin: Plugin) => void) {
-      const plugins = get().plugins;
+      const plugins = { ...get().plugins };
       const plugin = plugins[id];
       if (!plugin) return;
       const updatePlugin = { ...plugin };
@@ -203,7 +203,7 @@ export const usePluginStore = createPersistStore(
       get().markUpdate();
     },
     delete(id: string) {
-      const plugins = get().plugins;
+      const plugins = { ...get().plugins };
       delete plugins[id];
       set(() => ({ plugins }));
       get().markUpdate();

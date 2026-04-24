@@ -75,7 +75,7 @@ export const useSdStore = createPersistStore<
 
     const methods = {
       getNextId() {
-        const id = ++_get().currentId;
+        const id = _get().currentId + 1;
         set({ currentId: id });
         return id;
       },
@@ -163,7 +163,7 @@ export const useSdStore = createPersistStore<
           });
       },
       updateDraw(_draw: SdDrawItem) {
-        const draw = _get().draw || [];
+        const draw = [...(_get().draw || [])];
         draw.some((item, index) => {
           if (item.id === _draw.id) {
             draw[index] = _draw;

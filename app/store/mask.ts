@@ -51,7 +51,7 @@ export const useMaskStore = createPersistStore(
 
   (set, get) => ({
     create(mask?: Partial<Mask>) {
-      const masks = get().masks;
+      const masks = { ...get().masks };
       const id = nanoid();
       masks[id] = {
         ...createEmptyMask(),
@@ -66,7 +66,7 @@ export const useMaskStore = createPersistStore(
       return masks[id];
     },
     updateMask(id: string, updater: (mask: Mask) => void) {
-      const masks = get().masks;
+      const masks = { ...get().masks };
       const mask = masks[id];
       if (!mask) return;
       const updateMask = { ...mask };
@@ -76,7 +76,7 @@ export const useMaskStore = createPersistStore(
       get().markUpdate();
     },
     delete(id: string) {
-      const masks = get().masks;
+      const masks = { ...get().masks };
       delete masks[id];
       set(() => ({ masks }));
       get().markUpdate();
