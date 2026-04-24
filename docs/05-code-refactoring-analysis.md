@@ -38,12 +38,12 @@
 
 ## 二、重构项清单
 
-### R-01 — `stream()` / `streamWithThink()` 合并 ★★★
+### R-01 — `stream()` / `streamWithThink()` 合并 ★★★ ✅
 
 **位置**: `app/utils/chat.ts` 第 204–730 行（527 行）  
 **问题**: 两个函数逻辑高度重复 — 动画帧、tool-call 执行循环、错误重试、`remainText`/`responseText` 累积模式完全一致。唯一差异是 `streamWithThink` 额外追踪 `isThinking` 状态。  
 **方案**: 合并为单一 `stream()` 函数，增加可选 `thinkingMode` 参数；或抽取 `StreamHandler` 类封装共享逻辑。  
-**预估**: −250 行，改动 1 文件，需回归测试 `sse-heartbeat.test.ts`
+**预估**: −250 行 → **实际**: −195 行，`stream()` 改为 `streamWithThink()` 的适配器
 
 | 子任务 | 说明 |
 |--------|------|
@@ -55,7 +55,7 @@
 
 ---
 
-### R-02 — `utils.ts` 拆分 ★★★
+### R-02 — `utils.ts` 拆分 ★★★ ✅
 
 **位置**: `app/utils.ts`（589 行）  
 **问题**: 6+ 种不相关职责混合：剪贴板操作、DOM 工具、React hooks、模型检测函数、fetch 适配、版本比较。  
@@ -68,7 +68,7 @@
 | R-02c | `utils/hooks.ts`（已有） | `useWindowSize`, `useMobileScreen` (~30 行) |
 | R-02d | 清理 | 删除 `isFirefox()`, `isMacOS()` 等未使用导出 |
 
-**预估**: `utils.ts` 从 589 行缩减至 ~200 行，新增 1 文件
+**预估**: ~200 行 → **实际**: 439 行（含 barrel 重导出），新增 `utils/model-detection.ts`（156 行）
 
 ---
 
@@ -174,7 +174,7 @@
 
 ---
 
-### R-08 — 注释代码 & 死代码清理 ★☆☆
+### R-08 — 注释代码 & 死代码清理 ★☆☆ ✅
 
 **位置**: 多处  
 **问题**: 注释掉的代码块 + 未使用导出。
