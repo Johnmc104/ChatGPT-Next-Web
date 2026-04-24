@@ -91,13 +91,13 @@ export class MsEdgeTTS {
   private static VOICE_LANG_REGEX = /\w{2}-\w{2}/;
   private readonly _enableLogger;
   private _ws: WebSocket | undefined;
-  private _voice: any;
-  private _voiceLocale: any;
-  private _outputFormat: any;
+  private _voice: string | undefined;
+  private _voiceLocale: string | undefined;
+  private _outputFormat: string | undefined;
   private _streams: { [key: string]: Readable } = {};
   private _startTime = 0;
 
-  private _log(...o: any[]) {
+  private _log(...o: unknown[]) {
     if (this._enableLogger) {
       console.log(...o);
     }
@@ -113,7 +113,7 @@ export class MsEdgeTTS {
     this._enableLogger = enableLogger;
   }
 
-  private async _send(message: any) {
+  private async _send(message: string) {
     for (let i = 1; i <= 3 && this._ws!.readyState !== this._ws!.OPEN; i++) {
       if (i == 1) {
         this._startTime = Date.now();
@@ -153,7 +153,7 @@ export class MsEdgeTTS {
                 `,
         ).then(resolve);
       };
-      this._ws!.onmessage = (m: any) => {
+      this._ws!.onmessage = (m: MessageEvent) => {
         const buffer = Buffer.from(m.data as ArrayBuffer);
         const message = buffer.toString();
         const requestId = /X-RequestId:(.*?)\r\n/gm.exec(message)![1];
@@ -183,7 +183,7 @@ export class MsEdgeTTS {
           this._streams[requestId].push(null);
         }
       };
-      this._ws!.onerror = function (error: any) {
+      this._ws!.onerror = function (error: Event) {
         reject("Connect Error: " + error);
       };
     });

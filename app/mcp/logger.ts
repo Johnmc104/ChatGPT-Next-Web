@@ -21,23 +21,23 @@ export class MCPClientLogger {
     this.debugMode = debugMode;
   }
 
-  info(message: any) {
+  info(message: unknown) {
     this.print(colors.blue, message);
   }
 
-  success(message: any) {
+  success(message: unknown) {
     this.print(colors.green, message);
   }
 
-  error(message: any) {
+  error(message: unknown) {
     this.print(colors.red, message);
   }
 
-  warn(message: any) {
+  warn(message: unknown) {
     this.print(colors.yellow, message);
   }
 
-  debug(message: any) {
+  debug(message: unknown) {
     if (this.debugMode) {
       this.print(colors.dim, message);
     }
@@ -46,16 +46,16 @@ export class MCPClientLogger {
   /**
    * Format message to string, if message is object, convert to JSON string
    */
-  private formatMessage(message: any): string {
+  private formatMessage(message: unknown): string {
     return typeof message === "object"
       ? JSON.stringify(message, null, 2)
-      : message;
+      : String(message);
   }
 
   /**
    * Print formatted message to console
    */
-  private print(color: string, message: any) {
+  private print(color: string, message: unknown) {
     const formattedMessage = this.formatMessage(message);
     const logMessage = `${color}${colors.bright}[${this.prefix}]${colors.reset} ${formattedMessage}`;
 

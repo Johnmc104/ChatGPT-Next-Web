@@ -53,7 +53,9 @@ export const FunctionToolService = {
         ? `Bearer ${plugin?.authToken}`
         : plugin?.authToken;
     const authLocation = plugin?.authLocation || "header";
-    const definition = yaml.load(plugin.content) as any;
+    const definition = yaml.load(plugin.content) as Record<string, unknown> & {
+      servers?: { url: string }[];
+    };
     const serverURL = definition?.servers?.[0]?.url;
     const baseURL = !isApp ? "/api/proxy" : serverURL;
     const headers: Record<string, string | undefined> = {
@@ -239,30 +241,38 @@ export const usePluginStore = createPersistStore(
 
       fetchJSON("./plugins.json").then((res) => {
         Promise.all(
-          res.map((item: any) =>
+          res.map((item: { id?: string; schema?: string; content?: string }) =>
             // skip get schema
             state.get(item.id)
               ? item
-              : fetchText(item.schema)
+              : fetchText(item.schema!)
                   .then((content) => ({
                     ...item,
                     content,
                   }))
                   .catch((e) => item),
           ),
-        ).then((builtinPlugins: any) => {
-          builtinPlugins
-            .filter((item: any) => item?.content)
-            .forEach((item: any) => {
-              const plugin = state.create(item);
-              state.updatePlugin(plugin.id, (plugin) => {
-                const tool = FunctionToolService.add(plugin, true);
-                plugin.title = tool.api.definition.info.title;
-                plugin.version = tool.api.definition.info.version;
-                plugin.builtin = true;
+        ).then(
+          (
+            builtinPlugins: {
+              id?: string;
+              schema?: string;
+              content?: string;
+            }[],
+          ) => {
+            builtinPlugins
+              .filter((item) => item?.content)
+              .forEach((item) => {
+                const plugin = state.create(item);
+                state.updatePlugin(plugin.id, (plugin) => {
+                  const tool = FunctionToolService.add(plugin, true);
+                  plugin.title = tool.api.definition.info.title;
+                  plugin.version = tool.api.definition.info.version;
+                  plugin.builtin = true;
+                });
               });
-            });
-        });
+          },
+        );
       });
     },
   },

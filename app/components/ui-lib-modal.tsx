@@ -14,7 +14,7 @@ import { IconButton } from "./button";
 
 interface ModalProps {
   title: string;
-  children?: any;
+  children?: React.ReactNode;
   actions?: React.ReactNode[];
   defaultMax?: boolean;
   footer?: React.ReactNode;
@@ -104,7 +104,7 @@ function showModal(props: ModalProps) {
   root.render(<Modal {...props} onClose={closeModal}></Modal>);
 }
 
-function showConfirm(content: any) {
+function showConfirm(content: React.ReactNode) {
   const div = document.createElement("div");
   div.className = "modal-mask";
   document.body.appendChild(div);
@@ -177,7 +177,7 @@ function PromptInput(props: {
   );
 }
 
-function showPrompt(content: any, value = "", rows = 3) {
+function showPrompt(content: string, value = "", rows = 3) {
   const div = document.createElement("div");
   div.className = "modal-mask";
   document.body.appendChild(div);

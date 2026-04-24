@@ -67,7 +67,7 @@ export const DEFAULT_CONFIG = {
   hideBuiltinMasks: false, // dont add builtin masks
 
   customModels: "",
-  models: DEFAULT_MODELS as any as LLMModel[],
+  models: [...DEFAULT_MODELS] as LLMModel[],
 
   modelConfig: {
     model: "openai/gpt-4o-mini" as ModelType,
@@ -258,7 +258,7 @@ export const useAppConfig = createPersistStore(
 
       if (version < 4.2) {
         // Reset models to use new simplified model list
-        state.models = DEFAULT_MODELS as any as LLMModel[];
+        state.models = [...DEFAULT_MODELS] as LLMModel[];
       }
 
       return state as any;

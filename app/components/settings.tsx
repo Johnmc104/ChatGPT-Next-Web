@@ -247,8 +247,7 @@ export function Settings() {
               value={config.submitKey}
               onChange={(e) => {
                 updateConfig(
-                  (config) =>
-                    (config.submitKey = e.target.value as any as SubmitKey),
+                  (config) => (config.submitKey = e.target.value as SubmitKey),
                 );
               }}
             >
@@ -266,7 +265,7 @@ export function Settings() {
               value={config.theme}
               onChange={(e) => {
                 updateConfig(
-                  (config) => (config.theme = e.target.value as any as Theme),
+                  (config) => (config.theme = e.target.value as Theme),
                 );
               }}
             >
@@ -283,7 +282,7 @@ export function Settings() {
               aria-label={Locale.Settings.Lang.Name}
               value={getLang()}
               onChange={(e) => {
-                changeLang(e.target.value as any);
+                changeLang(e.target.value as Parameters<typeof changeLang>[0]);
               }}
             >
               {AllLangs.map((lang) => (

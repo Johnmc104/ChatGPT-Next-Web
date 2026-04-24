@@ -106,11 +106,12 @@ export function readFromFile() {
     fileInput.type = "file";
     fileInput.accept = "application/json";
 
-    fileInput.onchange = (event: any) => {
-      const file = event.target.files[0];
+    fileInput.onchange = (event: Event) => {
+      const file = (event.target as HTMLInputElement).files?.[0];
+      if (!file) return;
       const fileReader = new FileReader();
-      fileReader.onload = (e: any) => {
-        res(e.target.result);
+      fileReader.onload = (e: ProgressEvent<FileReader>) => {
+        res(e.target?.result as string);
       };
       fileReader.onerror = (e) => rej(e);
       fileReader.readAsText(file);
@@ -322,7 +323,9 @@ export function adapter(config: Record<string, unknown>) {
   const { baseURL, url, params, data: body, ...rest } = config;
   const path = baseURL ? `${baseURL}${url}` : url;
   const fetchUrl = params
-    ? `${path}?${new URLSearchParams(params as any).toString()}`
+    ? `${path}?${new URLSearchParams(
+        params as Record<string, string>,
+      ).toString()}`
     : path;
   return fetch(fetchUrl as string, { ...rest, body }).then((res) => {
     const { status, headers, statusText } = res;

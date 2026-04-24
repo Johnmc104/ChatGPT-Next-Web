@@ -307,9 +307,7 @@ export class ChatGPTApi extends BaseOpenAICompatibleApi {
       isImageEdit: boolean;
     },
   ): ImageGenerationPayload {
-    const prompt = getMessageTextContent(
-      options.messages.slice(-1)?.pop() as any,
-    );
+    const prompt = getMessageTextContent(options.messages.slice(-1)?.pop()!);
     return {
       model: options.config.model,
       prompt,
@@ -358,12 +356,12 @@ export class ChatGPTApi extends BaseOpenAICompatibleApi {
   private async parsePartialImageStream(
     body: ReadableStream<Uint8Array>,
     onUpdate?: ChatOptions["onUpdate"],
-  ): Promise<any> {
+  ): Promise<Record<string, unknown> | null> {
     const reader = body.getReader();
     const decoder = new TextDecoder();
     let buffer = "";
     let prevBlobUrl = "";
-    let finalJson: any = null;
+    let finalJson: Record<string, unknown> | null = null;
 
     try {
       while (true) {
@@ -456,9 +454,7 @@ export class ChatGPTApi extends BaseOpenAICompatibleApi {
 
     // Detect image edit: last message has attached images + is a GPT Image model
     const lastMessage = options.messages[options.messages.length - 1];
-    const attachedImages = lastMessage
-      ? getMessageImages(lastMessage as any)
-      : [];
+    const attachedImages = lastMessage ? getMessageImages(lastMessage) : [];
     const isImageEdit =
       isImageGen && isGptImageModel && attachedImages.length > 0;
     if (isImageGen) {
@@ -581,14 +577,22 @@ export class ChatGPTApi extends BaseOpenAICompatibleApi {
           chatPath,
           requestPayload,
           getHeaders(false, customBaseUrl),
-          tools as any,
+          tools as ChatMessageTool[],
           funcs,
           controller,
           // Reuse base class parseSSE/processToolMessage (eliminates ~65 lines of duplication)
           (text: string, runTools: ChatMessageTool[]) =>
             this.parseSSEWithThink(text, runTools),
-          (rp: any, toolCallMessage: any, toolCallResult: any[]) =>
-            this.processToolMessage(rp, toolCallMessage, toolCallResult),
+          (
+            rp: object,
+            toolCallMessage: Record<string, unknown>,
+            toolCallResult: Record<string, unknown>[],
+          ) =>
+            this.processToolMessage(
+              rp as RequestPayload,
+              toolCallMessage,
+              toolCallResult,
+            ),
           options,
         );
       } else {
@@ -658,7 +662,7 @@ export class ChatGPTApi extends BaseOpenAICompatibleApi {
         const res = await fetch(chatPath, chatPayload);
         clearTimeout(requestTimeoutId);
 
-        let resJson: any;
+        let resJson: Record<string, unknown>;
 
         // If the server wrapped the response in SSE heartbeat stream,
         // parse out the actual data payload (skip `: heartbeat` comments).
@@ -678,10 +682,9 @@ export class ChatGPTApi extends BaseOpenAICompatibleApi {
           contentType.includes("text/event-stream") &&
           res.body
         ) {
-          resJson = await this.parsePartialImageStream(
-            res.body,
-            options.onUpdate,
-          );
+          resJson =
+            (await this.parsePartialImageStream(res.body, options.onUpdate)) ??
+            {};
         } else if (isImageGen && contentType.includes("text/event-stream")) {
           // Non-partial SSE: collect-all mode (heartbeat-wrapped JSON)
           const text = await res.text();
@@ -701,9 +704,13 @@ export class ChatGPTApi extends BaseOpenAICompatibleApi {
         // Extract usage from non-streaming response
         const usage = resJson.usage
           ? {
-              promptTokens: resJson.usage.prompt_tokens ?? 0,
-              completionTokens: resJson.usage.completion_tokens ?? 0,
-              totalTokens: resJson.usage.total_tokens ?? 0,
+              promptTokens:
+                (resJson.usage as Record<string, number>).prompt_tokens ?? 0,
+              completionTokens:
+                (resJson.usage as Record<string, number>).completion_tokens ??
+                0,
+              totalTokens:
+                (resJson.usage as Record<string, number>).total_tokens ?? 0,
             }
           : undefined;
         options.onFinish(message, res, usage);
