@@ -28,7 +28,7 @@ export function useScrollToBottom(
     if (autoScroll && !detach) {
       scrollDomToBottom();
     }
-  });
+  }, [autoScroll, detach, scrollDomToBottom]);
 
   // auto scroll when messages length changes
   const lastMessagesLength = useRef(messages.length);

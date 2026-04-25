@@ -198,21 +198,21 @@ export function ChatActions(props: {
   setShowChatSidePanel: React.Dispatch<React.SetStateAction<boolean>>;
   userInput?: string;
 }) {
-  const config = useAppConfig();
+  const theme = useAppConfig((s) => s.theme);
+  const realtimeEnabled = useAppConfig((s) => s.realtimeConfig.enable);
+  const configUpdate = useAppConfig((s) => s.update);
   const navigate = useNavigate();
   const chatStore = useChatStore();
   const pluginStore = usePluginStore();
   const session = chatStore.currentSession();
 
   // switch themes
-  const theme = config.theme;
-
   function nextTheme() {
     const themes = [Theme.Auto, Theme.Light, Theme.Dark];
     const themeIndex = themes.indexOf(theme);
     const nextIndex = (themeIndex + 1) % themes.length;
     const nextTheme = themes[nextIndex];
-    config.update((config) => (config.theme = nextTheme));
+    configUpdate((config) => (config.theme = nextTheme));
   }
 
   // stop all responses
@@ -565,7 +565,7 @@ export function ChatActions(props: {
       </>
       <div className={styles["chat-input-actions-end"]}>
         <TokenUsageIndicator userInput={props.userInput} />
-        {config.realtimeConfig.enable && (
+        {realtimeEnabled && (
           <ChatAction
             onClick={() => props.setShowChatSidePanel(true)}
             text={"Realtime Chat"}

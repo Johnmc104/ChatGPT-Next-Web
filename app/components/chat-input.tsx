@@ -10,7 +10,7 @@ import clsx from "clsx";
 import BrainIcon from "../icons/brain.svg";
 
 import { SubmitKey, useAppConfig, useChatStore } from "../store";
-import { Prompt } from "../store/prompt";
+import type { Prompt } from "../store/prompt";
 import Locale from "../locales";
 
 import { SessionConfigModel } from "./chat-modals";
@@ -25,9 +25,7 @@ export function PromptToast(props: {
   showModal?: boolean;
   setShowModal: (_: boolean) => void;
 }) {
-  const chatStore = useChatStore();
-  const session = chatStore.currentSession();
-  const context = session.mask.context;
+  const context = useChatStore((s) => s.currentSession().mask.context);
 
   return (
     <div className={styles["prompt-toast"]} key="prompt-toast">
@@ -55,8 +53,7 @@ export function PromptToast(props: {
 // ---------------------------------------------------------------------------
 
 export function useSubmitHandler() {
-  const config = useAppConfig();
-  const submitKey = config.submitKey;
+  const submitKey = useAppConfig((s) => s.submitKey);
   const isComposing = useRef(false);
 
   useEffect(() => {
@@ -82,11 +79,11 @@ export function useSubmitHandler() {
     if (e.key === "Enter" && (e.nativeEvent.isComposing || isComposing.current))
       return false;
     return (
-      (config.submitKey === SubmitKey.AltEnter && e.altKey) ||
-      (config.submitKey === SubmitKey.CtrlEnter && e.ctrlKey) ||
-      (config.submitKey === SubmitKey.ShiftEnter && e.shiftKey) ||
-      (config.submitKey === SubmitKey.MetaEnter && e.metaKey) ||
-      (config.submitKey === SubmitKey.Enter &&
+      (submitKey === SubmitKey.AltEnter && e.altKey) ||
+      (submitKey === SubmitKey.CtrlEnter && e.ctrlKey) ||
+      (submitKey === SubmitKey.ShiftEnter && e.shiftKey) ||
+      (submitKey === SubmitKey.MetaEnter && e.metaKey) ||
+      (submitKey === SubmitKey.Enter &&
         !e.altKey &&
         !e.ctrlKey &&
         !e.shiftKey &&
@@ -180,14 +177,16 @@ export function PromptHints(props: {
 // ---------------------------------------------------------------------------
 
 export function ClearContextDivider() {
-  const chatStore = useChatStore();
-  const session = chatStore.currentSession();
+  const { session, updateTargetSession } = useChatStore((s) => ({
+    session: s.currentSession(),
+    updateTargetSession: s.updateTargetSession,
+  }));
 
   return (
     <div
       className={styles["clear-context"]}
       onClick={() =>
-        chatStore.updateTargetSession(
+        updateTargetSession(
           session,
           (session) => (session.clearContextIndex = undefined),
         )

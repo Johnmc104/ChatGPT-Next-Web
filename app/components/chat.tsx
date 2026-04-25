@@ -102,9 +102,25 @@ function _Chat() {
 
   const chatStore = useChatStore();
   const session = chatStore.currentSession();
-  const config = useAppConfig();
-  const fontSize = config.fontSize;
-  const fontFamily = config.fontFamily;
+  const {
+    fontSize,
+    fontFamily,
+    sendPreviewBubble,
+    disablePromptHint,
+    tightBorder,
+    avatar,
+    modelConfig,
+  } = useAppConfig((s) => ({
+    fontSize: s.fontSize,
+    fontFamily: s.fontFamily,
+    sendPreviewBubble: s.sendPreviewBubble,
+    disablePromptHint: s.disablePromptHint,
+    tightBorder: s.tightBorder,
+    avatar: s.avatar,
+    modelConfig: s.modelConfig,
+  }));
+  const ttsEnabled = useAppConfig((s) => s.ttsConfig.enable);
+  const configUpdate = useAppConfig((s) => s.update);
 
   const [showExport, setShowExport] = useState(false);
 
@@ -221,7 +237,7 @@ function _Chat() {
       setPromptHints([]);
     } else if (text.match(ChatCommandPrefix)) {
       setPromptHints(chatCommands.search(text));
-    } else if (!config.disablePromptHint && n < SEARCH_TEXT_LIMIT) {
+    } else if (!disablePromptHint && n < SEARCH_TEXT_LIMIT) {
       if (text.startsWith("/")) {
         let searchText = text.slice(1);
         onSearch(searchText);
@@ -291,7 +307,7 @@ function _Chat() {
 
       if (session.mask.syncGlobalConfig) {
         logger.info("[Mask] syncing from global, name = ", session.mask.name);
-        session.mask.modelConfig = { ...config.modelConfig };
+        session.mask.modelConfig = { ...modelConfig };
       }
     });
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -456,7 +472,7 @@ function _Chat() {
           : [],
       )
       .concat(
-        userInput.length > 0 && config.sendPreviewBubble
+        userInput.length > 0 && sendPreviewBubble
           ? [
               {
                 ...createMessage({
@@ -468,13 +484,7 @@ function _Chat() {
             ]
           : [],
       );
-  }, [
-    config.sendPreviewBubble,
-    context,
-    isLoading,
-    session.messages,
-    userInput,
-  ]);
+  }, [sendPreviewBubble, context, isLoading, session.messages, userInput]);
 
   const [msgRenderIndex, _setMsgRenderIndex] = useState(
     Math.max(0, renderMessages.length - CHAT_PAGE_SIZE),
@@ -619,7 +629,7 @@ function _Chat() {
           messageCount={session.messages.length}
           isMobileScreen={isMobileScreen}
           showMaxIcon={showMaxIcon}
-          tightBorder={config.tightBorder}
+          tightBorder={tightBorder}
           hitBottom={hitBottom}
           showPromptModal={showPromptModal}
           setShowPromptModal={setShowPromptModal}
@@ -630,9 +640,7 @@ function _Chat() {
           onEditMessage={() => setIsEditingMessage(true)}
           onExport={() => setShowExport(true)}
           onToggleBorder={() =>
-            config.update(
-              (config) => (config.tightBorder = !config.tightBorder),
-            )
+            configUpdate((config) => (config.tightBorder = !config.tightBorder))
           }
         />
         <div className={styles["chat-main"]}>
@@ -655,13 +663,13 @@ function _Chat() {
                   isContext={i < context.length}
                   totalCount={messages.length}
                   showClearContextDivider={i === clearContextIndex - 1}
-                  userAvatar={config.avatar}
+                  userAvatar={avatar}
                   maskAvatar={session.mask.avatar}
                   sessionModel={session.mask.modelConfig.model}
                   isMobileScreen={isMobileScreen}
                   fontSize={fontSize}
                   fontFamily={fontFamily}
-                  ttsEnabled={config.ttsConfig.enable}
+                  ttsEnabled={ttsEnabled}
                   speechStatus={speechStatus}
                   scrollRef={scrollRef}
                   onDelete={onDelete}
@@ -724,8 +732,8 @@ function _Chat() {
                   rows={inputRows}
                   autoFocus={autoFocus}
                   style={{
-                    fontSize: config.fontSize,
-                    fontFamily: config.fontFamily,
+                    fontSize: fontSize,
+                    fontFamily: fontFamily,
                   }}
                 />
                 {attachImages.length != 0 && (
@@ -810,7 +818,6 @@ function _Chat() {
 // ---------------------------------------------------------------------------
 
 export function Chat() {
-  const chatStore = useChatStore();
-  const session = chatStore.currentSession();
-  return <_Chat key={session.id}></_Chat>;
+  const sessionId = useChatStore((s) => s.currentSession().id);
+  return <_Chat key={sessionId}></_Chat>;
 }

@@ -45,15 +45,15 @@ const ChatList = dynamic(async () => (await import("./chat-list")).ChatList, {
 });
 
 export function useHotKey() {
-  const chatStore = useChatStore();
+  const nextSession = useChatStore((s) => s.nextSession);
 
   useEffect(() => {
     const onKeyDown = (e: KeyboardEvent) => {
       if (e.altKey || e.ctrlKey) {
         if (e.key === "ArrowUp") {
-          chatStore.nextSession(-1);
+          nextSession(-1);
         } else if (e.key === "ArrowDown") {
-          chatStore.nextSession(1);
+          nextSession(1);
         }
       }
     };
@@ -230,8 +230,16 @@ export function SideBar(props: { className?: string }) {
   const { onDragStart, shouldNarrow } = useDragSideBar();
   const [showDiscoverySelector, setshowDiscoverySelector] = useState(false);
   const navigate = useNavigate();
-  const config = useAppConfig();
-  const chatStore = useChatStore();
+  const dontShowMaskSplashScreen = useAppConfig(
+    (s) => s.dontShowMaskSplashScreen,
+  );
+  const { deleteSession, currentSessionIndex, newSession } = useChatStore(
+    (s) => ({
+      deleteSession: s.deleteSession,
+      currentSessionIndex: s.currentSessionIndex,
+      newSession: s.newSession,
+    }),
+  );
   const [mcpEnabled, setMcpEnabled] = useState(false);
 
   useEffect(() => {
@@ -262,7 +270,7 @@ export function SideBar(props: { className?: string }) {
             text={shouldNarrow ? undefined : Locale.Mask.Name}
             className={styles["sidebar-bar-button"]}
             onClick={() => {
-              if (config.dontShowMaskSplashScreen !== true) {
+              if (dontShowMaskSplashScreen !== true) {
                 navigate(Path.NewChat, { state: { fromHome: true } });
               } else {
                 navigate(Path.Masks, { state: { fromHome: true } });
@@ -323,7 +331,7 @@ export function SideBar(props: { className?: string }) {
                 icon={<DeleteIcon />}
                 onClick={async () => {
                   if (await showConfirm(Locale.Home.DeleteChat)) {
-                    chatStore.deleteSession(chatStore.currentSessionIndex);
+                    deleteSession(currentSessionIndex);
                   }
                 }}
               />
@@ -344,8 +352,8 @@ export function SideBar(props: { className?: string }) {
             icon={<AddIcon />}
             text={shouldNarrow ? undefined : Locale.Home.NewChat}
             onClick={() => {
-              if (config.dontShowMaskSplashScreen) {
-                chatStore.newSession();
+              if (dontShowMaskSplashScreen) {
+                newSession();
                 navigate(Path.Chat);
               } else {
                 navigate(Path.NewChat);
