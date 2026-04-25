@@ -59,6 +59,25 @@ class IndexedDBStorage implements StateStorage {
       localStorage.clear();
     }
   }
+
+  /**
+   * Immediately flush all pending debounced writes to IndexedDB.
+   * Falls back to localStorage on error.
+   */
+  public flushPending(): void {
+    for (const [name, { timer, value }] of this.pendingWrites) {
+      clearTimeout(timer);
+      set(name, value).catch(() => localStorage.setItem(name, value));
+    }
+    this.pendingWrites.clear();
+  }
 }
 
 export const indexedDBStorage = new IndexedDBStorage();
+
+// Flush pending writes before tab/window closes to prevent data loss
+if (typeof window !== "undefined") {
+  window.addEventListener("beforeunload", () => {
+    indexedDBStorage.flushPending();
+  });
+}
