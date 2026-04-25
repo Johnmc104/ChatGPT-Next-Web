@@ -291,13 +291,21 @@ export function streamWithThink(
     | undefined;
 
   // animate response to make it looks smooth
+  let animTimer: ReturnType<typeof setTimeout> | null = null;
+
   function animateResponseText() {
     if (finished || controller.signal.aborted) {
-      responseText += remainText;
+      // flush remaining text immediately
+      if (remainText.length > 0) {
+        responseText += remainText;
+        remainText = "";
+        options.onUpdate?.(responseText, "");
+      }
       logger.info("[Response Animation] finished");
       if (responseText?.length === 0) {
         options.onError?.(new Error("empty response from server"));
       }
+      animTimer = null;
       return;
     }
 
@@ -309,11 +317,20 @@ export function streamWithThink(
       options.onUpdate?.(responseText, fetchText);
     }
 
-    requestAnimationFrame(animateResponseText);
+    // Schedule next frame only if there's more to render or stream isn't done
+    if (remainText.length > 0) {
+      animTimer = setTimeout(animateResponseText, 33); // ~30fps
+    } else {
+      animTimer = null;
+    }
   }
 
-  // start animaion
-  animateResponseText();
+  /** Kick off animation when new text arrives from SSE */
+  function scheduleAnimation() {
+    if (animTimer === null) {
+      animTimer = setTimeout(animateResponseText, 33);
+    }
+  }
 
   const finish = () => {
     if (!finished) {
@@ -391,6 +408,8 @@ export function streamWithThink(
       if (isInThinkingMode) {
         remainText += "\n<!--/THINKING-->";
       }
+      // Flush remaining text through animation
+      animateResponseText();
       options.onFinish(responseText + remainText, responseRes, usageData);
     }
   };
@@ -533,6 +552,7 @@ export function streamWithThink(
               remainText += chunk.content;
             }
           }
+          scheduleAnimation();
         } catch (e) {
           console.error("[Request] parse error", text, msg, e);
           // Don't throw error for parse failures, just log them

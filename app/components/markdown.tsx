@@ -15,7 +15,7 @@ import {
   createContext,
   useContext,
 } from "react";
-import { copyToClipboard, useWindowSize } from "../utils";
+import { copyToClipboard } from "../utils";
 import Locale from "../locales";
 import LoadingIcon from "../icons/three-dots.svg";
 import ReloadButtonIcon from "../icons/reload.svg";
@@ -116,7 +116,6 @@ export function PreCode(props: { children: any }) {
   const previewRef = useRef<HTMLPreviewHandler>(null);
   const [mermaidCode, setMermaidCode] = useState("");
   const [htmlCode, setHtmlCode] = useState("");
-  const { height } = useWindowSize();
   const { enableArtifacts } = useContext(MarkdownFeatureContext);
 
   const renderArtifacts = useDebouncedCallback(() => {
@@ -201,7 +200,7 @@ export function PreCode(props: { children: any }) {
             ref={previewRef}
             code={htmlCode}
             autoHeight={!document.fullscreenElement}
-            height={!document.fullscreenElement ? 600 : height}
+            height={!document.fullscreenElement ? 600 : window.innerHeight}
           />
         </FullScreen>
       )}
