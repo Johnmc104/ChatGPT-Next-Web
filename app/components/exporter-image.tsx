@@ -15,7 +15,6 @@ import { Avatar } from "./emoji";
 import dynamic from "next/dynamic";
 import NextImage from "next/image";
 
-import { toBlob, toPng } from "html-to-image";
 import { getClientConfig } from "../config/client";
 import { MaskAvatar } from "./mask";
 import clsx from "clsx";
@@ -38,10 +37,11 @@ export function ImagePreviewer(props: {
 
   const previewRef = useRef<HTMLDivElement>(null);
 
-  const copy = () => {
+  const copy = async () => {
     showToast(Locale.Export.Image.Toast);
     const dom = previewRef.current;
     if (!dom) return;
+    const { toBlob } = await import("html-to-image");
     toBlob(dom).then((blob) => {
       if (!blob) return;
       try {
@@ -72,6 +72,7 @@ export function ImagePreviewer(props: {
     const isApp = getClientConfig()?.isApp;
 
     try {
+      const { toPng } = await import("html-to-image");
       const blob = await toPng(dom);
       if (!blob) return;
 

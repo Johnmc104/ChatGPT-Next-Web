@@ -45,6 +45,51 @@ export function Loading(props: { noLogo?: boolean }) {
   );
 }
 
+function SkeletonLoading() {
+  return (
+    <div className={styles["skeleton-loading"]}>
+      <div className={styles["skeleton-sidebar"]}>
+        <div
+          className={clsx(styles["skeleton-line"], styles["skeleton-title"])}
+        />
+        <div
+          className={clsx(styles["skeleton-line"], styles["skeleton-subtitle"])}
+        />
+        {[1, 2, 3, 4].map((i) => (
+          <div
+            key={i}
+            className={clsx(
+              styles["skeleton-line"],
+              styles["skeleton-chat-item"],
+            )}
+          />
+        ))}
+      </div>
+      <div className={styles["skeleton-main"]}>
+        <div
+          className={clsx(styles["skeleton-line"], styles["skeleton-header"])}
+        />
+        <div
+          className={clsx(styles["skeleton-line"], styles["skeleton-message"])}
+        />
+        <div
+          className={clsx(
+            styles["skeleton-line"],
+            styles["skeleton-message"],
+            styles["skeleton-message-right"],
+          )}
+        />
+        <div
+          className={clsx(styles["skeleton-line"], styles["skeleton-message"])}
+        />
+        <div
+          className={clsx(styles["skeleton-line"], styles["skeleton-input"])}
+        />
+      </div>
+    </div>
+  );
+}
+
 const Artifacts = dynamic(async () => (await import("./artifacts")).Artifacts, {
   loading: () => <Loading noLogo />,
 });
@@ -268,7 +313,7 @@ export function Home() {
   }, []);
 
   if (!useHasHydrated()) {
-    return <Loading />;
+    return <SkeletonLoading />;
   }
 
   return (

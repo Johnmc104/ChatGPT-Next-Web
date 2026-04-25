@@ -1,5 +1,4 @@
 import ReactMarkdown from "react-markdown";
-import "katex/dist/katex.min.css";
 import RemarkMath from "remark-math";
 import RemarkBreaks from "remark-breaks";
 import RehypeKatex from "rehype-katex";
@@ -57,6 +56,14 @@ function loadMermaid() {
     });
   }
   return mermaidLoadPromise;
+}
+
+// Lazy-load katex CSS only when math content is present (~200KB CSS).
+let katexCssLoaded = false;
+function ensureKatexCss() {
+  if (katexCssLoaded) return;
+  katexCssLoaded = true;
+  import("katex/dist/katex.min.css");
 }
 
 export const Mermaid = React.memo(function Mermaid(props: { code: string }) {
@@ -302,6 +309,13 @@ function _MarkDownContent(props: { content: string }) {
     return tryWrapHtmlCode(escapeBrackets(props.content));
   }, [props.content]);
 
+  // Load katex CSS on-demand when math content ($, $$, \[, \() is detected
+  const hasMath = useMemo(
+    () => /\$|\\\[|\\\\?\(/.test(props.content),
+    [props.content],
+  );
+  if (hasMath) ensureKatexCss();
+
   const maskEnableArtifacts = useChatStore(
     (s) => s.currentSession().mask?.enableArtifacts !== false,
   );
@@ -390,6 +404,30 @@ export function Markdown(
 ) {
   const mdRef = useRef<HTMLDivElement>(null);
 
+  // Throttle markdown re-renders during streaming.
+  // ReactMarkdown is expensive — batching token updates reduces CPU usage ~5-10x.
+  // When key changes from "loading" to "done", the component remounts and
+  // gets the final content immediately (no stale throttle state).
+  const [renderedContent, setRenderedContent] = useState(props.content);
+  const flushContent = useDebouncedCallback(
+    (c: string) => setRenderedContent(c),
+    60,
+    { maxWait: 120 },
+  );
+
+  useEffect(() => {
+    if (props.content !== renderedContent) {
+      flushContent(props.content);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [props.content]);
+
+  // Flush pending debounce on unmount so final content is committed
+  useEffect(() => {
+    return () => flushContent.flush();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
   return (
     <div
       className="markdown-body"
@@ -405,7 +443,7 @@ export function Markdown(
       {props.loading ? (
         <LoadingIcon />
       ) : (
-        <MarkdownContent content={props.content} />
+        <MarkdownContent content={renderedContent} />
       )}
     </div>
   );

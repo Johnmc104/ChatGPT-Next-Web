@@ -512,15 +512,15 @@ const notoSans = Noto_Sans({ subsets: ['latin'], weight: ['300','400','700','900
 <link rel="preload" as="style" href="https://fonts.googleapis.com/css2?family=Noto+Sans:wght@300;400;700;900&display=swap" />
 ```
 
-### Sprint L — 体验增强（可选，未实施）
+### Sprint L — 体验增强 ✅
 
-| 序号 | 任务 | 涉及文件 | 预期收益 | 复杂度 |
-|------|------|----------|----------|--------|
-| L-01 | 初始加载骨架屏 | home.tsx, 新增 skeleton 组件 | 感知加载速度提升 | 中 |
-| L-02 | katex CSS 动态加载 | markdown.tsx | 无数学公式时减少 ~700KB | 中 |
-| L-03 | html-to-image 动态导入 | exporter.tsx, exporter-image.tsx | 减少初始 bundle | 低 |
-| L-04 | SW precache 关键 JS/CSS | serviceWorker.js | 重复访问秒开 | 高 |
-| L-05 | Markdown 增量渲染 | markdown.tsx | 流式时不全量重解析 | 高 |
+| 序号 | 任务 | 涉及文件 | 预期收益 | 复杂度 | 状态 |
+|------|------|----------|----------|--------|------|
+| L-01 | 初始加载骨架屏 | home.tsx, home.module.scss | 感知加载速度提升 | 中 | ✅ SkeletonLoading 组件，模拟侧边栏+主区域布局，shimmer 动画 |
+| L-02 | katex CSS 动态加载 | markdown.tsx, global.d.ts | 无数学公式时减少 ~200KB CSS | 中 | ✅ 检测数学内容 ($, \\[) 后按需 import("katex/dist/katex.min.css") |
+| L-03 | html-to-image 动态导入 | exporter.tsx, exporter-image.tsx | 减少初始 bundle ~100KB | 低 | ✅ toBlob/toPng 改为 await import("html-to-image")，删除静态导入 |
+| L-04 | SW precache 关键 JS/CSS | serviceWorker.js | 重复访问秒开 | 高 | ✅ /_next/static/ 资源 cache-first 策略，利用内容哈希文件名不变性 |
+| L-05 | Markdown 增量渲染 | markdown.tsx | 流式时不全量重解析 | 高 | ✅ useDebouncedCallback 节流 60ms/maxWait 120ms，减少 ReactMarkdown 重渲染 ~5-10x |
 
 ### 实施优先级排序
 

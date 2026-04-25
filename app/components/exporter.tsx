@@ -31,8 +31,6 @@ import { Avatar } from "./emoji";
 import dynamic from "next/dynamic";
 import NextImage from "next/image";
 
-import { toBlob, toPng } from "html-to-image";
-
 import { prettyObject } from "../utils/format";
 import { EXPORT_MESSAGE_CLASS_NAME, ServiceProvider } from "../constant";
 import { getClientConfig } from "../config/client";

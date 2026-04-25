@@ -72,6 +72,24 @@ async function remove(request, url) {
 
 self.addEventListener("fetch", (e) => {
   const url = new URL(e.request.url);
+
+  // Cache-first for immutable Next.js static assets (content-hashed filenames).
+  // These never change for a given hash, so serving from cache is always correct.
+  if (url.pathname.startsWith("/_next/static/") && e.request.method === "GET") {
+    e.respondWith(
+      caches.open(CHATGPT_NEXT_WEB_CACHE).then((cache) =>
+        cache.match(e.request).then((cached) => {
+          if (cached) return cached;
+          return fetch(e.request).then((response) => {
+            if (response.ok) cache.put(e.request, response.clone());
+            return response;
+          });
+        }),
+      ),
+    );
+    return;
+  }
+
   if (/^\/api\/cache/.test(url.pathname)) {
     if ('GET' == e.request.method) {
       e.respondWith(caches.match(e.request))

@@ -344,6 +344,93 @@
   width: 100%;
 }
 
+.skeleton-loading {
+  display: flex;
+  width: 100%;
+  height: 100%;
+  background-color: var(--white);
+  border-radius: 20px;
+  overflow: hidden;
+}
+
+.skeleton-sidebar {
+  width: var(--sidebar-width);
+  min-width: var(--sidebar-width);
+  background-color: var(--second);
+  padding: 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.skeleton-main {
+  flex: 1;
+  padding: 20px;
+  display: flex;
+  flex-direction: column;
+}
+
+.skeleton-line {
+  background: linear-gradient(
+    90deg,
+    var(--bar-color) 25%,
+    var(--hover-color) 50%,
+    var(--bar-color) 75%
+  );
+  background-size: 200% 100%;
+  animation: skeleton-shimmer 1.5s ease-in-out infinite;
+  border-radius: 8px;
+}
+
+.skeleton-title {
+  height: 28px;
+  width: 60%;
+  margin-bottom: 8px;
+}
+
+.skeleton-subtitle {
+  height: 14px;
+  width: 40%;
+  margin-bottom: 24px;
+}
+
+.skeleton-chat-item {
+  height: 56px;
+  width: 100%;
+}
+
+.skeleton-header {
+  height: 44px;
+  width: 100%;
+  margin-bottom: 20px;
+}
+
+.skeleton-message {
+  height: 80px;
+  width: 70%;
+  margin-bottom: 16px;
+}
+
+.skeleton-message-right {
+  align-self: flex-end;
+  width: 50%;
+}
+
+.skeleton-input {
+  height: 48px;
+  width: 100%;
+  margin-top: auto;
+}
+
+@keyframes skeleton-shimmer {
+  0% {
+    background-position: 200% 0;
+  }
+  100% {
+    background-position: -200% 0;
+  }
+}
+
 .rtl-screen {
   direction: rtl;
 }
