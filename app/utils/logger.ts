@@ -70,11 +70,13 @@ function shouldLog(level: LogLevel): boolean {
 export const logger = {
   debug(...args: unknown[]) {
     if (!shouldLog("debug")) return;
+    // eslint-disable-next-line no-console
     console.debug(...formatArgs(args));
   },
 
   info(...args: unknown[]) {
     if (!shouldLog("info")) return;
+    // eslint-disable-next-line no-console
     console.info(...formatArgs(args));
   },
 

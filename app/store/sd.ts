@@ -15,6 +15,7 @@ import {
   SdModelConfig,
 } from "./sd-config";
 import { useAccessStore } from "./access";
+import { logger } from "@/app/utils/logger";
 
 export interface SdDrawItem {
   id: string;
@@ -132,7 +133,7 @@ export const useSdStore = createPersistStore<
             if (resData.finish_reason === "SUCCESS") {
               cacheBase64Image(resData.image, "image/png")
                 .then((img_data) => {
-                  console.debug("uploadImage success", img_data, self);
+                  logger.debug("uploadImage success", img_data, self);
                   self.updateDraw({
                     ...data,
                     status: "success",

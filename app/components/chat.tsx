@@ -78,6 +78,7 @@ import { ShortcutKeyModal as ShortcutKeyModalComponent } from "./chat-modals";
 import { useChatTTS } from "./chat-tts";
 import { useChatKeyboardShortcuts } from "./chat-keyboard-shortcuts";
 import { useChatImages } from "./chat-images";
+import { logger } from "@/app/utils/logger";
 import {
   useSubmitHandler,
   PromptHints as PromptHintsComponent,
@@ -289,7 +290,7 @@ function _Chat() {
       });
 
       if (session.mask.syncGlobalConfig) {
-        console.log("[Mask] syncing from global, name = ", session.mask.name);
+        logger.info("[Mask] syncing from global, name = ", session.mask.name);
         session.mask.modelConfig = { ...config.modelConfig };
       }
     });
@@ -539,7 +540,7 @@ function _Chat() {
     },
     code: (text) => {
       if (accessStore.disableFastLink) return;
-      console.log("[Command] got code from url: ", text);
+      logger.info("[Command] got code from url: ", text);
       showConfirm(Locale.URLCommand.Code + `code = ${text}`).then((res) => {
         if (res) {
           accessStore.update((access) => (access.accessCode = text));
@@ -555,7 +556,7 @@ function _Chat() {
           url?: string;
         };
 
-        console.log("[Command] got settings from url: ", payload);
+        logger.info("[Command] got settings from url: ", payload);
 
         if (payload.key || payload.url) {
           showConfirm(
@@ -776,7 +777,7 @@ function _Chat() {
                   setShowChatSidePanel(false);
                 }}
                 onStartVoice={async () => {
-                  console.log("start voice");
+                  logger.info("start voice");
                 }}
               />
             )}

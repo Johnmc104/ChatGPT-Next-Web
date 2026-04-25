@@ -12,6 +12,7 @@ import { downloadAs, readFromFile } from "../utils";
 import { showToast } from "../utils/toast";
 import Locale from "../locales";
 import { createSyncClient, ProviderType } from "../utils/cloud";
+import { logger } from "@/app/utils/logger";
 
 export interface WebDavConfig {
   server: string;
@@ -98,7 +99,7 @@ export const useSyncStore = createPersistStore(
         const remoteState = await client.get(config.username);
         if (!remoteState || remoteState === "") {
           await client.set(config.username, JSON.stringify(localState));
-          console.log(
+          logger.info(
             "[Sync] Remote state is empty, using local state instead.",
           );
           return;
@@ -108,7 +109,7 @@ export const useSyncStore = createPersistStore(
           setLocalAppState(localState);
         }
       } catch (e) {
-        console.log("[Sync] failed to get remote state", e);
+        logger.info("[Sync] failed to get remote state", e);
         throw e;
       }
 

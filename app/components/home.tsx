@@ -34,6 +34,7 @@ import { ServiceProvider } from "../constant";
 import { preloadEncoder } from "../utils/tiktoken";
 import { registerToastHandler } from "../utils/toast";
 import { showToast } from "./ui-lib";
+import { logger } from "@/app/utils/logger";
 
 export function Loading(props: { noLogo?: boolean }) {
   return (
@@ -248,16 +249,16 @@ export function Home() {
 
   useEffect(() => {
     registerToastHandler(showToast);
-    console.log("[Config] got config from build time", getClientConfig());
+    logger.info("[Config] got config from build time", getClientConfig());
     useAccessStore.getState().fetch();
 
     const initMcp = async () => {
       try {
         const enabled = await isMcpEnabled();
         if (enabled) {
-          console.log("[MCP] initializing...");
+          logger.info("[MCP] initializing...");
           await initializeMcpSystem();
-          console.log("[MCP] initialized");
+          logger.info("[MCP] initialized");
         }
       } catch (err) {
         console.error("[MCP] failed to initialize:", err);

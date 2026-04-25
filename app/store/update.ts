@@ -11,6 +11,7 @@ import { fetchJSON } from "../utils/fetch";
 import ChatGptIcon from "../icons/chatgpt.png";
 import Locale from "../locales";
 import { ClientApi } from "../client/api";
+import { logger } from "@/app/utils/logger";
 
 const ONE_MINUTE = 60 * 1000;
 const isApp = !!getClientConfig()?.isApp;
@@ -132,7 +133,7 @@ export const useUpdateStore = createPersistStore(
               }
             });
         }
-        console.log("[Got Upstream] ", remoteId);
+        logger.info("[Got Upstream] ", remoteId);
       } catch (error) {
         console.error("[Fetch Upstream Commit Id]", error);
       }

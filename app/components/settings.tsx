@@ -60,6 +60,7 @@ import { UserPromptModal } from "./settings-prompts";
 import { SyncItems } from "./settings-sync";
 import { DangerItems } from "./settings-danger";
 import { ProviderConfigSection } from "./settings-provider";
+import { logger } from "@/app/utils/logger";
 
 export function Settings() {
   const navigate = useNavigate();
@@ -80,8 +81,8 @@ export function Settings() {
       setCheckingUpdate(false);
     });
 
-    console.log("[Update] local version ", updateStore.version);
-    console.log("[Update] remote version ", updateStore.remoteVersion);
+    logger.info("[Update] local version ", updateStore.version);
+    logger.info("[Update] remote version ", updateStore.remoteVersion);
   }
 
   const accessStore = useAccessStore();

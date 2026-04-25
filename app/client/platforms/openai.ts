@@ -50,6 +50,7 @@ import {
 } from "@/app/utils";
 import { fetch } from "@/app/utils/stream";
 import { BaseOpenAICompatibleApi } from "./base";
+import { logger } from "@/app/utils/logger";
 
 export interface OpenAIListModelResponse {
   object: string;
@@ -120,7 +121,7 @@ export class ChatGPTApi extends BaseOpenAICompatibleApi {
       baseUrl = "https://" + baseUrl;
     }
 
-    console.log("[Proxy Endpoint] ", baseUrl, path);
+    logger.info("[Proxy Endpoint] ", baseUrl, path);
 
     // When using custom config with external URL, use proxy to avoid CORS
     const isApp = !!getClientConfig()?.isApp;
@@ -266,7 +267,7 @@ export class ChatGPTApi extends BaseOpenAICompatibleApi {
       speed: options.speed,
     };
 
-    console.log("[Request] openai speech payload: ", requestPayload);
+    logger.info("[Request] openai speech payload: ", requestPayload);
 
     const controller = new AbortController();
     options.onController?.(controller);
@@ -291,7 +292,7 @@ export class ChatGPTApi extends BaseOpenAICompatibleApi {
       clearTimeout(requestTimeoutId);
       return await res.arrayBuffer();
     } catch (e) {
-      console.log("[Request] failed to make a speech request", e);
+      logger.info("[Request] failed to make a speech request", e);
       throw e;
     }
   }
@@ -514,7 +515,7 @@ export class ChatGPTApi extends BaseOpenAICompatibleApi {
       }
     }
 
-    console.log("[Request] openai payload: ", requestPayload);
+    logger.info("[Request] openai payload: ", requestPayload);
 
     // ALL image-generation models (isImageGen covers DALL-E + gpt-image + cogview)
     // use the non-streaming images/generations endpoint. Force non-stream here.
@@ -716,7 +717,7 @@ export class ChatGPTApi extends BaseOpenAICompatibleApi {
         options.onFinish(message, res, usage);
       }
     } catch (e) {
-      console.log("[Request] failed to make a chat request", e);
+      logger.info("[Request] failed to make a chat request", e);
       options.onError?.(e as Error);
     }
   }
@@ -804,7 +805,7 @@ export class ChatGPTApi extends BaseOpenAICompatibleApi {
     const chatModels = resJson.data?.filter(
       (m) => m.id.startsWith("gpt-") || m.id.startsWith("chatgpt-"),
     );
-    console.log("[Models]", chatModels);
+    logger.info("[Models]", chatModels);
 
     if (!chatModels) {
       return [];

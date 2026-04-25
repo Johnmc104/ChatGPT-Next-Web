@@ -8,6 +8,7 @@
  */
 
 import { estimateTokenLength } from "./token";
+import { logger } from "@/app/utils/logger";
 
 // ── singleton encoder (lazy via dynamic import) ─────────────────────────────
 // Both the Tiktoken class and the BPE rank data are loaded dynamically.
@@ -34,7 +35,7 @@ async function loadEncoderInternal(): Promise<void> {
       import("js-tiktoken/ranks/o200k_base"),
     ]);
     encoder = new Tiktoken(o200k_base);
-    console.log("[tiktoken] o200k_base encoder loaded successfully");
+    logger.info("[tiktoken] o200k_base encoder loaded successfully");
   } catch (err) {
     console.warn("[tiktoken] Failed to load o200k_base, using heuristic:", err);
     loadFailed = true;

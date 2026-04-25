@@ -1,6 +1,7 @@
 import { STORAGE_KEY } from "@/app/constant";
 import { SyncStore } from "@/app/store/sync";
 import { chunks } from "../format";
+import { logger } from "@/app/utils/logger";
 
 export type UpstashConfig = SyncStore["upstash"];
 export type UpStashClient = ReturnType<typeof createUpstashClient>;
@@ -21,7 +22,7 @@ export function createUpstashClient(store: SyncStore) {
           method: "GET",
           headers: this.headers(),
         });
-        console.log("[Upstash] check", res.status, res.statusText);
+        logger.info("[Upstash] check", res.status, res.statusText);
         return [200].includes(res.status);
       } catch (e) {
         console.error("[Upstash] failed to check", e);
@@ -35,7 +36,7 @@ export function createUpstashClient(store: SyncStore) {
         headers: this.headers(),
       });
 
-      console.log("[Upstash] get key = ", key, res.status, res.statusText);
+      logger.info("[Upstash] get key = ", key, res.status, res.statusText);
       const resJson = (await res.json()) as { result: string };
 
       return resJson.result;
@@ -48,7 +49,7 @@ export function createUpstashClient(store: SyncStore) {
         body: value,
       });
 
-      console.log("[Upstash] set key = ", key, res.status, res.statusText);
+      logger.info("[Upstash] set key = ", key, res.status, res.statusText);
     },
 
     async get() {
@@ -60,7 +61,7 @@ export function createUpstashClient(store: SyncStore) {
           .fill(0)
           .map((_, i) => this.redisGet(chunkIndexKey(i))),
       );
-      console.log("[Upstash] get full chunks", chunks);
+      logger.info("[Upstash] get full chunks", chunks);
       return chunks.join("");
     },
 

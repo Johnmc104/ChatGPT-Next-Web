@@ -37,6 +37,7 @@ import { extractMcpJson, isMcpJson } from "../mcp/utils";
 
 import type { ChatMessage, ChatMessageTool, ChatSession } from "./chat-types";
 import { createMessage, DEFAULT_TOPIC } from "./chat-types";
+import { logger } from "@/app/utils/logger";
 
 // ---------------------------------------------------------------------------
 // Public interface — used by chat.ts for proper TypeScript inference
@@ -377,7 +378,7 @@ export function createChatActions(
     }
 
     if (shouldInjectSystemPrompts || mcpEnabled) {
-      console.log(
+      logger.info(
         "[Global System Prompt] ",
         systemPrompts.at(0)?.content ?? "empty",
       );
@@ -533,7 +534,7 @@ export function createChatActions(
 
     const lastSummarizeIndex = session.messages.length;
 
-    console.log(
+    logger.info(
       "[Chat History] ",
       toBeSummarizedMsgs,
       historyMsgLength,
@@ -571,7 +572,7 @@ export function createChatActions(
           if (responseRes?.status === 200) {
             // memory summary uses text-only model
             const text = typeof message === "string" ? message : "";
-            console.log("[Memory] ", text);
+            logger.info("[Memory] ", text);
             get().updateTargetSession(session, (session: ChatSession) => {
               session.lastSummarizeIndex = lastSummarizeIndex;
               session.memoryPrompt = text; // Update the memory prompt for stored it in local storage
@@ -604,11 +605,11 @@ export function createChatActions(
       try {
         const mcpRequest = extractMcpJson(content);
         if (mcpRequest) {
-          console.debug("[MCP Request]", mcpRequest);
+          logger.debug("[MCP Request]", mcpRequest);
 
           executeMcpAction(mcpRequest.clientId, mcpRequest.mcp)
             .then((result) => {
-              console.log("[MCP Response]", result);
+              logger.info("[MCP Response]", result);
               const mcpResponse =
                 typeof result === "object"
                   ? JSON.stringify(result)

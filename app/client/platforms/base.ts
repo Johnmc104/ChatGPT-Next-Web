@@ -38,6 +38,7 @@ import {
 } from "@/app/utils";
 import { preProcessImageContent } from "@/app/utils/chat";
 import { fetch } from "@/app/utils/stream";
+import { logger } from "@/app/utils/logger";
 
 // ---------------------------------------------------------------------------
 // RequestPayload — shared by base and openai.ts (defined here to avoid cycle)
@@ -150,7 +151,7 @@ export class BaseOpenAICompatibleApi implements LLMApi {
       baseUrl = "https://" + baseUrl;
     }
 
-    console.log("[Proxy Endpoint] ", baseUrl, path);
+    logger.info("[Proxy Endpoint] ", baseUrl, path);
 
     return [baseUrl, path].join("/");
   }
@@ -353,7 +354,7 @@ export class BaseOpenAICompatibleApi implements LLMApi {
       shouldStream,
     );
 
-    console.log(
+    logger.info(
       `[Request] ${this.config.providerName} payload: `,
       requestPayload,
     );
@@ -419,7 +420,7 @@ export class BaseOpenAICompatibleApi implements LLMApi {
         options.onFinish(message, res);
       }
     } catch (e) {
-      console.log("[Request] failed to make a chat request", e);
+      logger.info("[Request] failed to make a chat request", e);
       options.onError?.(e as Error);
     }
   }

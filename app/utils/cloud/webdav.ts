@@ -1,5 +1,6 @@
 import { STORAGE_KEY } from "@/app/constant";
 import { SyncStore } from "@/app/store/sync";
+import { logger } from "@/app/utils/logger";
 
 export type WebDAVConfig = SyncStore["webdav"];
 export type WebDavClient = ReturnType<typeof createWebDavClient>;
@@ -21,7 +22,7 @@ export function createWebDavClient(store: SyncStore) {
         const success = [201, 200, 404, 405, 301, 302, 307, 308].includes(
           res.status,
         );
-        console.log(
+        logger.info(
           `[WebDav] check ${success ? "success" : "failed"}, ${res.status} ${
             res.statusText
           }`,
@@ -40,7 +41,7 @@ export function createWebDavClient(store: SyncStore) {
         headers: this.headers(),
       });
 
-      console.log("[WebDav] get key = ", key, res.status, res.statusText);
+      logger.info("[WebDav] get key = ", key, res.status, res.statusText);
 
       if (404 == res.status) {
         return "";
@@ -56,7 +57,7 @@ export function createWebDavClient(store: SyncStore) {
         body: value,
       });
 
-      console.log("[WebDav] set key = ", key, res.status, res.statusText);
+      logger.info("[WebDav] set key = ", key, res.status, res.statusText);
     },
 
     headers() {

@@ -12,6 +12,7 @@ import { ensure } from "../utils/clone";
 import { DEFAULT_CONFIG } from "./config";
 import { getModelProvider } from "../utils/model";
 import { fetchJSON } from "../utils/fetch";
+import { logger } from "@/app/utils/logger";
 
 let fetchState = 0; // 0 not fetch, 1 fetching, 2 done
 
@@ -132,7 +133,7 @@ export const useAccessStore = createPersistStore(
             DEFAULT_CONFIG.modelConfig.model = model;
             DEFAULT_CONFIG.modelConfig.providerName = providerName as any;
           }
-          console.log("[Config] got config from server", res);
+          logger.info("[Config] got config from server", res);
           set(() => ({ ...res }));
         })
         .catch(() => {
