@@ -2,6 +2,7 @@
 
 > 生成日期：2026-04-25 | 分支：main (de5e2c4e)
 > 基线：Sprint F/G/H 完成后
+> 实施更新：2026-04-25 | Sprint I/J/K 已完成
 
 ---
 
@@ -420,15 +421,15 @@ t=~1200ms 字体下载完成 → FOUT → LCP (Largest Contentful Paint)
 
 ## 6. 改进路线图
 
-### Sprint I — 渲染性能关键修复
+### Sprint I — 渲染性能关键修复 ✅ 已完成
 
-| 序号 | 任务 | 涉及文件 | 预期收益 | 复杂度 |
-|------|------|----------|----------|--------|
-| I-01 | `_Chat` 关键 store 订阅改为 selector | chat.tsx | 流式重渲染降低 60%+ | 中 |
-| I-02 | `ChatActions` 三个全量订阅改为 selector | chat-actions.tsx | 消除不必要重渲染 | 中 |
-| I-03 | `ChatInput` 全量订阅改为 selector | chat-input.tsx | 消除输入时不必要重渲染 | 低 |
-| I-04 | `SideBar` 移除双重订阅 + 改 selector | sidebar.tsx | 消除侧边栏冗余渲染 | 低 |
-| I-05 | `useScrollToBottom` useEffect 添加依赖数组 | hooks/useChatScroll.ts | 消除每帧强制布局 | 低 |
+| 序号 | 任务 | 涉及文件 | 预期收益 | 状态 |
+|------|------|----------|----------|------|
+| I-01 | `_Chat` 关键 store 订阅改为 selector | chat.tsx | 流式重渲染降低 60%+ | ✅ |
+| I-02 | `ChatActions` 三个全量订阅改为 selector | chat-actions.tsx | 消除不必要重渲染 | ✅ |
+| I-03 | `ChatInput` 全量订阅改为 selector | chat-input.tsx | 消除输入时不必要重渲染 | ✅ |
+| I-04 | `SideBar` 移除双重订阅 + 改 selector | sidebar.tsx | 消除侧边栏冗余渲染 | ✅ |
+| I-05 | `useScrollToBottom` useEffect 添加依赖数组 | hooks/useChatScroll.ts | 消除每帧强制布局 | ✅ |
 
 **I-01 详细方案**：
 
@@ -449,13 +450,13 @@ const [session, onUserInput, deleteMessage, ...] = useChatStore(s => [
 
 注意：`_Chat` 依赖较多 store 方法（`onUserInput`、`deleteMessage`、`onNewTopic` 等），需要逐一审计使用点。方法引用是稳定的（不会触发重渲染），关键是避免订阅 `sessions` 数组的全量变更。
 
-### Sprint J — 流式动画优化
+### Sprint J — 流式动画优化 ✅ 已完成（J-01, J-03）
 
-| 序号 | 任务 | 涉及文件 | 预期收益 | 复杂度 |
-|------|------|----------|----------|--------|
-| J-01 | animateResponseText 改为按需 setTimeout | utils/chat.ts | CPU 占用降低 50%+ | 中 |
-| J-02 | 流式 onUpdate 使用 index 赋值替代 concat | utils/chat.ts, chat-actions.ts | O(n)→O(1) per token | 高 |
-| J-03 | PreCode 移除 useWindowSize 改为 CSS | markdown.tsx | 消除 N×resize 重渲染 | 低 |
+| 序号 | 任务 | 涉及文件 | 预期收益 | 状态 |
+|------|------|----------|----------|------|
+| J-01 | animateResponseText 改为按需 setTimeout | utils/chat.ts | CPU 占用降低 50%+ | ✅ |
+| J-02 | 流式 onUpdate 使用 index 赋值替代 concat | utils/chat.ts, chat-actions.ts | O(n)→O(1) per token | ⏳ 延后 |
+| J-03 | PreCode 移除 useWindowSize 改为 CSS | markdown.tsx | 消除 N×resize 重渲染 | ✅ |
 
 **J-01 详细方案**：
 
@@ -485,16 +486,16 @@ function scheduleAnimate() {
 // SSE onMessage 中调用 scheduleAnimate() 而非 animateResponseText()
 ```
 
-### Sprint K — 网页速度与 UX 优化
+### Sprint K — 网页速度与 UX 优化 ✅ 已完成（K-01, K-03~K-06）
 
-| 序号 | 任务 | 涉及文件 | 预期收益 | 复杂度 |
-|------|------|----------|----------|--------|
-| K-01 | Google Font 改为 `next/font` 或 `<link rel="preload">` | layout.tsx / home.tsx | 消除 FOUT | 低 |
-| K-02 | 图片添加 `loading="lazy"` | image-preview.tsx, sd.tsx, ui-lib-modal.tsx | 减少带宽消耗 | 低 |
-| K-03 | 关键滚动容器添加 `will-change: transform` | chat.module.scss, home.module.scss | 移动端滚动流畅 | 低 |
-| K-04 | `transition: all` 改为具体属性 | chat.module.scss (11处) | 减少过渡计算 | 低 |
-| K-05 | 修复 SW 安装双重 reload | serviceWorkerRegister.js | 消除首访闪烁 | 低 |
-| K-06 | 移除 `user-scalable=no` | layout.tsx | 恢复缩放支持 | 低 |
+| 序号 | 任务 | 涉及文件 | 预期收益 | 状态 |
+|------|------|----------|----------|------|
+| K-01 | Google Font 改为 `<link rel="preconnect">` | layout.tsx | 加速字体连接 | ✅ |
+| K-02 | 图片添加 `loading="lazy"` | — | — | ⏭ 不适用（无 `<img>` 标签） |
+| K-03 | 关键滚动容器添加 `will-change` + `contain` | chat.module.scss | 移动端滚动流畅 | ✅ |
+| K-04 | `transition: all` 改为具体属性 | chat.module.scss (15处) | 减少过渡计算 | ✅ |
+| K-05 | 修复 SW 安装双重 reload | serviceWorkerRegister.js | 消除首访闪烁 | ✅ |
+| K-06 | 移除 `user-scalable=no` 重复 viewport | layout.tsx | 恢复缩放支持 | ✅ |
 
 **K-01 详细方案**：
 
@@ -511,7 +512,7 @@ const notoSans = Noto_Sans({ subsets: ['latin'], weight: ['300','400','700','900
 <link rel="preload" as="style" href="https://fonts.googleapis.com/css2?family=Noto+Sans:wght@300;400;700;900&display=swap" />
 ```
 
-### Sprint L — 体验增强（可选）
+### Sprint L — 体验增强（可选，未实施）
 
 | 序号 | 任务 | 涉及文件 | 预期收益 | 复杂度 |
 |------|------|----------|----------|--------|
