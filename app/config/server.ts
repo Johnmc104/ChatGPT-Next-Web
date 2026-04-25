@@ -82,7 +82,7 @@ function getApiKey(keys?: string) {
   const apiKeys = apiKeyEnvVar.split(",").map((v) => v.trim());
   const randomIndex = Math.floor(Math.random() * apiKeys.length);
   const apiKey = apiKeys[randomIndex];
-  if (apiKey) {
+  if (apiKey && process.env.NEXT_PHASE !== "phase-production-build") {
     logger.keyInfo(
       `[Server Config] using ${randomIndex + 1} of ${apiKeys.length} api key`,
       apiKey,
