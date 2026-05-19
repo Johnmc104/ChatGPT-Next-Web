@@ -335,6 +335,7 @@ const defaultModels = [
   "anthropic/claude-haiku-4.5",
 
   // OpenAI GPT - 稳定可靠
+  "openai/gpt-5.5",
   "openai/gpt-5.4",
   "openai/gpt-5.3-chat",
   "openai/gpt-5.3-codex",
@@ -347,14 +348,14 @@ const defaultModels = [
 
   // Google Gemini - 编程强
   "google/gemini-3.1-pro-preview",
-  "google/gemini-3-flash-preview",
+  "google/gemini-3.1-flash-lite",
   "google/gemini-3.1-flash-lite-preview",
 
   // xAI Grok - 免费/便宜
-  "xai/grok-4",
+  "xai/grok-4.3",
+  "xai/grok-4.20",
   "xai/grok-4.20-reasoning",
   "xai/grok-4.20-multi-agent",
-  "xai/grok-4.1-fast",
 
   // DeepSeek - 国产性价比
   "deepseek/deepseek-v4-pro",
