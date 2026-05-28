@@ -515,19 +515,9 @@ export class ChatGPTApi extends BaseOpenAICompatibleApi {
       }
 
       // Ensure messages don't end with assistant role (some models reject prefill)
-      if (
-        requestPayload.messages.length > 0 &&
-        requestPayload.messages[requestPayload.messages.length - 1].role !==
-          "user"
-      ) {
-        while (
-          requestPayload.messages.length > 0 &&
-          requestPayload.messages[requestPayload.messages.length - 1].role !==
-            "user"
-        ) {
-          requestPayload.messages.pop();
-        }
-      }
+      requestPayload.messages = this.ensureLastMessageIsUser(
+        requestPayload.messages,
+      );
     }
 
     logger.info("[Request] openai payload: ", requestPayload);
