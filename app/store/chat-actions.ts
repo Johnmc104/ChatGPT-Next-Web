@@ -552,7 +552,7 @@ export function createChatActions(
       api.llm.chat({
         messages: toBeSummarizedMsgs.concat(
           createMessage({
-            role: "system",
+            role: "user",
             content: Locale.Store.Prompt.Summarize,
             date: "",
           }),

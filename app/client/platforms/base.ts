@@ -202,6 +202,40 @@ export class BaseOpenAICompatibleApi implements LLMApi {
     return result;
   }
 
+  // ---- Ensure messages end with a user message ----------------------------
+
+  /**
+   * Some models (e.g. Claude via OpenAI-compatible API) do not support
+   * "assistant message prefill" — the conversation must end with a user
+   * message. This method strips trailing non-user messages to prevent the
+   * error while preserving conversation context.
+   */
+  protected ensureLastMessageIsUser(
+    messages: RequestPayload["messages"],
+  ): RequestPayload["messages"] {
+    if (messages.length === 0) return messages;
+
+    // If the last message is already from the user, no change needed.
+    if (messages[messages.length - 1].role === "user") {
+      return messages;
+    }
+
+    // Remove trailing assistant/system messages until we find a user message
+    // or run out of messages.
+    const trimmed = [...messages];
+    while (trimmed.length > 0 && trimmed[trimmed.length - 1].role !== "user") {
+      trimmed.pop();
+    }
+
+    // If we removed everything, fall back to original messages to avoid
+    // sending an empty payload (the API will return a different error anyway).
+    if (trimmed.length === 0) {
+      return messages;
+    }
+
+    return trimmed;
+  }
+
   // ---- Build request payload (overridable) --------------------------------
 
   protected buildPayload(
@@ -348,8 +382,9 @@ export class BaseOpenAICompatibleApi implements LLMApi {
     };
 
     const shouldStream = !!options.config.stream;
+    const safeMessages = this.ensureLastMessageIsUser(processedMessages);
     const requestPayload = this.buildPayload(
-      processedMessages,
+      safeMessages,
       modelConfig,
       shouldStream,
     );

@@ -513,6 +513,21 @@ export class ChatGPTApi extends BaseOpenAICompatibleApi {
       if (visionModel && !isO1OrO3 && !isGpt5) {
         requestPayload["max_tokens"] = Math.max(modelConfig.max_tokens, 4000);
       }
+
+      // Ensure messages don't end with assistant role (some models reject prefill)
+      if (
+        requestPayload.messages.length > 0 &&
+        requestPayload.messages[requestPayload.messages.length - 1].role !==
+          "user"
+      ) {
+        while (
+          requestPayload.messages.length > 0 &&
+          requestPayload.messages[requestPayload.messages.length - 1].role !==
+            "user"
+        ) {
+          requestPayload.messages.pop();
+        }
+      }
     }
 
     logger.info("[Request] openai payload: ", requestPayload);
