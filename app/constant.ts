@@ -367,17 +367,18 @@ const defaultModels = [
 
   // Alibaba Qwen - 国产新秀
   "alibaba/qwen3.7-max",
-  "alibaba/qwen3.6-plus",
+  "alibaba/qwen3.7-plus",
   "alibaba/qwen3-coder-plus",
   "alibaba/qwen3-max-thinking",
 
   // zhipu
+  "zai/glm-5.2",
   "zai/glm-5.1",
   "zai/glm-5",
 
   // Other
+  "minimax/minimax-m3",
   "minimax/minimax-m2.7",
-  "minimax/minimax-m2.5",
 ];
 
 // Map provider id to display name (= ServiceProvider enum value)
