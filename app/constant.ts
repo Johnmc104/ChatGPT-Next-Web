@@ -329,11 +329,11 @@ const defaultModels = [
   "ragflow/ae",
 
   // Anthropic Claude - 编程最强
-  "anthropic/claude-opus-4.8",
-  "anthropic/claude-opus-4.7",
-  "anthropic/claude-opus-4.6",
-  "anthropic/claude-sonnet-4.6",
-  "anthropic/claude-haiku-4.5",
+  "claude-opus-5",
+  "claude-opus-4.6",
+  "claude-sonnet-5",
+  "claude-sonnet-4.6",
+  "claude-haiku-4.5",
 
   // OpenAI GPT - 稳定可靠
   "openai/gpt-5.5",
