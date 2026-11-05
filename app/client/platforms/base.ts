@@ -1,5 +1,6 @@
+"use client";
+
 import Locale from "../../locales";
-("use client");
 
 /**
  * BaseOpenAICompatibleApi — shared base for all providers that follow the
