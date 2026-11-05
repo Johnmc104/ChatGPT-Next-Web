@@ -7,7 +7,7 @@ import { ListItem, Select } from "./ui-lib";
 import { useAllModels } from "../hooks/useAllModels";
 import groupBy from "lodash-es/groupBy";
 import styles from "./model-config.module.scss";
-import { getModelProvider } from "../utils/model";
+import { getModelProvider, retainSelectedModel } from "../utils/model";
 
 export function ModelConfigList(props: {
   modelConfig: ModelConfig;
@@ -15,16 +15,12 @@ export function ModelConfigList(props: {
 }) {
   const allModels = useAllModels();
   // Group models by providerName for display
-  const visibleModels = allModels.filter(
-    (model) =>
-      model.available ||
-      (model.name === props.modelConfig.model &&
-        model.provider?.providerName === props.modelConfig.providerName),
+  const visibleModels = retainSelectedModel(
+    allModels,
+    props.modelConfig.model,
+    props.modelConfig.providerName,
   );
-  const groupModels = groupBy(
-    visibleModels,
-    "provider.providerName",
-  );
+  const groupModels = groupBy(visibleModels, "provider.providerName");
   const value = `${props.modelConfig.model}@${props.modelConfig?.providerName}`;
   const compressModelValue = `${props.modelConfig.compressModel}@${props.modelConfig?.compressProviderName}`;
 

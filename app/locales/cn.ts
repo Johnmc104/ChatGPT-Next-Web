@@ -396,6 +396,25 @@ const cn = {
 
     Model: "模型 (model)",
     ModelSelector: {
+      Sources: {
+        builtin: "内置",
+        custom: "自定义",
+        server: "服务端",
+        missing: "已移除",
+      },
+      Capabilities: {
+        "text-input": "文本输入",
+        "image-input": "图片输入",
+        "audio-input": "音频输入",
+        "video-input": "视频输入",
+        "file-input": "文件输入",
+        "text-output": "文本输出",
+        "image-output": "图片输出",
+        "audio-output": "音频输出",
+        reasoning: "推理",
+        "tool-use": "工具",
+        "web-search": "搜索",
+      },
       CustomGroup: "自定义模型",
       BuiltinGroup: "内置模型",
       Unavailable: "不可用",

@@ -1,7 +1,6 @@
 import { ServiceProvider } from "../../constant";
 import { useAccessStore, useAppConfig } from "../../store";
-import { resolveModelSelection } from "../../domain/model/selection";
-import { parseCustomModels } from "../../domain/model/custom";
+import { resolveConfiguredModel } from "../../utils/model";
 import type { SettingsLink } from "../../domain/settings/link";
 
 /** Called only after the user has reviewed and confirmed the import. */
@@ -36,30 +35,11 @@ export function applySettingsLink(payload: SettingsLink) {
         state.customModels = payload.customModels;
       }
       if (payload.defaultModel !== undefined) {
-        // Explicit custom IDs take precedence over built-in aliases.
-        const custom = parseCustomModels(
-          [access.customModels, state.customModels].join(","),
-        ).models;
-        const records = custom
-          .filter((m) => m.id !== "all")
-          .map((m) => ({
-            name: m.id,
-            available: m.enabled,
-            sorted: 0,
-            provider: {
-              id: (m.provider ?? "OpenAI").toLowerCase(),
-              providerName: m.provider ?? "OpenAI",
-              sorted: 0,
-            },
-          }));
-        const exactCustom = records.filter((m) =>
-          [m.name, `${m.name}@${m.provider.providerName}`].includes(
-            payload.defaultModel!,
-          ),
-        );
-        const selection = resolveModelSelection(
+        const selection = resolveConfiguredModel(
           payload.defaultModel,
-          exactCustom.length ? exactCustom : state.models,
+          state.models,
+          state.customModels,
+          access.customModels,
         );
         state.modelConfig = {
           ...state.modelConfig,

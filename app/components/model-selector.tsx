@@ -3,6 +3,7 @@ import styles from "./model-selector.module.scss";
 import { IconButton } from "./button";
 import CloseIcon from "../icons/close.svg";
 import Locale from "../locales";
+import { useModelInfo } from "../hooks/useModelInfo";
 
 export interface ModelItem {
   name: string;
@@ -12,6 +13,7 @@ export interface ModelItem {
     providerName: string;
   };
   isCustom?: boolean;
+  source?: "builtin" | "custom" | "server" | "missing";
   available?: boolean;
 }
 
@@ -26,41 +28,40 @@ interface ModelSelectorProps {
 export function ModelSelector(props: ModelSelectorProps) {
   const { models, selectedModel, selectedProvider, onSelect, onClose } = props;
 
+  const { getModelInfo } = useModelInfo();
+
   // Group models by provider
   const groupedModels = useMemo(() => {
     const groups: Record<string, ModelItem[]> = {};
 
-    // First add custom models group
-    const customModels = models.filter((m) => m.isCustom);
-    if (customModels.length > 0) {
-      groups[Locale.Settings.ModelSelector.CustomGroup] = customModels;
-    }
-
-    // Then group by provider
-    models
-      .filter((m) => !m.isCustom)
-      .forEach((model) => {
-        const providerName = model.provider?.providerName || "Other";
-        if (!groups[providerName]) {
-          groups[providerName] = [];
-        }
-        groups[providerName].push(model);
-      });
+    models.forEach((model) => {
+      const providerName = model.provider?.providerName || "Other";
+      (groups[providerName] ??= []).push(model);
+    });
 
     return groups;
   }, [models]);
 
-  const providerNames = Object.keys(groupedModels);
+  const providerNames = useMemo(
+    () => Object.keys(groupedModels),
+    [groupedModels],
+  );
 
   // Find initial provider based on selected model
   const initialProvider = useMemo(() => {
     for (const [provider, items] of Object.entries(groupedModels)) {
-      if (items.some((m) => m.name === selectedModel)) {
+      if (
+        items.some(
+          (m) =>
+            m.name === selectedModel &&
+            m.provider?.providerName === selectedProvider,
+        )
+      ) {
         return provider;
       }
     }
     return providerNames[0] || "";
-  }, [groupedModels, selectedModel, providerNames]);
+  }, [groupedModels, selectedModel, selectedProvider, providerNames]);
 
   const [activeProvider, setActiveProvider] = useState(initialProvider);
 
@@ -97,7 +98,9 @@ export function ModelSelector(props: ModelSelectorProps) {
             {providerNames.map((provider) => {
               const isActive = provider === activeProvider;
               const hasSelected = groupedModels[provider]?.some(
-                (m) => m.name === selectedModel,
+                (m) =>
+                  m.name === selectedModel &&
+                  m.provider?.providerName === selectedProvider,
               );
               return (
                 <div
@@ -105,6 +108,14 @@ export function ModelSelector(props: ModelSelectorProps) {
                   className={`${styles["provider-item"]} ${
                     isActive ? styles["provider-item-active"] : ""
                   } ${hasSelected ? styles["provider-item-has-selected"] : ""}`}
+                  role="button"
+                  tabIndex={0}
+                  onKeyDown={(event) => {
+                    if (event.key === "Enter" || event.key === " ") {
+                      event.preventDefault();
+                      setActiveProvider(provider);
+                    }
+                  }}
                   onClick={() => setActiveProvider(provider)}
                 >
                   <span className={styles["provider-name"]}>{provider}</span>
@@ -132,6 +143,14 @@ export function ModelSelector(props: ModelSelectorProps) {
                       ? styles["model-item-unavailable"]
                       : ""
                   }`}
+                  role="button"
+                  tabIndex={model.available === false ? -1 : 0}
+                  onKeyDown={(event) => {
+                    if (event.key === "Enter" || event.key === " ") {
+                      event.preventDefault();
+                      handleModelClick(model);
+                    }
+                  }}
                   aria-disabled={model.available === false}
                   onClick={() => handleModelClick(model)}
                 >
@@ -142,6 +161,27 @@ export function ModelSelector(props: ModelSelectorProps) {
                         ? ` (${Locale.Settings.ModelSelector.Unavailable})`
                         : ""}
                     </span>
+                    <div className={styles["model-tags"]}>
+                      <span>
+                        {
+                          Locale.Settings.ModelSelector.Sources[
+                            model.source ??
+                              (model.isCustom ? "custom" : "builtin")
+                          ]
+                        }
+                      </span>
+                      {(getModelInfo(model.name)?.capabilities ?? []).map(
+                        (capability) => (
+                          <span key={capability}>
+                            {
+                              Locale.Settings.ModelSelector.Capabilities[
+                                capability
+                              ]
+                            }
+                          </span>
+                        ),
+                      )}
+                    </div>
                   </div>
                   {isSelected && <div className={styles["model-check"]}>✓</div>}
                 </div>

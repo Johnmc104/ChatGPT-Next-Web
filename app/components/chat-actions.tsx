@@ -1,3 +1,4 @@
+import { retainSelectedModel } from "../utils/model";
 /**
  * Reusable chat action button and the bottom-of-chat action bar.
  *
@@ -225,11 +226,10 @@ export function ChatActions(props: {
     session.mask.modelConfig?.providerName || ServiceProvider.OpenAI;
   const allModels = useAllModels();
   const models = useMemo(() => {
-    const filteredModels = allModels.filter(
-      (m) =>
-        m.available ||
-        (m.name === currentModel &&
-          m.provider?.providerName === currentProviderName),
+    const filteredModels = retainSelectedModel(
+      allModels,
+      currentModel,
+      currentProviderName,
     );
     const defaultModel = filteredModels.find((m) => m.isDefault);
 

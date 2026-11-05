@@ -31,14 +31,16 @@ import { prettyObject } from "../utils/format";
 import { countTokens } from "../utils/tiktoken";
 import { ModelConfig, useAppConfig } from "./config";
 import { useAccessStore } from "./access";
-import { collectModelsWithDefaultModel } from "../utils/model";
+import {
+  collectModelsWithDefaultModel,
+  resolveConfiguredModel,
+} from "../utils/model";
 import { executeMcpAction, getAllTools, isMcpEnabled } from "../mcp/actions";
 import { extractMcpJson, isMcpJson } from "../mcp/utils";
 
 import type { ChatMessage, ChatMessageTool, ChatSession } from "./chat-types";
 import { createMessage, DEFAULT_TOPIC } from "./chat-types";
 import { logger } from "@/app/utils/logger";
-import { resolveModelSelection } from "@/app/domain/model/selection";
 
 // ---------------------------------------------------------------------------
 // Public interface — used by chat.ts for proper TypeScript inference
@@ -72,8 +74,9 @@ export function getSummarizeModel(
     const accessStore = useAccessStore.getState();
     const allModel = collectModelsWithDefaultModel(
       configStore.models,
-      [configStore.customModels, accessStore.customModels].join(","),
+      configStore.customModels,
       accessStore.defaultModel,
+      accessStore.customModels,
     );
     const summarizeModel = allModel.find(
       (m) => m.name === SUMMARIZE_MODEL && m.available,
@@ -200,9 +203,13 @@ export function createChatActions(
   ) {
     const session = get().currentSession();
     const rawModelConfig = session.mask.modelConfig;
-    const selection = resolveModelSelection(
+    const config = useAppConfig.getState();
+    const selection = resolveConfiguredModel(
       rawModelConfig.model,
-      useAppConfig.getState().models,
+      config.models,
+      config.customModels,
+      useAccessStore.getState().customModels,
+      rawModelConfig.providerName,
     );
     const modelConfig = {
       ...rawModelConfig,
@@ -475,12 +482,21 @@ export function createChatActions(
     }
 
     // if not config compressModel, then using getSummarizeModel
-    const [model, providerName] = modelConfig.compressModel
+    const [rawModel, rawProvider] = modelConfig.compressModel
       ? [modelConfig.compressModel, modelConfig.compressProviderName]
       : getSummarizeModel(
           session.mask.modelConfig.model,
           session.mask.modelConfig.providerName,
         );
+    const selection = resolveConfiguredModel(
+      rawModel,
+      config.models,
+      config.customModels,
+      useAccessStore.getState().customModels,
+      rawProvider,
+    );
+    const model = selection.model;
+    const providerName = selection.providerName ?? rawProvider;
     // getClientApi internally handles BASE_URL routing
     const api: ClientApi = getClientApi(providerName as ServiceProvider);
 

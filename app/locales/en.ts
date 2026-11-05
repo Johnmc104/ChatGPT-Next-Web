@@ -404,6 +404,25 @@ const en: LocaleType = {
 
     Model: "Model",
     ModelSelector: {
+      Sources: {
+        builtin: "Built-in",
+        custom: "Custom",
+        server: "Server",
+        missing: "Removed",
+      },
+      Capabilities: {
+        "text-input": "Text input",
+        "image-input": "Image input",
+        "audio-input": "Audio input",
+        "video-input": "Video input",
+        "file-input": "File input",
+        "text-output": "Text output",
+        "image-output": "Image output",
+        "audio-output": "Audio output",
+        reasoning: "Reasoning",
+        "tool-use": "Tools",
+        "web-search": "Search",
+      },
       CustomGroup: "Custom Models",
       BuiltinGroup: "Built-in Models",
       Unavailable: "unavailable",

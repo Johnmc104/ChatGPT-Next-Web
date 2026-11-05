@@ -11,7 +11,7 @@ import { createPersistStore } from "../utils/store";
 import { ensure } from "../utils/clone";
 import { DEFAULT_CONFIG } from "./config";
 import { DEFAULT_MODELS } from "../domain/model/catalog";
-import { resolveModelSelection } from "../domain/model/selection";
+import { resolveConfiguredModel } from "../utils/model";
 import { fetchJSON } from "../utils/fetch";
 import { logger } from "@/app/utils/logger";
 
@@ -145,9 +145,16 @@ export const useAccessStore = createPersistStore(
         .then((res) => {
           const defaultModel = res.defaultModel ?? "";
           if (defaultModel !== "") {
-            const selection = resolveModelSelection(defaultModel, DEFAULT_MODELS);
-            DEFAULT_CONFIG.modelConfig.model = selection.model as typeof DEFAULT_CONFIG.modelConfig.model;
-            DEFAULT_CONFIG.modelConfig.providerName = selection.providerName as typeof DEFAULT_CONFIG.modelConfig.providerName;
+            const selection = resolveConfiguredModel(
+              defaultModel,
+              DEFAULT_MODELS,
+              "",
+              res.customModels ?? "",
+            );
+            DEFAULT_CONFIG.modelConfig.model =
+              selection.model as typeof DEFAULT_CONFIG.modelConfig.model;
+            DEFAULT_CONFIG.modelConfig.providerName = (selection.providerName ??
+              ServiceProvider.OpenAI) as typeof DEFAULT_CONFIG.modelConfig.providerName;
           }
           logger.info("[Config] got config from server", res);
           configLoaded = true;

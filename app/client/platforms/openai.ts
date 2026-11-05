@@ -486,7 +486,7 @@ export class ChatGPTApi extends BaseOpenAICompatibleApi {
     try {
       let chatPath = "";
       if (modelConfig.providerName === ServiceProvider.Azure) {
-        // find model, and get displayName as deployName
+        // The upstream ID is the deployment name; display names are UI-only.
         const { models: configModels, customModels: configCustomModels } =
           useAppConfig.getState();
         const {
@@ -506,7 +506,7 @@ export class ChatGPTApi extends BaseOpenAICompatibleApi {
         );
         chatPath = this.path(
           (isImageGen ? Azure.ImagePath : Azure.ChatPath)(
-            (model?.displayName ?? model?.name) as string,
+            encodeURIComponent(model?.name ?? modelConfig.model),
             useCustomConfig ? useAccessStore.getState().azureApiVersion : "",
           ),
         );

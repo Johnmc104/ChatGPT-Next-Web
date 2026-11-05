@@ -22,22 +22,25 @@ function sameProvider(value: string | undefined, model: LLMModel) {
 export function resolveModelSelection(
   value: string,
   models: readonly LLMModel[],
+  preferredProvider?: string,
 ): ResolvedModelSelection {
   const input = value.trim();
   const separator = input.lastIndexOf("@");
   const requestedModel =
     separator >= 0 ? input.slice(0, separator).trim() : input;
   const requestedProvider =
-    separator >= 0 ? input.slice(separator + 1).trim() : undefined;
+    separator >= 0 ? input.slice(separator + 1).trim() : preferredProvider;
 
-  const exact = models.filter(
-    (model) =>
-      (model.name === requestedModel ||
-        model.name === input ||
-        model.name.endsWith(`/${requestedModel}`)) &&
-      sameProvider(requestedProvider, model),
+  const candidates = models.filter((model) =>
+    sameProvider(requestedProvider, model),
   );
-  const selected = exact.length === 1 ? exact[0] : undefined;
+  const exact = candidates.filter(
+    (model) => model.name === requestedModel || model.name === input,
+  );
+  const aliases = exact.length
+    ? exact
+    : candidates.filter((model) => model.name.endsWith(`/${requestedModel}`));
+  const selected = aliases.length === 1 ? aliases[0] : undefined;
 
   if (selected) {
     return {

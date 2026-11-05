@@ -3,11 +3,13 @@ import {
   VISION_MODEL_REGEXES,
   EXCLUDE_VISION_MODEL_REGEXES,
 } from "../domain/model/catalog";
-import { LLMModel } from "../client/api";
+import type { LLMModel } from "../client/api";
 import {
   modelSelectionMatches,
   resolveModelSelection,
 } from "../domain/model/selection";
+
+import { parseCustomModels } from "../domain/model/custom";
 
 const CustomSeq = {
   val: -1000, //To ensure the custom model located at front, start from -1000, refer to constant.ts
@@ -55,110 +57,132 @@ export function getModelProvider(modelWithProvider: string): [string, string?] {
   return [model, provider];
 }
 
-let _collectCache: {
-  key: string;
-  result: ReturnType<typeof _collectModelTable>;
-} | null = null;
+export interface ModelRecord extends LLMModel {
+  displayName: string;
+  source: "builtin" | "custom" | "server" | "missing";
+  isDefault?: boolean;
+  isCustom?: boolean;
+}
 
 export function collectModelTable(
   models: readonly LLMModel[],
   customModels: string,
-) {
-  const cacheKey = `${models.length}:${customModels}`;
-  if (_collectCache && _collectCache.key === cacheKey) {
-    return _collectCache.result;
-  }
-  const result = _collectModelTable(models, customModels);
-  _collectCache = { key: cacheKey, result };
-  return result;
-}
-
-function _collectModelTable(models: readonly LLMModel[], customModels: string) {
-  const modelTable: Record<
-    string,
-    {
-      available: boolean;
-      name: string;
-      displayName: string;
-      sorted: number;
-      provider?: LLMModel["provider"]; // Marked as optional
-      isDefault?: boolean;
-      isCustom?: boolean; // Custom model added by user
-    }
-  > = {};
-
-  // default models
-  models.forEach((m) => {
-    // using <modelName>@<providerId> as fullName
-    modelTable[`${m.name}@${m?.provider?.id}`] = {
-      ...m,
-      displayName: m.name, // 'provider' is copied over if it exists
+  serverModels = "",
+): Record<string, ModelRecord> {
+  const table: Record<string, ModelRecord> = {};
+  for (const model of models) {
+    table[`${model.name}@${model.provider.id.toLowerCase()}`] = {
+      ...model,
+      provider: { ...model.provider },
+      displayName: model.displayName || model.name,
+      source: "builtin",
       isCustom: false,
     };
-  });
-
-  // server custom models
-  customModels
-    .split(",")
-    .filter((v) => !!v && v.length > 0)
-    .forEach((m) => {
-      const available = !m.startsWith("-");
-      const nameConfig =
-        m.startsWith("+") || m.startsWith("-") ? m.slice(1) : m;
-      let [name, displayName] = nameConfig.split("=");
-
-      // enable or disable all models
-      if (name === "all") {
-        Object.values(modelTable).forEach(
-          (model) => (model.available = available),
+  }
+  for (const [rules, source] of [
+    [customModels, "custom"],
+    [serverModels, "server"],
+  ] as const) {
+    for (const rule of parseCustomModels(rules, true).models) {
+      if (rule.id === "all") {
+        Object.values(table).forEach(
+          (model) => (model.available = rule.enabled),
         );
-      } else {
-        // 1. find model by name, and set available value
-        const [customModelName, customProviderName] = getModelProvider(name);
-        let count = 0;
-        for (const fullName in modelTable) {
-          const [modelName, providerName] = getModelProvider(fullName);
-          if (
-            customModelName == modelName &&
-            (customProviderName === undefined ||
-              customProviderName === providerName)
-          ) {
-            count += 1;
-            modelTable[fullName]["available"] = available;
-            if (displayName) {
-              modelTable[fullName]["displayName"] = displayName;
-            }
-          }
-        }
-        // 2. if model not exists, create new model with available value
-        if (count === 0) {
-          let [customModelName, customProviderName] = getModelProvider(name);
-          const provider = customProvider(
-            customProviderName || customModelName,
-          );
-          modelTable[`${customModelName}@${provider?.id}`] = {
-            name: customModelName,
-            displayName: displayName || customModelName,
-            available,
-            provider, // Use optional chaining
-            sorted: CustomSeq.next(`${customModelName}@${provider?.id}`),
-            isCustom: true, // Mark as user custom model
-          };
-        }
+        continue;
       }
-    });
+      const matches = Object.values(table).filter(
+        (model) =>
+          model.name === rule.id &&
+          (!rule.provider ||
+            [model.provider.id, model.provider.providerName].some(
+              (p) => p.toLowerCase() === rule.provider!.toLowerCase(),
+            )),
+      );
+      if (matches.length) {
+        matches.forEach((model) => {
+          model.available = rule.enabled;
+          model.source = source;
+          if (rule.displayName) model.displayName = rule.displayName;
+        });
+      } else {
+        const provider =
+          models.find((m) =>
+            [m.provider.id, m.provider.providerName].some(
+              (p) => p.toLowerCase() === rule.provider?.toLowerCase(),
+            ),
+          )?.provider ?? customProvider(rule.provider || rule.id);
+        const key = `${rule.id}@${provider.id.toLowerCase()}`;
+        table[key] = {
+          name: rule.id,
+          displayName: rule.displayName || rule.id,
+          available: rule.enabled,
+          provider: { ...provider },
+          sorted: CustomSeq.next(key),
+          source,
+          isCustom: true,
+        };
+      }
+    }
+  }
+  return table;
+}
 
-  return modelTable;
+/** Resolve against the same records used by the selector, preserving explicit backend IDs. */
+export function resolveConfiguredModel(
+  value: string,
+  models: readonly LLMModel[],
+  customModels: string,
+  serverModels: string,
+  preferredProvider?: string,
+) {
+  return resolveModelSelection(
+    value,
+    Object.values(collectModelTable(models, customModels, serverModels)),
+    preferredProvider,
+  );
+}
+
+/** Keep the current selection visible even if it disappears from a refreshed catalog. */
+export function retainSelectedModel(
+  models: ModelRecord[],
+  name: string,
+  providerName: string,
+): ModelRecord[] {
+  const visible = models.filter(
+    (m) =>
+      m.available ||
+      (m.name === name && m.provider.providerName === providerName),
+  );
+  if (
+    !visible.some(
+      (m) => m.name === name && m.provider.providerName === providerName,
+    )
+  ) {
+    visible.push({
+      name,
+      displayName: name,
+      provider: { id: providerName.toLowerCase(), providerName, sorted: 0 },
+      available: false,
+      sorted: 0,
+      source: "missing",
+      isCustom: true,
+    });
+  }
+  return visible;
 }
 
 export function collectModelTableWithDefaultModel(
   models: readonly LLMModel[],
   customModels: string,
   defaultModel: string,
+  serverModels = "",
 ) {
-  let modelTable = collectModelTable(models, customModels);
+  const modelTable = collectModelTable(models, customModels, serverModels);
   if (defaultModel && defaultModel !== "") {
-    const selection = resolveModelSelection(defaultModel, models);
+    const selection = resolveModelSelection(
+      defaultModel,
+      Object.values(modelTable),
+    );
     for (const key of Object.keys(modelTable)) {
       const model = modelTable[key];
       if (
@@ -192,11 +216,13 @@ export function collectModelsWithDefaultModel(
   models: readonly LLMModel[],
   customModels: string,
   defaultModel: string,
+  serverModels = "",
 ) {
   const modelTable = collectModelTableWithDefaultModel(
     models,
     customModels,
     defaultModel,
+    serverModels,
   );
   let allModels = Object.values(modelTable);
 

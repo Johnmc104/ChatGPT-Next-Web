@@ -20,7 +20,10 @@ function splitModelProvider(value: string) {
 }
 
 /** Parse CUSTOM_MODELS while retaining the existing +, -, @ and = syntax. */
-export function parseCustomModels(value: string): CustomModelParseResult {
+export function parseCustomModels(
+  value: string,
+  allowOverrides = false,
+): CustomModelParseResult {
   const models: CustomModelSpec[] = [];
   const errors: string[] = [];
   const seen = new Set<string>();
@@ -31,9 +34,10 @@ export function parseCustomModels(value: string): CustomModelParseResult {
     .filter(Boolean)
     .forEach((item) => {
       const enabled = !item.startsWith("-");
-      const body = item.startsWith("+") || item.startsWith("-")
-        ? item.slice(1).trim()
-        : item;
+      const body =
+        item.startsWith("+") || item.startsWith("-")
+          ? item.slice(1).trim()
+          : item;
       const equal = body.indexOf("=");
       const modelValue = equal >= 0 ? body.slice(0, equal).trim() : body;
       const displayName = equal >= 0 ? body.slice(equal + 1).trim() : undefined;
@@ -41,6 +45,10 @@ export function parseCustomModels(value: string): CustomModelParseResult {
 
       if (!id) {
         errors.push(`空模型 ID: ${item}`);
+        return;
+      }
+      if (provider === "" || /\s/.test(id)) {
+        errors.push(`模型 ID 或 Provider 格式无效: ${item}`);
         return;
       }
       if (id === "all") {
@@ -53,7 +61,7 @@ export function parseCustomModels(value: string): CustomModelParseResult {
       }
 
       const key = `${id.toLowerCase()}@${(provider ?? "").toLowerCase()}`;
-      if (seen.has(key)) {
+      if (seen.has(key) && !allowOverrides) {
         errors.push(`模型重复: ${modelValue}`);
         return;
       }

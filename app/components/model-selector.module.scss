@@ -279,3 +279,17 @@
     font-size: 12px;
   }
 }
+
+.model-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  margin-top: 4px;
+  font-size: 10px;
+  opacity: 0.75;
+  span {
+    border: 1px solid var(--border-in-light);
+    border-radius: 4px;
+    padding: 1px 4px;
+  }
+}
