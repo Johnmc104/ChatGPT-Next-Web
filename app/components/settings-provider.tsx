@@ -5,6 +5,7 @@
 
 import { useMemo, useState, type ChangeEvent } from "react";
 
+import { IconButton } from "./button";
 import { ListItem, PasswordInput, Select } from "./ui-lib";
 import Locale from "../locales";
 import { useAccessStore } from "../store";
@@ -16,14 +17,18 @@ import {
   StabilityConfig,
 } from "../constant";
 import { validateEndpointUrl } from "@/app/domain/endpoint/config";
+import { testEndpointConnection } from "@/app/services/endpoint/test";
 
 function EndpointInput(props: {
   value: string;
   placeholder: string;
   ariaLabel: string;
+  apiKey: string;
   onChange: (event: ChangeEvent<HTMLInputElement>) => void;
 }) {
   const [error, setError] = useState<string>("");
+  const [testResult, setTestResult] = useState<string>("");
+  const [testing, setTesting] = useState(false);
   const validate = () => {
     const result = validateEndpointUrl(props.value);
     setError(
@@ -37,6 +42,19 @@ function EndpointInput(props: {
         ? "接口地址不能包含账号密码 / Credentials are not allowed in the URL"
         : "接口地址格式无效 / Invalid endpoint URL",
     );
+  };
+
+  const testConnection = async () => {
+    const validation = validateEndpointUrl(props.value);
+    if (!validation.valid) {
+      validate();
+      return;
+    }
+    setTesting(true);
+    setTestResult("");
+    const result = await testEndpointConnection(props.value, props.apiKey);
+    setTestResult(result.message);
+    setTesting(false);
   };
 
   return (
@@ -56,6 +74,16 @@ function EndpointInput(props: {
       {error && (
         <div role="alert" style={{ color: "var(--error)", fontSize: 12 }}>
           {error}
+        </div>
+      )}
+      <IconButton
+        text={testing ? "Testing…" : "Test connection"}
+        onClick={() => void testConnection()}
+        disabled={testing}
+      />
+      {testResult && (
+        <div role="status" style={{ fontSize: 12 }}>
+          {testResult}
         </div>
       )}
     </div>
@@ -119,6 +147,7 @@ export function ProviderConfigSection(props: { showAccessCode: boolean }) {
         <EndpointInput
           ariaLabel={Locale.Settings.Access.OpenAI.Endpoint.Title}
           placeholder={OPENAI_BASE_URL}
+          apiKey={accessStore.openaiApiKey}
           value={accessStore.openaiUrl}
           onChange={(e) =>
             accessStore.update(
@@ -160,6 +189,7 @@ export function ProviderConfigSection(props: { showAccessCode: boolean }) {
         <EndpointInput
           ariaLabel={Locale.Settings.Access.Azure.Endpoint.Title}
           placeholder={Azure.ExampleEndpoint}
+          apiKey={accessStore.azureApiKey}
           value={accessStore.azureUrl}
           onChange={(e) =>
             accessStore.update(
@@ -217,6 +247,7 @@ export function ProviderConfigSection(props: { showAccessCode: boolean }) {
         <EndpointInput
           ariaLabel={Locale.Settings.Access.Stability.Endpoint.Title}
           placeholder={StabilityConfig.ExampleEndpoint}
+          apiKey={accessStore.stabilityApiKey}
           value={accessStore.stabilityUrl}
           onChange={(e) =>
             accessStore.update(
