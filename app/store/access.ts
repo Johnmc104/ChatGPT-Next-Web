@@ -15,6 +15,18 @@ import { resolveConfiguredModel } from "../utils/model";
 import { fetchJSON } from "../utils/fetch";
 import { logger } from "@/app/utils/logger";
 
+import {
+  checkAuthorization,
+  type AuthorizationError,
+} from "../services/auth/check";
+
+let verifiedCredentials: string | undefined;
+let verification:
+  | { credentials: string; promise: Promise<boolean> }
+  | undefined;
+const credentials = (code: string, key: string) =>
+  JSON.stringify([code.trim(), key.trim()]);
+
 let fetchPromise: Promise<void> | null = null;
 let configLoaded = false;
 
@@ -60,6 +72,8 @@ const DEFAULT_ACCESS_STATE = {
   hasCustomBaseUrl: false,
   configStatus: "idle" as "idle" | "loading" | "ready" | "error",
   configError: "",
+  authorizationStatus: "idle" as "idle" | "checking" | "authorized" | "error",
+  authorizationError: "" as AuthorizationError | "",
 
   // tts config
   edgeTTSVoiceName: "zh-CN-YunxiNeural",
@@ -91,7 +105,7 @@ export const useAccessStore = createPersistStore(
     // -----------------------------------------------------------------------
 
     isValidOpenAI() {
-      return ensure(get(), ["openaiApiKey"]);
+      return !get().hideUserApiKey && !!get().openaiApiKey.trim();
     },
 
     isAuthorized() {
@@ -118,10 +132,53 @@ export const useAccessStore = createPersistStore(
         ensure(get(), ["accessCode"]) &&
         state.hasServerApiKey
       ) {
-        return true;
+        return (
+          verifiedCredentials ===
+          credentials(
+            state.accessCode,
+            state.hideUserApiKey ? "" : state.openaiApiKey,
+          )
+        );
       }
 
       return false;
+    },
+    async verifyAuthorization(): Promise<boolean> {
+      await this.fetchConfig();
+      const state = get();
+      if (getClientConfig()?.buildMode === "export")
+        return this.isValidOpenAI();
+      const key = state.hideUserApiKey ? "" : state.openaiApiKey;
+      const signature = credentials(state.accessCode, key);
+      if (verifiedCredentials === signature) return true;
+      if (verification?.credentials === signature) return verification.promise;
+      set({ authorizationStatus: "checking", authorizationError: "" });
+      const promise = checkAuthorization(state.accessCode, key)
+        .then((result) => {
+          const current = get();
+          if (
+            signature !==
+            credentials(
+              current.accessCode,
+              current.hideUserApiKey ? "" : current.openaiApiKey,
+            )
+          ) {
+            if (verification?.credentials === signature)
+              set({ authorizationStatus: "idle", authorizationError: "" });
+            return false;
+          }
+          verifiedCredentials = result.ok ? signature : undefined;
+          set({
+            authorizationStatus: result.ok ? "authorized" : "error",
+            authorizationError: result.ok ? "" : result.code,
+          });
+          return result.ok;
+        })
+        .finally(() => {
+          if (verification?.credentials === signature) verification = undefined;
+        });
+      verification = { credentials: signature, promise };
+      return promise;
     },
     fetchConfig(): Promise<void> {
       if (getClientConfig()?.buildMode === "export") {
@@ -163,6 +220,13 @@ export const useAccessStore = createPersistStore(
             configStatus: "ready",
             configError: "",
           }));
+          if (
+            get().needCode &&
+            get().accessCode.trim() &&
+            !this.isValidOpenAI()
+          ) {
+            void this.verifyAuthorization().catch(() => undefined);
+          }
         })
         .catch((error) => {
           const message =

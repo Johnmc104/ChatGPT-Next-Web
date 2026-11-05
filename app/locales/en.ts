@@ -16,6 +16,26 @@ const en: LocaleType = {
      `,
   },
   Auth: {
+    Checking: "Verifying access…",
+    Retry: "Retry",
+    ContactAdmin: "The server has no API key. Contact the administrator.",
+    Configure: "Endpoint and model settings",
+    ConnectionHint:
+      "The access code authorizes this site. Check your own API key against its provider in Settings. Endpoints and custom models can be configured separately.",
+    CheckAccess: "Verify site access",
+    AccessVerified: "Site access verified.",
+    Validation: {
+      "missing-code": "Please enter the access code.",
+      "invalid-code": "Incorrect access code. Try again.",
+      "user-key-disabled":
+        "This site does not allow personal API keys. Use an access code.",
+      "missing-server-key":
+        "The server has no API key. Contact the administrator or use an allowed personal key.",
+      network: "Unable to verify access. Check your network and retry.",
+      timeout: "Access verification timed out. Retry.",
+      server: "Access verification is unavailable. Retry.",
+    },
+
     Return: "Return",
     Title: "Need Access Code",
     Tips: "Please enter access code below",

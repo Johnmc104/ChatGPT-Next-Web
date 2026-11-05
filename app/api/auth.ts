@@ -29,6 +29,11 @@ export interface AuthResult {
   error: boolean;
   msg?: string;
   systemApiKey?: string;
+  code?:
+    | "missing-code"
+    | "invalid-code"
+    | "user-key-disabled"
+    | "missing-server-key";
 }
 
 export async function auth(
@@ -52,6 +57,7 @@ export async function auth(
     return {
       error: true,
       msg: !accessCode ? "empty access code" : "wrong access code",
+      code: !accessCode ? "missing-code" : "invalid-code",
     };
   }
 
@@ -59,6 +65,7 @@ export async function auth(
     return {
       error: true,
       msg: "you are not allowed to access with your own api key",
+      code: "user-key-disabled",
     };
   }
 
@@ -106,6 +113,7 @@ export async function auth(
       // Return error if no API key is available
       return {
         error: true,
+        code: "missing-server-key",
         msg: "Server API key not configured. Please contact the administrator or provide your own API key.",
       };
     }

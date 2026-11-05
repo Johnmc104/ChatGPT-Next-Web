@@ -149,11 +149,8 @@ export function Settings() {
     });
   }
 
-  const enabledAccessControl = useMemo(
-    () => accessStore.enabledAccessControl(),
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-    [],
-  );
+  const enabledAccessControl =
+    accessStore.configStatus === "ready" && accessStore.needCode;
 
   const promptStore = usePromptStore();
   const builtinCount = SearchService.count.builtin;
@@ -533,7 +530,6 @@ export function Settings() {
               )}
             </ListItem>
           ) : null}
-
         </List>
 
         <List id={SlotID.CustomModel}>

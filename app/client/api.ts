@@ -212,22 +212,23 @@ export function getHeaders(
 
   const modelConfig = useChatStore.getState().currentSession().mask.modelConfig;
   const isRAGFlow = modelConfig.providerName === ServiceProvider.RAGFlow;
-  const apiKey = isRAGFlow ? "" : accessStore.openaiApiKey;
+  const apiKey =
+    isRAGFlow || accessStore.hideUserApiKey ? "" : accessStore.openaiApiKey;
 
   // 1. Always send access code if available (for server-side authentication)
   if (validString(accessStore.accessCode)) {
     headers["Authorization"] = getBearerToken(
-      ACCESS_CODE_PREFIX + accessStore.accessCode,
+      ACCESS_CODE_PREFIX + accessStore.accessCode.trim(),
     );
   }
 
   // 2. Send user's API key in custom header (server uses this for upstream calls)
   if (validString(apiKey)) {
-    headers["X-User-Api-Key"] = apiKey;
+    headers["X-User-Api-Key"] = apiKey.trim();
   }
 
-  // 3. If no access code but has API key, set Authorization directly
-  if (!validString(accessStore.accessCode) && validString(apiKey)) {
+  // 3. An explicitly allowed user key takes precedence, matching site verification.
+  if (validString(apiKey)) {
     headers["Authorization"] = getBearerToken(apiKey);
   }
 

@@ -3,7 +3,7 @@
  * Simplified for unified proxy architecture — only OpenAI, Azure, and Stability remain.
  */
 
-import { useMemo } from "react";
+import { useMemo, useState } from "react";
 
 import { ListItem, PasswordInput, Select } from "./ui-lib";
 import Locale from "../locales";
@@ -17,6 +17,7 @@ import {
   ServiceProvider,
   StabilityConfig,
 } from "../constant";
+import { IconButton } from "./button";
 import { EndpointInput } from "./endpoint-input";
 
 /**
@@ -26,6 +27,7 @@ import { EndpointInput } from "./endpoint-input";
 export function ProviderConfigSection(props: { showAccessCode: boolean }) {
   const accessStore = useAccessStore();
   const clientConfig = useMemo(() => getClientConfig(), []);
+  const [checkingAccess, setCheckingAccess] = useState(false);
 
   // ---- Access code ----
   const accessCodeComponent = props.showAccessCode && (
@@ -33,16 +35,44 @@ export function ProviderConfigSection(props: { showAccessCode: boolean }) {
       title={Locale.Settings.Access.AccessCode.Title}
       subTitle={Locale.Settings.Access.AccessCode.SubTitle}
     >
-      <PasswordInput
-        value={accessStore.accessCode}
-        type="text"
-        placeholder={Locale.Settings.Access.AccessCode.Placeholder}
-        onChange={(e) => {
-          accessStore.update(
-            (access) => (access.accessCode = e.currentTarget.value),
-          );
-        }}
-      />
+      <div>
+        <PasswordInput
+          value={accessStore.accessCode}
+          type="text"
+          placeholder={Locale.Settings.Access.AccessCode.Placeholder}
+          onChange={(e) => {
+            accessStore.update((access) => {
+              access.accessCode = e.currentTarget.value;
+              access.authorizationStatus = "idle";
+              access.authorizationError = "";
+            });
+          }}
+        />
+        <IconButton
+          text={Locale.Auth.CheckAccess}
+          disabled={checkingAccess}
+          onClick={async () => {
+            setCheckingAccess(true);
+            try {
+              await accessStore.verifyAuthorization();
+            } catch {
+              /* store exposes config errors */
+            } finally {
+              setCheckingAccess(false);
+            }
+          }}
+        />
+        <div role="status">
+          {accessStore.authorizationError
+            ? Locale.Auth.Validation[accessStore.authorizationError]
+            : accessStore.authorizationStatus === "authorized" &&
+              accessStore.isAuthorized()
+            ? Locale.Auth.AccessVerified
+            : accessStore.configError
+            ? Locale.Auth.ConfigError
+            : ""}
+        </div>
+      </div>
     </ListItem>
   );
 

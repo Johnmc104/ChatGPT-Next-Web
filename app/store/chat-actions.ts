@@ -52,7 +52,7 @@ export interface ChatActions {
     content: string,
     attachImages?: string[],
     isMcpResponse?: boolean,
-  ): Promise<void>;
+  ): Promise<boolean>;
   getMemoryPrompt(): ChatMessage | undefined;
   getMessagesWithMemory(): Promise<ChatMessage[]>;
   summarizeSession(refreshTitle: boolean, targetSession: ChatSession): void;
@@ -201,6 +201,19 @@ export function createChatActions(
     attachImages?: string[],
     isMcpResponse?: boolean,
   ) {
+    const access = useAccessStore.getState();
+    try {
+      if (!(await access.verifyAuthorization())) {
+        const code = useAccessStore.getState().authorizationError;
+        showToast(
+          code ? Locale.Auth.Validation[code] : Locale.Auth.MissingCode,
+        );
+        return false;
+      }
+    } catch {
+      showToast(Locale.Auth.ConfigError);
+      return false;
+    }
     const session = get().currentSession();
     const rawModelConfig = session.mask.modelConfig;
     const config = useAppConfig.getState();
@@ -349,6 +362,7 @@ export function createChatActions(
         );
       },
     });
+    return true;
   }
 
   // -- getMemoryPrompt -----------------------------------------------------

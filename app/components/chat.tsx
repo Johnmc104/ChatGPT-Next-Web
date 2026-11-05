@@ -260,16 +260,22 @@ function _Chat() {
       matchCommand.invoke();
       return;
     }
+    if (isLoading) return;
     setIsLoading(true);
     chatStore
       .onUserInput(userInput, attachImages)
-      .then(() => setIsLoading(false));
-    setAttachImages([]);
-    chatStore.setLastInput(userInput);
-    setUserInput("");
-    setPromptHints([]);
-    if (!isMobileScreen) inputRef.current?.focus();
-    setAutoScroll(true);
+      .then((accepted) => {
+        if (!accepted) return;
+        setAttachImages((current) =>
+          current.filter((image) => !attachImages.includes(image)),
+        );
+        chatStore.setLastInput(userInput);
+        setUserInput((current) => (current === userInput ? "" : current));
+        setPromptHints([]);
+        if (!isMobileScreen) inputRef.current?.focus();
+        setAutoScroll(true);
+      })
+      .finally(() => setIsLoading(false));
   };
 
   const onPromptSelect = (prompt: RenderPrompt) => {
@@ -363,7 +369,7 @@ function _Chat() {
   );
 
   const onResend = useCallback(
-    (message: ChatMessage) => {
+    async (message: ChatMessage) => {
       const resendingIndex = session.messages.findIndex(
         (m) => m.id === message.id,
       );
@@ -399,6 +405,18 @@ function _Chat() {
         return;
       }
 
+      try {
+        if (!(await useAccessStore.getState().verifyAuthorization())) {
+          const code = useAccessStore.getState().authorizationError;
+          showToast(
+            code ? Locale.Auth.Validation[code] : Locale.Auth.MissingCode,
+          );
+          return;
+        }
+      } catch {
+        showToast(Locale.Auth.ConfigError);
+        return;
+      }
       deleteMessage(userMessage.id);
       deleteMessage(botMessage?.id);
 
@@ -455,7 +473,14 @@ function _Chat() {
     session.messages.at(0)?.content !== BOT_HELLO.content
   ) {
     const copiedHello = Object.assign({}, BOT_HELLO);
-    if (accessStore.configStatus === "ready" && !accessStore.isAuthorized()) {
+    if (
+      accessStore.configStatus === "ready" &&
+      !(
+        accessStore.accessCode.trim() &&
+        ["idle", "checking"].includes(accessStore.authorizationStatus)
+      ) &&
+      !accessStore.isAuthorized()
+    ) {
       copiedHello.content = Locale.Error.Unauthorized;
     }
     context.push(copiedHello);

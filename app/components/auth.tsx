@@ -1,6 +1,6 @@
 import styles from "./auth.module.scss";
 import { IconButton } from "./button";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Path } from "../constant";
 import { useAccessStore } from "../store";
@@ -16,6 +16,15 @@ export function AuthPage() {
   const navigate = useNavigate();
   const accessStore = useAccessStore();
   const [error, setError] = useState("");
+  const [submitting, setSubmitting] = useState(false);
+  const inFlight = useRef(false);
+  const mounted = useRef(true);
+  useEffect(() => {
+    mounted.current = true;
+    return () => {
+      mounted.current = false;
+    };
+  }, []);
   const loadingConfig =
     accessStore.configStatus === "idle" ||
     accessStore.configStatus === "loading";
@@ -28,44 +37,38 @@ export function AuthPage() {
   }, []);
 
   const goChat = async () => {
-    // Clear any previous error
+    if (inFlight.current) return;
+    inFlight.current = true;
+    setSubmitting(true);
     setError("");
-
-    if (accessStore.configStatus !== "ready") {
-      try {
-        await accessStore.fetchConfig();
-      } catch {
-        setError(Locale.Auth.ConfigError);
-        return;
-      }
-    }
-
-    const state = useAccessStore.getState();
-
-    // Check if user has provided their own API key (unified proxy: only openaiApiKey matters)
-    const hasUserKey = state.isValidOpenAI();
-
-    // Check if server has API key and user provided access code (if needed)
-    const hasServerKey = state.hasServerApiKey;
-    const needCode = state.needCode;
-    const hasAccessCode = state.accessCode.trim().length > 0;
-
-    const decision = resolveAuthorization({
-      hasUserKey,
-      hasServerKey,
-      needCode,
-      hasAccessCode,
-    });
-    switch (decision.status) {
-      case "authorized":
-        navigate(Path.Chat);
-        break;
-      case "missing-access-code":
+    try {
+      await accessStore.fetchConfig();
+      const state = useAccessStore.getState();
+      const decision = resolveAuthorization({
+        hasUserKey: state.isValidOpenAI(),
+        hasServerKey: state.hasServerApiKey,
+        needCode: state.needCode,
+        hasAccessCode: !!state.accessCode.trim(),
+      });
+      if (decision.status === "missing-access-code") {
         setError(Locale.Auth.MissingCode);
-        break;
-      case "missing-server-key":
-        setError(Locale.Auth.MissingServerKey);
-        break;
+      } else if (decision.status === "missing-server-key") {
+        setError(
+          state.hideUserApiKey
+            ? Locale.Auth.ContactAdmin
+            : Locale.Auth.MissingServerKey,
+        );
+      } else if (await state.verifyAuthorization()) {
+        if (mounted.current) navigate(Path.Chat);
+      } else {
+        const code = useAccessStore.getState().authorizationError;
+        setError(code ? Locale.Auth.Validation[code] : Locale.Auth.ConfigError);
+      }
+    } catch {
+      setError(Locale.Auth.ConfigError);
+    } finally {
+      inFlight.current = false;
+      if (mounted.current) setSubmitting(false);
     }
   };
 
@@ -92,23 +95,28 @@ export function AuthPage() {
       <div className={styles["auth-title"]}>{Locale.Auth.Title}</div>
       <div className={styles["auth-tips"]}>{Locale.Auth.Tips}</div>
 
-      <PasswordInput
-        style={{ marginTop: "3vh", marginBottom: "3vh" }}
-        aria={Locale.Settings.ShowPassword}
-        aria-label={Locale.Auth.Input}
-        value={accessStore.accessCode}
-        type="text"
-        placeholder={Locale.Auth.Input}
-        onChange={(e) => {
-          accessStore.update(
-            (access) => (access.accessCode = e.currentTarget.value),
-          );
-        }}
-        onKeyDown={(e) => {
-          if (e.key === "Enter") void goChat();
-        }}
-        disabled={loadingConfig}
-      />
+      {accessStore.needCode && (
+        <PasswordInput
+          style={{ marginTop: "3vh", marginBottom: "3vh" }}
+          aria={Locale.Settings.ShowPassword}
+          aria-label={Locale.Auth.Input}
+          value={accessStore.accessCode}
+          type="text"
+          placeholder={Locale.Auth.Input}
+          onChange={(e) => {
+            setError("");
+            accessStore.update((access) => {
+              access.accessCode = e.currentTarget.value;
+              access.authorizationStatus = "idle";
+              access.authorizationError = "";
+            });
+          }}
+          onKeyDown={(e) => {
+            if (e.key === "Enter") void goChat();
+          }}
+          disabled={loadingConfig || submitting}
+        />
+      )}
 
       {!accessStore.hideUserApiKey ? (
         <>
@@ -121,11 +129,17 @@ export function AuthPage() {
             type="text"
             placeholder={Locale.Settings.Access.OpenAI.ApiKey.Placeholder}
             onChange={(e) => {
-              accessStore.update(
-                (access) => (access.openaiApiKey = e.currentTarget.value),
-              );
+              setError("");
+              accessStore.update((access) => {
+                access.openaiApiKey = e.currentTarget.value;
+                access.authorizationStatus = "idle";
+                access.authorizationError = "";
+              });
             }}
-            disabled={loadingConfig}
+            onKeyDown={(event) => {
+              if (event.key === "Enter") void goChat();
+            }}
+            disabled={loadingConfig || submitting}
           />
         </>
       ) : null}
@@ -133,6 +147,8 @@ export function AuthPage() {
       {loadingConfig && (
         <div className={styles["auth-status"]}>{Locale.Auth.Loading}</div>
       )}
+
+      {submitting && <div role="status">{Locale.Auth.Checking}</div>}
 
       {error && (
         <div className={styles["auth-error"]} role="alert">
@@ -142,12 +158,22 @@ export function AuthPage() {
 
       <div className={styles["auth-actions"]}>
         <IconButton
-          text={Locale.Auth.Confirm}
+          text={
+            accessStore.configStatus === "error"
+              ? Locale.Auth.Retry
+              : Locale.Auth.Confirm
+          }
           type="primary"
           onClick={goChat}
-          disabled={loadingConfig}
+          disabled={loadingConfig || submitting}
+        />
+        <IconButton
+          text={Locale.Auth.Configure}
+          onClick={() => navigate(Path.Settings)}
+          disabled={submitting}
         />
       </div>
+      <div className={styles["auth-tips"]}>{Locale.Auth.ConnectionHint}</div>
     </div>
   );
 }

@@ -14,6 +14,25 @@ const cn = {
        `,
   },
   Auth: {
+    Checking: "正在验证访问权限…",
+    Retry: "重试",
+    ContactAdmin: "服务器未配置 API Key，请联系管理员。",
+    Configure: "接口与模型设置",
+    ConnectionHint:
+      "访问码用于本站授权。自有 API Key 的上游有效性请在设置页验证；自定义接口与自定义模型可分别配置。",
+    CheckAccess: "验证访问权限",
+    AccessVerified: "本站访问权限已验证。",
+    Validation: {
+      "missing-code": "请输入访问码。",
+      "invalid-code": "访问码错误，请重新输入。",
+      "user-key-disabled": "本站不允许使用自有 API Key，请使用访问码。",
+      "missing-server-key":
+        "服务器未配置 API Key，请联系管理员或使用允许的自有 Key。",
+      network: "无法验证访问权限，请检查网络后重试。",
+      timeout: "访问验证超时，请重试。",
+      server: "访问验证服务暂时不可用，请重试。",
+    },
+
     Return: "返回",
     Title: "需要密码",
     Tips: "管理员开启了密码验证，请在下方填入访问码",
