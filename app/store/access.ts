@@ -129,6 +129,7 @@ export const useAccessStore = createPersistStore(
         }
         return Promise.resolve();
       }
+      if (get().configStatus === "ready") return Promise.resolve();
       if (fetchPromise) return fetchPromise;
 
       set({ configStatus: "loading", configError: "" });
