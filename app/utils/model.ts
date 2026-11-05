@@ -4,6 +4,10 @@ import {
   EXCLUDE_VISION_MODEL_REGEXES,
 } from "../domain/model/catalog";
 import { LLMModel } from "../client/api";
+import {
+  modelSelectionMatches,
+  resolveModelSelection,
+} from "../domain/model/selection";
 
 const CustomSeq = {
   val: -1000, //To ensure the custom model located at front, start from -1000, refer to constant.ts
@@ -154,19 +158,15 @@ export function collectModelTableWithDefaultModel(
 ) {
   let modelTable = collectModelTable(models, customModels);
   if (defaultModel && defaultModel !== "") {
-    if (defaultModel.includes("@")) {
-      if (defaultModel in modelTable) {
-        modelTable[defaultModel].isDefault = true;
-      }
-    } else {
-      for (const key of Object.keys(modelTable)) {
-        if (
-          modelTable[key].available &&
-          getModelProvider(key)[0] == defaultModel
-        ) {
-          modelTable[key].isDefault = true;
-          break;
-        }
+    const selection = resolveModelSelection(defaultModel, models);
+    for (const key of Object.keys(modelTable)) {
+      const model = modelTable[key];
+      if (
+        model.available &&
+        modelSelectionMatches(selection, model as LLMModel)
+      ) {
+        model.isDefault = true;
+        break;
       }
     }
   }

@@ -10,7 +10,8 @@ import { getClientConfig } from "../config/client";
 import { createPersistStore } from "../utils/store";
 import { ensure } from "../utils/clone";
 import { DEFAULT_CONFIG } from "./config";
-import { getModelProvider } from "../utils/model";
+import { DEFAULT_MODELS } from "../domain/model/catalog";
+import { resolveModelSelection } from "../domain/model/selection";
 import { fetchJSON } from "../utils/fetch";
 import { logger } from "@/app/utils/logger";
 
@@ -141,9 +142,9 @@ export const useAccessStore = createPersistStore(
         .then((res) => {
           const defaultModel = res.defaultModel ?? "";
           if (defaultModel !== "") {
-            const [model, providerName] = getModelProvider(defaultModel);
-            DEFAULT_CONFIG.modelConfig.model = model;
-            DEFAULT_CONFIG.modelConfig.providerName = providerName as any;
+            const selection = resolveModelSelection(defaultModel, DEFAULT_MODELS);
+            DEFAULT_CONFIG.modelConfig.model = selection.model as typeof DEFAULT_CONFIG.modelConfig.model;
+            DEFAULT_CONFIG.modelConfig.providerName = selection.providerName as typeof DEFAULT_CONFIG.modelConfig.providerName;
           }
           logger.info("[Config] got config from server", res);
           set(() => ({
