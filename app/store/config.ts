@@ -9,7 +9,6 @@ import {
 import { getClientConfig } from "../config/client";
 import {
   DEFAULT_INPUT_TEMPLATE,
-  DEFAULT_MODELS,
   DEFAULT_SIDEBAR_WIDTH,
   DEFAULT_TTS_ENGINE,
   DEFAULT_TTS_ENGINES,
@@ -20,6 +19,7 @@ import {
   StoreKey,
   ServiceProvider,
 } from "../constant";
+import { DEFAULT_MODELS } from "../domain/model/catalog";
 import { createPersistStore } from "../utils/store";
 import type { Voice } from "rt-client";
 

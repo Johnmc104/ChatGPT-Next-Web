@@ -1,6 +1,6 @@
 import { useState, useCallback } from "react";
 import { useChatStore } from "../store";
-import { uploadImage as uploadImageRemote } from "@/app/utils/chat";
+import { uploadImage as uploadImageRemote } from "@/app/services/media/image";
 import { isVisionModel } from "../utils";
 
 const MAX_ATTACH_IMAGES = 3;

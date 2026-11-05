@@ -19,7 +19,7 @@ import {
   TurnDetection,
 } from "rt-client";
 import { AudioHandler } from "@/app/lib/audio";
-import { uploadImage } from "@/app/utils/chat";
+import { uploadImage } from "@/app/services/media/image";
 import { VoicePrint } from "@/app/components/voice-print";
 
 interface RealtimeChatProps {

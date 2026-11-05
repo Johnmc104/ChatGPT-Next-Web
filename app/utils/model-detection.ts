@@ -10,9 +10,11 @@ import {
   REQUEST_TIMEOUT_MS,
   REQUEST_TIMEOUT_MS_FOR_THINKING,
   ServiceProvider,
+} from "@/app/constant";
+import {
   VISION_MODEL_REGEXES,
   EXCLUDE_VISION_MODEL_REGEXES,
-} from "@/app/constant";
+} from "@/app/domain/model/catalog";
 import { ModelSize } from "@/app/typing";
 import { ModelCapability } from "@/app/api/model-info/types";
 import { hasCapability } from "@/app/hooks/useModelInfo";

@@ -20,7 +20,7 @@ import {
   usePluginStore,
   ModelConfig,
 } from "@/app/store";
-import { streamWithThink } from "@/app/utils/chat";
+import { streamWithThink } from "@/app/services/chat/stream";
 import {
   ChatOptions,
   getHeaders,
@@ -36,7 +36,7 @@ import {
   getTimeoutMSByModel,
   isVisionModel,
 } from "@/app/utils";
-import { preProcessImageContent } from "@/app/utils/chat";
+import { preProcessImageContent } from "@/app/services/media/image";
 import { fetch } from "@/app/utils/stream";
 import { logger } from "@/app/utils/logger";
 

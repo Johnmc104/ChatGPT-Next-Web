@@ -3,12 +3,12 @@
 import {
   ApiPath,
   OPENAI_BASE_URL,
-  DEFAULT_MODELS,
   OpenaiPath,
   Azure,
   REQUEST_TIMEOUT_MS,
   ServiceProvider,
 } from "@/app/constant";
+import { DEFAULT_MODELS } from "@/app/domain/model/catalog";
 import {
   ChatMessageTool,
   useAccessStore,
@@ -22,8 +22,8 @@ import {
   uploadImage,
   base64Image2Blob,
   cacheBase64Image,
-  streamWithThink,
-} from "@/app/utils/chat";
+} from "@/app/services/media/image";
+import { streamWithThink } from "@/app/services/chat/stream";
 import { cloudflareAIGatewayUrl } from "@/app/utils/cloudflare";
 import { ModelSize, DalleStyle, ImageQuality } from "@/app/typing";
 

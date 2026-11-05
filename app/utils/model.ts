@@ -2,7 +2,7 @@ import {
   DEFAULT_MODELS,
   VISION_MODEL_REGEXES,
   EXCLUDE_VISION_MODEL_REGEXES,
-} from "../constant";
+} from "../domain/model/catalog";
 import { LLMModel } from "../client/api";
 
 const CustomSeq = {

@@ -1,5 +1,6 @@
 import { sha256 } from "../utils/hash";
-import { DEFAULT_MODELS, DEFAULT_GA_ID } from "../constant";
+import { DEFAULT_GA_ID } from "../constant";
+import { DEFAULT_MODELS } from "../domain/model/catalog";
 import { isGPT4Model } from "../utils/model";
 import { logger } from "@/app/utils/logger";
 

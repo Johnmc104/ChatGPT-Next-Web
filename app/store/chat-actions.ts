@@ -18,7 +18,6 @@ import { ChatControllerPool } from "../client/controller";
 import { showToast } from "../utils/toast";
 import {
   DEFAULT_INPUT_TEMPLATE,
-  DEFAULT_MODELS,
   DEFAULT_SYSTEM_TEMPLATE,
   KnowledgeCutOffDate,
   MCP_SYSTEM_TEMPLATE,
@@ -26,6 +25,7 @@ import {
   ServiceProvider,
   SUMMARIZE_MODEL,
 } from "../constant";
+import { DEFAULT_MODELS } from "../domain/model/catalog";
 import Locale, { getLang } from "../locales";
 import { prettyObject } from "../utils/format";
 import { countTokens } from "../utils/tiktoken";

@@ -28,7 +28,7 @@ import {
   showImageModal,
   showModal,
 } from "@/app/components/ui-lib";
-import { removeImage } from "@/app/utils/chat";
+import { removeImage } from "@/app/services/media/image";
 import { SideBar } from "./sd-sidebar";
 import { WindowContent } from "@/app/components/home";
 import { params } from "./sd-panel";

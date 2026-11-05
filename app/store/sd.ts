@@ -7,7 +7,7 @@ import {
 import { getBearerToken } from "@/app/client/api";
 import { createPersistStore } from "@/app/utils/store";
 import { nanoid } from "nanoid";
-import { cacheBase64Image } from "@/app/utils/chat";
+import { cacheBase64Image } from "@/app/services/media/image";
 import {
   models,
   getModelParamBasicData,
