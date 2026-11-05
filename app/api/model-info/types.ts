@@ -3,30 +3,8 @@
  * These are inferred from OpenRouter's architecture.input_modalities,
  * architecture.output_modalities, and supported_parameters fields.
  */
-export enum ModelCapability {
-  /** Accepts text input */
-  TextInput = "text-input",
-  /** Accepts image input (vision models) */
-  ImageInput = "image-input",
-  /** Accepts audio input */
-  AudioInput = "audio-input",
-  /** Accepts video input */
-  VideoInput = "video-input",
-  /** Accepts file input */
-  FileInput = "file-input",
-  /** Generates text output */
-  TextOutput = "text-output",
-  /** Generates image output (image generation models) */
-  ImageOutput = "image-output",
-  /** Generates audio output (TTS / audio models) */
-  AudioOutput = "audio-output",
-  /** Supports extended thinking / reasoning */
-  Reasoning = "reasoning",
-  /** Supports tool / function calling */
-  ToolUse = "tool-use",
-  /** Supports web search */
-  WebSearch = "web-search",
-}
+export { ModelCapability } from "@/app/domain/model/types";
+import type { ModelCapability } from "@/app/domain/model/types";
 
 /**
  * Model metadata fetched from OpenRouter API

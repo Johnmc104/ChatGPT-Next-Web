@@ -2,8 +2,8 @@ import { useState, useCallback } from "react";
 import { useChatStore } from "../store";
 import { uploadImage as uploadImageRemote } from "@/app/services/media/image";
 import { isVisionModel } from "../utils";
-
-const MAX_ATTACH_IMAGES = 3;
+import { getClientModelInfo } from "@/app/hooks/useModelInfo";
+import { resolveMaxInputImages } from "@/app/domain/model/resolve";
 
 export function useChatImages() {
   const chatStore = useChatStore();
@@ -12,14 +12,20 @@ export function useChatImages() {
 
   async function appendImageFiles(files: File[]) {
     if (files.length === 0) return;
+    const model = chatStore.currentSession().mask.modelConfig.model;
+    const maxImages = resolveMaxInputImages(
+      model,
+      getClientModelInfo(model),
+    );
+    if (maxImages === 0) return;
     setUploading(true);
     try {
       const results = await Promise.all(
-        files.slice(0, MAX_ATTACH_IMAGES).map((f) => uploadImageRemote(f)),
+        files.slice(0, maxImages).map((f) => uploadImageRemote(f)),
       );
       setAttachImages((prev) => {
         const merged = [...prev, ...results];
-        return merged.slice(0, MAX_ATTACH_IMAGES);
+        return merged.slice(0, maxImages);
       });
     } catch (e) {
       console.error("[Image Upload] failed", e);
