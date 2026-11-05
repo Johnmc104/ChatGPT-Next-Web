@@ -159,6 +159,35 @@ const en: LocaleType = {
     Revert: "Revert",
   },
   Settings: {
+    EndpointDiagnostics: {
+      Test: "Test connection",
+      Testing: "Testing…",
+      Reset: "Reset endpoint",
+      Hint: "Read-only check; no chat request. Results are kept until settings change. Some services do not expose model lists; a 404 does not prove chat is unavailable.",
+      Validation: {
+        required: "Endpoint is required.",
+        invalid: "Invalid endpoint URL.",
+        protocol: "Only HTTP(S) endpoints are supported.",
+        credentials: "Use the API Key field; URL credentials are not allowed.",
+      },
+      Codes: {
+        connected: "API check succeeded.",
+        invalid: "Invalid endpoint.",
+        unauthorized:
+          "Authentication failed. Check your access code or API key.",
+        forbidden: "Access denied. Check endpoint permissions.",
+        "not-found":
+          "Diagnostic endpoint not found. Check the URL or supported API paths.",
+        "rate-limited": "Rate limited. Retry later.",
+        upstream: "Upstream service unavailable. Retry later.",
+        http: "Endpoint returned an error.",
+        response: "Unexpected API response. Check the URL and protocol.",
+        network:
+          "Connection failed. Check your network, proxy, or CORS configuration.",
+        timeout: "Connection timed out. Retry.",
+        cancelled: "Check cancelled.",
+      },
+    },
     Title: "Settings",
     SubTitle: "All Settings",
     ShowPassword: "ShowPassword",

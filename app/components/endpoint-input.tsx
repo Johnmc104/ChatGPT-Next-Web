@@ -1,0 +1,127 @@
+import { useCallback, useEffect, useRef, useState } from "react";
+import { ServiceProvider } from "../constant";
+import Locale from "../locales";
+import { validateEndpointUrl } from "../domain/endpoint/config";
+import {
+  testEndpointConnection,
+  type EndpointTestResult,
+} from "../services/endpoint/test";
+import { IconButton } from "./button";
+
+export function EndpointInput(props: {
+  value: string;
+  placeholder: string;
+  ariaLabel: string;
+  apiKey: string;
+  provider: ServiceProvider;
+  apiVersion?: string;
+  defaultValue: string;
+  onChange: (value: string) => void;
+}) {
+  const labels = Locale.Settings.EndpointDiagnostics;
+  const [draft, setDraft] = useState(props.value);
+  const [error, setError] = useState("");
+  const [result, setResult] = useState<EndpointTestResult>();
+  const [testing, setTesting] = useState(false);
+  const request = useRef<AbortController>();
+  const invalidate = useCallback(() => {
+    request.current?.abort();
+    request.current = undefined;
+    setTesting(false);
+    setResult(undefined);
+  }, []);
+  useEffect(() => {
+    setDraft(props.value);
+    setError("");
+  }, [props.value]);
+  useEffect(() => {
+    invalidate();
+    return () => {
+      request.current?.abort();
+      request.current = undefined;
+    };
+  }, [props.value, props.apiKey, props.provider, props.apiVersion, invalidate]);
+
+  const validate = () => {
+    const validation = validateEndpointUrl(draft);
+    setError(validation.valid ? "" : labels.Validation[validation.code!]);
+    return validation;
+  };
+  const save = () => {
+    const validation = validate();
+    if (validation.valid) props.onChange(validation.normalized!);
+  };
+  const test = async () => {
+    const validation = validate();
+    if (!validation.valid) return;
+    invalidate();
+    const controller = new AbortController();
+    request.current = controller;
+    setTesting(true);
+    const response = await testEndpointConnection(
+      validation.normalized!,
+      props.apiKey,
+      {
+        provider: props.provider,
+        apiVersion: props.apiVersion,
+        signal: controller.signal,
+      },
+    );
+    if (request.current !== controller) return;
+    setResult(response);
+    setTesting(false);
+    request.current = undefined;
+  };
+  return (
+    <div>
+      <input
+        aria-label={props.ariaLabel}
+        aria-invalid={!!error}
+        type="url"
+        value={draft}
+        placeholder={props.placeholder}
+        onChange={(event) => {
+          invalidate();
+          setError("");
+          setDraft(event.target.value);
+        }}
+        onBlur={save}
+      />
+      {error && (
+        <div role="alert" style={{ color: "var(--error)", fontSize: 12 }}>
+          {error}
+        </div>
+      )}
+      <div style={{ display: "flex", gap: 8, marginTop: 8, flexWrap: "wrap" }}>
+        <IconButton
+          text={testing ? labels.Testing : labels.Test}
+          onClick={() => void test()}
+          disabled={testing}
+        />
+        {testing && (
+          <IconButton
+            text={Locale.UI.Cancel}
+            onClick={() => request.current?.abort()}
+          />
+        )}
+        <IconButton
+          text={labels.Reset}
+          onClick={() => {
+            invalidate();
+            setError("");
+            setDraft(props.defaultValue);
+            props.onChange(props.defaultValue);
+          }}
+        />
+      </div>
+      {result && (
+        <div role="status" style={{ fontSize: 12, marginTop: 8 }}>
+          {labels.Codes[result.code]}{" "}
+          {result.status ? `HTTP ${result.status} · ` : ""}
+          {result.latencyMs} ms
+        </div>
+      )}
+      <div style={{ fontSize: 12, marginTop: 4 }}>{labels.Hint}</div>
+    </div>
+  );
+}

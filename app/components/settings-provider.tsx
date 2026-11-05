@@ -3,92 +3,21 @@
  * Simplified for unified proxy architecture — only OpenAI, Azure, and Stability remain.
  */
 
-import { useMemo, useState, type ChangeEvent } from "react";
+import { useMemo } from "react";
 
-import { IconButton } from "./button";
 import { ListItem, PasswordInput, Select } from "./ui-lib";
 import Locale from "../locales";
 import { useAccessStore } from "../store";
 import { getClientConfig } from "../config/client";
 import {
+  ApiPath,
   Azure,
+  RAGFLOW_BASE_URL,
   OPENAI_BASE_URL,
   ServiceProvider,
   StabilityConfig,
 } from "../constant";
-import { validateEndpointUrl } from "@/app/domain/endpoint/config";
-import { testEndpointConnection } from "@/app/services/endpoint/test";
-
-function EndpointInput(props: {
-  value: string;
-  placeholder: string;
-  ariaLabel: string;
-  apiKey: string;
-  onChange: (event: ChangeEvent<HTMLInputElement>) => void;
-}) {
-  const [error, setError] = useState<string>("");
-  const [testResult, setTestResult] = useState<string>("");
-  const [testing, setTesting] = useState(false);
-  const validate = () => {
-    const result = validateEndpointUrl(props.value);
-    setError(
-      result.valid
-        ? ""
-        : result.code === "required"
-        ? "接口地址不能为空 / Endpoint is required"
-        : result.code === "protocol"
-        ? "仅支持 http(s) / Only http(s) is supported"
-        : result.code === "credentials"
-        ? "接口地址不能包含账号密码 / Credentials are not allowed in the URL"
-        : "接口地址格式无效 / Invalid endpoint URL",
-    );
-  };
-
-  const testConnection = async () => {
-    const validation = validateEndpointUrl(props.value);
-    if (!validation.valid) {
-      validate();
-      return;
-    }
-    setTesting(true);
-    setTestResult("");
-    const result = await testEndpointConnection(props.value, props.apiKey);
-    setTestResult(result.message);
-    setTesting(false);
-  };
-
-  return (
-    <div>
-      <input
-        aria-label={props.ariaLabel}
-        aria-invalid={error ? true : undefined}
-        type="text"
-        value={props.value}
-        placeholder={props.placeholder}
-        onChange={(event) => {
-          setError("");
-          props.onChange(event);
-        }}
-        onBlur={validate}
-      />
-      {error && (
-        <div role="alert" style={{ color: "var(--error)", fontSize: 12 }}>
-          {error}
-        </div>
-      )}
-      <IconButton
-        text={testing ? "Testing…" : "Test connection"}
-        onClick={() => void testConnection()}
-        disabled={testing}
-      />
-      {testResult && (
-        <div role="status" style={{ fontSize: 12 }}>
-          {testResult}
-        </div>
-      )}
-    </div>
-  );
-}
+import { EndpointInput } from "./endpoint-input";
 
 /**
  * Renders access-code + custom-endpoint toggle + provider-specific
@@ -148,11 +77,11 @@ export function ProviderConfigSection(props: { showAccessCode: boolean }) {
           ariaLabel={Locale.Settings.Access.OpenAI.Endpoint.Title}
           placeholder={OPENAI_BASE_URL}
           apiKey={accessStore.openaiApiKey}
+          provider={ServiceProvider.OpenAI}
+          defaultValue={clientConfig?.isApp ? OPENAI_BASE_URL : ApiPath.OpenAI}
           value={accessStore.openaiUrl}
-          onChange={(e) =>
-            accessStore.update(
-              (access) => (access.openaiUrl = e.currentTarget.value),
-            )
+          onChange={(value) =>
+            accessStore.update((access) => (access.openaiUrl = value))
           }
         />
       </ListItem>
@@ -190,11 +119,12 @@ export function ProviderConfigSection(props: { showAccessCode: boolean }) {
           ariaLabel={Locale.Settings.Access.Azure.Endpoint.Title}
           placeholder={Azure.ExampleEndpoint}
           apiKey={accessStore.azureApiKey}
+          provider={ServiceProvider.Azure}
+          defaultValue={""}
+          apiVersion={accessStore.azureApiVersion}
           value={accessStore.azureUrl}
-          onChange={(e) =>
-            accessStore.update(
-              (access) => (access.azureUrl = e.currentTarget.value),
-            )
+          onChange={(value) =>
+            accessStore.update((access) => (access.azureUrl = value))
           }
         />
       </ListItem>
@@ -248,11 +178,11 @@ export function ProviderConfigSection(props: { showAccessCode: boolean }) {
           ariaLabel={Locale.Settings.Access.Stability.Endpoint.Title}
           placeholder={StabilityConfig.ExampleEndpoint}
           apiKey={accessStore.stabilityApiKey}
+          provider={ServiceProvider.Stability}
+          defaultValue={StabilityConfig.ExampleEndpoint}
           value={accessStore.stabilityUrl}
-          onChange={(e) =>
-            accessStore.update(
-              (access) => (access.stabilityUrl = e.currentTarget.value),
-            )
+          onChange={(value) =>
+            accessStore.update((access) => (access.stabilityUrl = value))
           }
         />
       </ListItem>
@@ -270,6 +200,38 @@ export function ProviderConfigSection(props: { showAccessCode: boolean }) {
               (access) => (access.stabilityApiKey = e.currentTarget.value),
             );
           }}
+        />
+      </ListItem>
+    </>
+  );
+
+  const ragflowConfigComponent = accessStore.provider ===
+    ServiceProvider.RAGFlow && (
+    <>
+      <ListItem title="RAGFlow Endpoint">
+        <EndpointInput
+          ariaLabel="RAGFlow Endpoint"
+          value={accessStore.ragflowUrl}
+          apiKey={accessStore.ragflowApiKey}
+          provider={ServiceProvider.RAGFlow}
+          placeholder={RAGFLOW_BASE_URL}
+          defaultValue={
+            clientConfig?.isApp ? RAGFLOW_BASE_URL : ApiPath.RAGFlow
+          }
+          onChange={(value) =>
+            accessStore.update((access) => (access.ragflowUrl = value))
+          }
+        />
+      </ListItem>
+      <ListItem title="RAGFlow API Key">
+        <PasswordInput
+          aria-label="RAGFlow API Key"
+          value={accessStore.ragflowApiKey}
+          onChange={(event) =>
+            accessStore.update(
+              (access) => (access.ragflowApiKey = event.currentTarget.value),
+            )
+          }
         />
       </ListItem>
     </>
@@ -310,6 +272,7 @@ export function ProviderConfigSection(props: { showAccessCode: boolean }) {
               {openAIConfigComponent}
               {azureConfigComponent}
               {stabilityConfigComponent}
+              {ragflowConfigComponent}
             </>
           )}
         </>

@@ -1,84 +1,118 @@
-import { getClientConfig } from "@/app/config/client";
-import { getHeaders } from "@/app/client/api";
-import { validateEndpointUrl } from "@/app/domain/endpoint/config";
+import { getClientConfig } from "../../config/client";
+import { useAccessStore } from "../../store/access";
+import { fetch as platformFetch } from "../../utils/stream";
+import { buildEndpointDiagnostic } from "../../domain/endpoint/diagnostic";
+import { ServiceProvider } from "../../constant";
+
+export type EndpointTestCode =
+  | "connected"
+  | "invalid"
+  | "unauthorized"
+  | "forbidden"
+  | "not-found"
+  | "rate-limited"
+  | "upstream"
+  | "http"
+  | "response"
+  | "network"
+  | "timeout"
+  | "cancelled";
 
 export interface EndpointTestResult {
   ok: boolean;
+  code: EndpointTestCode;
   status?: number;
   latencyMs: number;
-  message: string;
 }
 
 export async function testEndpointConnection(
   baseUrl: string,
   apiKey: string,
+  options: {
+    provider?: ServiceProvider;
+    apiVersion?: string;
+    signal?: AbortSignal;
+  } = {},
 ): Promise<EndpointTestResult> {
-  const validation = validateEndpointUrl(baseUrl);
-  if (!validation.valid || !validation.normalized) {
-    return {
-      ok: false,
-      latencyMs: 0,
-      message: `接口地址无效 / Invalid endpoint (${validation.code ?? "unknown"})`,
-    };
-  }
-
-  const normalized = validation.normalized;
-  const isApp = !!getClientConfig()?.isApp;
-  const isRelative = normalized.startsWith("/");
-  const endpoint = `${normalized.replace(/\/$/, "")}/v1/models`;
-  const headers: Record<string, string> = {
-    ...getHeaders(false),
-    ...(apiKey.trim() ? { "X-User-Api-Key": apiKey.trim() } : {}),
-  };
-
-  if (!isRelative && !isApp) {
-    headers["X-Base-URL"] = normalized;
-  }
-
-  const url = isRelative
-    ? endpoint
-    : !isApp
-    ? "/api/proxy/v1/models"
-    : endpoint;
+  const request = buildEndpointDiagnostic({
+    url: baseUrl,
+    apiKey,
+    ...options,
+    isApp: !!getClientConfig()?.isApp,
+    accessCode: useAccessStore.getState().accessCode,
+  });
+  if (!request) return { ok: false, code: "invalid", latencyMs: 0 };
+  if (options.signal?.aborted)
+    return { ok: false, code: "cancelled", latencyMs: 0 };
   const started = performance.now();
   const controller = new AbortController();
-  const timeout = setTimeout(() => controller.abort(), 8_000);
-
+  let timedOut = false;
+  const abort = () => controller.abort();
+  options.signal?.addEventListener("abort", abort, { once: true });
+  const timeout = setTimeout(() => {
+    timedOut = true;
+    controller.abort();
+  }, 8_000);
+  const result = (
+    code: EndpointTestCode,
+    status?: number,
+  ): EndpointTestResult => ({
+    ok: code === "connected",
+    code,
+    status,
+    latencyMs: Math.round(performance.now() - started),
+  });
   try {
-    const response = await fetch(url, {
+    const response = await platformFetch(request.url, {
       method: "GET",
-      headers,
+      headers: request.headers,
       signal: controller.signal,
     });
-    const latencyMs = Math.round(performance.now() - started);
-    if (response.ok) {
-      return {
-        ok: true,
-        status: response.status,
-        latencyMs,
-        message: `连接成功 / Connected (${response.status}, ${latencyMs} ms)`,
-      };
+    if (!response.ok) {
+      const code =
+        response.status === 401
+          ? "unauthorized"
+          : response.status === 403
+          ? "forbidden"
+          : response.status === 404
+          ? "not-found"
+          : response.status === 429
+          ? "rate-limited"
+          : response.status >= 500
+          ? "upstream"
+          : "http";
+      return result(code, response.status);
     }
-    return {
-      ok: false,
-      status: response.status,
-      latencyMs,
-      message:
-        response.status === 401 || response.status === 403
-          ? `认证失败 / Authentication failed (${response.status})`
-          : `接口返回错误 / Endpoint returned ${response.status}`,
-    };
-  } catch (error) {
-    const latencyMs = Math.round(performance.now() - started);
-    return {
-      ok: false,
-      latencyMs,
-      message:
-        error instanceof DOMException && error.name === "AbortError"
-          ? "连接超时 / Connection timed out"
-          : "无法连接接口 / Unable to reach endpoint",
-    };
+    // A login page or reverse-proxy HTML response is not a successful API check.
+    try {
+      const body = await response.json();
+      if (
+        !body ||
+        typeof body !== "object" ||
+        body.error ||
+        ([ServiceProvider.OpenAI, ServiceProvider.RAGFlow].includes(
+          options.provider ?? ServiceProvider.OpenAI,
+        ) &&
+          !Array.isArray(body.data))
+      ) {
+        return result("response", response.status);
+      }
+    } catch {
+      if (controller.signal.aborted)
+        return result(timedOut ? "timeout" : "cancelled");
+      return result("response", response.status);
+    }
+    return result("connected", response.status);
+  } catch {
+    return result(
+      controller.signal.aborted
+        ? timedOut
+          ? "timeout"
+          : "cancelled"
+        : "network",
+    );
   } finally {
     clearTimeout(timeout);
+    options.signal?.removeEventListener("abort", abort);
   }
 }
