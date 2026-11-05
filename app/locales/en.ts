@@ -367,7 +367,8 @@ const en: LocaleType = {
       },
       CustomModel: {
         Title: "Custom Models",
-        SubTitle: "Custom model options, seperated by comma",
+        SubTitle:
+          "Independent from the endpoint. Use model-id@Provider=Display Name, separated by commas",
       },
     },
 

@@ -363,7 +363,8 @@ const cn = {
       },
       CustomModel: {
         Title: "自定义模型名",
-        SubTitle: "增加自定义模型可选项，使用英文逗号隔开",
+        SubTitle:
+          "与自定义接口独立配置，格式为 model-id@Provider=展示名，多个模型用英文逗号分隔",
       },
     },
 

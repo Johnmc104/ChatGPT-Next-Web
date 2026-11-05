@@ -472,7 +472,7 @@ export function Settings() {
           </ListItem>
         </List>
 
-        <List id={SlotID.CustomModel}>
+        <List>
           <ProviderConfigSection showAccessCode={showAccessCode} />
 
           {!shouldHideBalanceQuery && !clientConfig?.isApp ? (
@@ -501,6 +501,9 @@ export function Settings() {
             </ListItem>
           ) : null}
 
+        </List>
+
+        <List id={SlotID.CustomModel}>
           <ListItem
             title={Locale.Settings.Access.CustomModel.Title}
             subTitle={Locale.Settings.Access.CustomModel.SubTitle}
@@ -511,7 +514,7 @@ export function Settings() {
               style={{ width: "100%", maxWidth: "unset", textAlign: "left" }}
               type="text"
               value={config.customModels}
-              placeholder="model1,model2,model3"
+              placeholder="model-id@Provider=Display Name"
               onChange={(e) =>
                 config.update(
                   (config) => (config.customModels = e.currentTarget.value),
