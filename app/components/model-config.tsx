@@ -1,3 +1,4 @@
+import { ModelCapabilitiesEditor } from "./model-capabilities";
 import { ServiceProvider } from "@/app/constant";
 import { ModalConfigValidator, ModelConfig } from "../store";
 
@@ -59,6 +60,10 @@ export function ModelConfigList(props: {
           ))}
         </Select>
       </ListItem>
+      <ModelCapabilitiesEditor
+        model={props.modelConfig.model}
+        provider={props.modelConfig.providerName}
+      />
       <ListItem
         title={Locale.Settings.Temperature.Title}
         subTitle={Locale.Settings.Temperature.SubTitle}

@@ -1,4 +1,5 @@
-"use client";
+import Locale from "../../locales";
+("use client");
 
 /**
  * BaseOpenAICompatibleApi — shared base for all providers that follow the
@@ -178,6 +179,7 @@ export class BaseOpenAICompatibleApi implements LLMApi {
   protected async buildMessages(
     messages: ChatOptions["messages"],
     modelName?: string,
+    providerName?: string,
   ): Promise<RequestPayload["messages"]> {
     const result: RequestPayload["messages"] = [];
 
@@ -185,7 +187,7 @@ export class BaseOpenAICompatibleApi implements LLMApi {
       this.config.supportsVision === true ||
       (this.config.supportsVision === "auto" &&
         !!modelName &&
-        isVisionModel(modelName));
+        isVisionModel(modelName, providerName));
 
     for (const v of messages) {
       let content: string | MultimodalContent[];
@@ -369,10 +371,17 @@ export class BaseOpenAICompatibleApi implements LLMApi {
   // ---- Chat (template method) -------------------------------------------
 
   async chat(options: ChatOptions): Promise<void> {
-    const processedMessages = await this.buildMessages(
-      options.messages,
-      options.config.model,
-    );
+    let processedMessages: RequestPayload["messages"];
+    try {
+      processedMessages = await this.buildMessages(
+        options.messages,
+        options.config.model,
+        options.config.providerName,
+      );
+    } catch {
+      options.onError?.(new Error(Locale.Chat.Images.ReadFailed));
+      return;
+    }
 
     const modelConfig = {
       ...useAppConfig.getState().modelConfig,

@@ -182,10 +182,17 @@ function _Chat() {
   const {
     attachImages,
     maxAttachImages,
+    beginImageSubmission,
     setAttachImages,
     uploading,
     setUploading,
     handlePaste,
+    handleDrop,
+    imageError,
+    removeImage,
+    clearImages,
+    retryImages,
+    canRetryImages,
     uploadImage,
   } = useChatImages();
 
@@ -260,11 +267,13 @@ function _Chat() {
       matchCommand.invoke();
       return;
     }
-    if (isLoading) return;
+    if (isLoading || uploading) return;
     setIsLoading(true);
+    const finishImageSubmission = beginImageSubmission();
     chatStore
       .onUserInput(userInput, attachImages)
       .then((accepted) => {
+        finishImageSubmission(accepted);
         if (!accepted) return;
         setAttachImages((current) =>
           current.filter((image) => !attachImages.includes(image)),
@@ -274,6 +283,10 @@ function _Chat() {
         setPromptHints([]);
         if (!isMobileScreen) inputRef.current?.focus();
         setAutoScroll(true);
+      })
+      .catch(() => {
+        finishImageSubmission(false);
+        showToast(Locale.Chat.Images.ReadFailed);
       })
       .finally(() => setIsLoading(false));
   };
@@ -760,6 +773,11 @@ function _Chat() {
                   onFocus={scrollToBottom}
                   onClick={scrollToBottom}
                   onPaste={handlePaste}
+                  onDragOver={(event) => {
+                    if (event.dataTransfer.types.includes("Files"))
+                      event.preventDefault();
+                  }}
+                  onDrop={handleDrop}
                   rows={inputRows}
                   autoFocus={autoFocus}
                   style={{
@@ -767,6 +785,29 @@ function _Chat() {
                     fontFamily: fontFamily,
                   }}
                 />
+                {(attachImages.length > 0 || imageError) && (
+                  <div role="status" style={{ fontSize: 12, marginTop: 8 }}>
+                    {Locale.Chat.Images.Count(
+                      attachImages.length,
+                      maxAttachImages,
+                    )}
+                    {imageError && <div role="alert">{imageError}</div>}
+                    {canRetryImages && (
+                      <IconButton
+                        text={Locale.Chat.Images.Retry}
+                        onClick={retryImages}
+                        disabled={uploading}
+                      />
+                    )}
+                    {attachImages.length > 0 && (
+                      <IconButton
+                        text={Locale.Chat.Images.TextOnly}
+                        onClick={clearImages}
+                        disabled={uploading}
+                      />
+                    )}
+                  </div>
+                )}
                 {attachImages.length != 0 && (
                   <div
                     className={styles["attach-images"]}
@@ -781,11 +822,7 @@ function _Chat() {
                         >
                           <div className={styles["attach-image-mask"]}>
                             <DeleteImageButtonComponent
-                              deleteImage={() => {
-                                setAttachImages(
-                                  attachImages.filter((_, i) => i !== index),
-                                );
-                              }}
+                              deleteImage={() => removeImage(index)}
                             />
                           </div>
                         </div>

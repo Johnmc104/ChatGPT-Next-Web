@@ -1,3 +1,6 @@
+jest.mock("../app/services/model/capabilities", () => ({
+  getConfiguredCapabilities: () => undefined,
+}));
 /**
  * Tests for ChatGPTApi.extractMessage() — the unified response parser
  * that handles DALL-E, gpt-image, OpenRouter, and standard chat formats.
@@ -242,6 +245,51 @@ describe("ChatGPTApi.extractMessage", () => {
     it("should handle string response directly", async () => {
       const result = await api.extractMessage("raw string");
       expect(result).toBe("raw string");
+    });
+  });
+});
+
+describe("multimodal image generation request routing", () => {
+  test("Gemini-style image models use non-streaming chat output with modalities", async () => {
+    const api = new ChatGPTApi();
+    const path = jest.spyOn(api, "path").mockReturnValue("/fixture/chat");
+    const finish = jest.fn();
+    (fetch as jest.Mock).mockResolvedValueOnce({
+      ok: true,
+      status: 200,
+      headers: new Headers({ "content-type": "application/json" }),
+      json: async () => ({
+        choices: [
+          {
+            message: {
+              content: "Image",
+              images: [
+                { image_url: { url: "https://fixture.test/generated.png" } },
+              ],
+            },
+          },
+        ],
+      }),
+    });
+    await api.chat({
+      messages: [{ role: "user", content: "draw a tree" }],
+      config: {
+        model: "google/gemini-image-preview",
+        providerName: "Google",
+        stream: true,
+      },
+      onFinish: finish,
+    });
+    expect(path).toHaveBeenCalledWith("v1/chat/completions");
+    const request = (fetch as jest.Mock).mock.calls.at(-1);
+    expect(JSON.parse(request[1].body)).toMatchObject({
+      model: "google/gemini-image-preview",
+      modalities: ["image", "text"],
+      stream: false,
+    });
+    expect(finish.mock.calls[0][0]).toContainEqual({
+      type: "image_url",
+      image_url: { url: "https://fixture.test/generated.png" },
     });
   });
 });

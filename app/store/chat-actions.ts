@@ -9,6 +9,7 @@ import {
   getMessageTextContent,
   isDalle3,
   isImageModel,
+  isVisionModel,
   trimTopic,
 } from "../utils";
 
@@ -40,6 +41,9 @@ import { extractMcpJson, isMcpJson } from "../mcp/utils";
 
 import type { ChatMessage, ChatMessageTool, ChatSession } from "./chat-types";
 import { createMessage, DEFAULT_TOPIC } from "./chat-types";
+import { resolveModelCapabilities } from "../domain/model/resolve";
+import { getConfiguredCapabilities } from "../services/model/capabilities";
+import { getClientModelInfo } from "../hooks/useModelInfo";
 import { logger } from "@/app/utils/logger";
 
 // ---------------------------------------------------------------------------
@@ -229,6 +233,30 @@ export function createChatActions(
       model: selection.model,
       providerName: selection.providerName ?? rawModelConfig.providerName,
     };
+
+    const profile = resolveModelCapabilities(
+      modelConfig.model,
+      getClientModelInfo(modelConfig.model),
+      {
+        imageInput: isVisionModel(modelConfig.model, modelConfig.providerName),
+        ...getConfiguredCapabilities(
+          modelConfig.model,
+          modelConfig.providerName,
+        ),
+      },
+    );
+    if (
+      attachImages?.length &&
+      (!profile.imageInput ||
+        attachImages.length > (profile.maxInputImages ?? 0))
+    ) {
+      showToast(
+        profile.imageInput
+          ? Locale.Chat.Images.Limit(profile.maxInputImages ?? 0)
+          : Locale.Chat.Images.Unsupported,
+      );
+      return false;
+    }
 
     // Persist the canonical model ID so subsequent summaries, retries and
     // image requests use the same value as the model selector.
@@ -491,7 +519,10 @@ export function createChatActions(
     const session = targetSession;
     const modelConfig = session.mask.modelConfig;
     // skip summarize when using image generation models
-    if (isDalle3(modelConfig.model) || isImageModel(modelConfig.model)) {
+    if (
+      isDalle3(modelConfig.model) ||
+      isImageModel(modelConfig.model, modelConfig.providerName)
+    ) {
       return;
     }
 

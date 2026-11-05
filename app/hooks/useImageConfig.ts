@@ -6,6 +6,8 @@
  */
 
 import { useMemo } from "react";
+import { findCapabilityOverride } from "../domain/model/overrides";
+import { useAppConfig } from "../store/config";
 import {
   isDalle3,
   isImageModel,
@@ -39,10 +41,16 @@ export interface ImageConfigOptions {
   styleOptions: DalleStyle[];
 }
 
-export function useImageConfig(model: string): ImageConfigOptions {
+export function useImageConfig(
+  model: string,
+  provider?: string,
+): ImageConfigOptions {
+  const overrides = useAppConfig((state) => state.modelCapabilityOverrides);
   return useMemo(() => {
     const sizes = getModelSizes(model);
-    const imageGen = isImageModel(model);
+    const imageGen =
+      findCapabilityOverride(overrides ?? {}, model, provider)?.imageOutput ??
+      isImageModel(model, provider);
     const dalle3 = isDalle3(model);
     const gptImage = isGptImageModel(model);
 
@@ -63,5 +71,5 @@ export function useImageConfig(model: string): ImageConfigOptions {
       formatOptions,
       styleOptions,
     };
-  }, [model]);
+  }, [model, provider, overrides]);
 }

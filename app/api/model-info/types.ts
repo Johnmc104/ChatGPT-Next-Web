@@ -15,6 +15,8 @@ export interface ModelInfo {
   name: string; // display name e.g. "Anthropic: Claude Opus 4.6"
   context_length: number; // total context window size in tokens
   max_output: number | null; // max completion tokens, null if unlimited
+  max_input_images?: number;
+  max_image_bytes?: number;
   capabilities: ModelCapability[]; // what the model can do
   pricing: {
     input: number; // cost per token (raw from API)

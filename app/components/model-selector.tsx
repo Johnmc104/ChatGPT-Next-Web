@@ -3,6 +3,9 @@ import styles from "./model-selector.module.scss";
 import { IconButton } from "./button";
 import CloseIcon from "../icons/close.svg";
 import Locale from "../locales";
+import { useAppConfig } from "../store/config";
+import { findCapabilityOverride } from "../domain/model/overrides";
+import { ModelCapability } from "../domain/model/types";
 import { useModelInfo } from "../hooks/useModelInfo";
 
 export interface ModelItem {
@@ -29,6 +32,24 @@ export function ModelSelector(props: ModelSelectorProps) {
   const { models, selectedModel, selectedProvider, onSelect, onClose } = props;
 
   const { getModelInfo } = useModelInfo();
+  const overrides = useAppConfig((state) => state.modelCapabilityOverrides);
+  const flags = (model: ModelItem) => {
+    const capabilities = new Set(getModelInfo(model.name)?.capabilities ?? []);
+    const override = findCapabilityOverride(
+      overrides ?? {},
+      model.name,
+      model.provider?.providerName,
+    );
+    for (const [field, flag] of [
+      ["imageInput", ModelCapability.ImageInput],
+      ["imageOutput", ModelCapability.ImageOutput],
+      ["tools", ModelCapability.ToolUse],
+    ] as const) {
+      if (override?.[field] === true) capabilities.add(flag);
+      if (override?.[field] === false) capabilities.delete(flag);
+    }
+    return [...capabilities];
+  };
 
   // Group models by provider
   const groupedModels = useMemo(() => {
@@ -170,17 +191,15 @@ export function ModelSelector(props: ModelSelectorProps) {
                           ]
                         }
                       </span>
-                      {(getModelInfo(model.name)?.capabilities ?? []).map(
-                        (capability) => (
-                          <span key={capability}>
-                            {
-                              Locale.Settings.ModelSelector.Capabilities[
-                                capability
-                              ]
-                            }
-                          </span>
-                        ),
-                      )}
+                      {flags(model).map((capability) => (
+                        <span key={capability}>
+                          {
+                            Locale.Settings.ModelSelector.Capabilities[
+                              capability
+                            ]
+                          }
+                        </span>
+                      ))}
                     </div>
                   </div>
                   {isSelected && <div className={styles["model-check"]}>✓</div>}

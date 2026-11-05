@@ -53,6 +53,21 @@ const en: LocaleType = {
     ChatItemCount: (count: number) => `${count} messages`,
   },
   Chat: {
+    Images: {
+      ReadFailed:
+        "Unable to read an image. Upload it again or remove it and retry.",
+      Count: (count: number, limit: number) => `${count}/${limit} images`,
+      Limit: (limit: number) =>
+        `This model accepts up to ${limit} images. Remove extra images.`,
+      Failed: (count: number) =>
+        `${count} images failed. Retry to upload them again.`,
+      Unsupported:
+        "This model does not accept images. Choose a vision model or remove images to send text.",
+      InvalidFiles:
+        "Unsupported files or images over 20 MB were skipped. PNG, JPEG, WebP, HEIC/HEIF are supported.",
+      Retry: "Retry failed images",
+      TextOnly: "Remove images, keep text",
+    },
     SubTitle: (count: number) => `${count} messages`,
     EditMessage: {
       Title: "Edit All Messages",
@@ -179,6 +194,33 @@ const en: LocaleType = {
     Revert: "Revert",
   },
   Settings: {
+    CustomModelEditor: {
+      ID: "Model ID (sent upstream)",
+      Provider: "Model provider",
+      Name: "Display name (optional)",
+      Enabled: "Enabled",
+      Delete: "Delete",
+      Advanced: "Advanced rules (CUSTOM_MODELS)",
+      Invalid:
+        "Invalid model fields or duplicate ID/provider. An ID is required; fields cannot contain commas. Edit all rules in the advanced input.",
+      Hint: "Use the model ID accepted by your backend; display names are UI-only. Configure endpoints separately. Select a model below to declare image capabilities and limits.",
+    },
+    ModelCapabilities: {
+      Scope: (model: string, provider: string) =>
+        `Applies to ${provider} / ${model}. Endpoint settings are independent.`,
+      imageInput: "Image input",
+      imageOutput: "Image output",
+      Auto: "Automatic",
+      Yes: "Supported",
+      No: "Unsupported",
+      Limit: "Images per message",
+      LimitHint:
+        "Leave blank for model metadata or the default of 3. Accepts 1–32. This does not raise upstream service limits.",
+      InvalidLimit: "Enter an integer from 1 to 32, or leave blank.",
+      Protocol: "Image output API",
+      ProtocolHint:
+        "GPT Image / DALL-E use Images API by default; other multimodal image models use Chat Completions. Select the API supported by your gateway.",
+    },
     EndpointDiagnostics: {
       Test: "Test connection",
       Testing: "Testing…",

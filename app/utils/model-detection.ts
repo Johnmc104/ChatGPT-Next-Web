@@ -17,10 +17,12 @@ import {
 } from "@/app/domain/model/catalog";
 import { ModelSize } from "@/app/typing";
 import { ModelCapability } from "@/app/api/model-info/types";
-import { hasCapability } from "@/app/hooks/useModelInfo";
+import { hasCapability, getClientModelInfo } from "@/app/hooks/useModelInfo";
+
+import { getConfiguredCapabilities } from "../services/model/capabilities";
 
 export function isDalle3(model: string): boolean {
-  return "dall-e-3" === model;
+  return model.split("/").pop() === "dall-e-3";
 }
 
 /**
@@ -42,7 +44,7 @@ export function isCogViewModel(model: string): boolean {
  * GPT-5 uses max_completion_tokens instead of max_tokens.
  */
 export function isGpt5Model(model: string): boolean {
-  return model.toLowerCase().startsWith("gpt-5");
+  return (model.split("/").pop() ?? model).toLowerCase().startsWith("gpt-5");
 }
 
 /**
@@ -67,7 +69,11 @@ function isImageModelByName(model: string): boolean {
  * falling back to string heuristics. This ensures correct routing
  * regardless of provider-specific model naming conventions.
  */
-export function isImageModel(model: string): boolean {
+export function isImageModel(model: string, provider?: string): boolean {
+  const configured = getConfiguredCapabilities(model, provider)?.imageOutput;
+  if (configured !== undefined) return configured;
+  const info = getClientModelInfo(model);
+  if (info) return info.capabilities.includes(ModelCapability.ImageOutput);
   // Primary: capability-based check (provider-agnostic)
   if (hasCapability(model, ModelCapability.ImageOutput)) {
     return true;
@@ -80,7 +86,9 @@ export function isImageModel(model: string): boolean {
  * Check if a model supports vision (image input).
  * Uses capability metadata when available, with regex fallback.
  */
-export function isVisionModel(model: string) {
+export function isVisionModel(model: string, provider?: string) {
+  const configured = getConfiguredCapabilities(model, provider)?.imageInput;
+  if (configured !== undefined) return configured;
   // Primary: capability-based check
   if (hasCapability(model, ModelCapability.ImageInput)) {
     return true;
@@ -92,6 +100,10 @@ export function isVisionModel(model: string) {
   if (envVisionModels?.includes(model)) {
     return true;
   }
+  const info = getClientModelInfo(model);
+  if (info) return info.capabilities.includes(ModelCapability.ImageInput);
+  // GPT Image supports edits even before metadata is loaded.
+  if (isGptImageModel(model)) return true;
   // Fallback: regex heuristic
   return (
     !EXCLUDE_VISION_MODEL_REGEXES.some((regex) => regex.test(model)) &&

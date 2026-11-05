@@ -1,3 +1,4 @@
+import { useModelInfo } from "../hooks/useModelInfo";
 import { retainSelectedModel } from "../utils/model";
 /**
  * Reusable chat action button and the bottom-of-chat action bar.
@@ -265,7 +266,7 @@ export function ChatActions(props: {
     qualityOptions,
     formatOptions,
     styleOptions: dalle3Styles,
-  } = useImageConfig(currentModel);
+  } = useImageConfig(currentModel, currentProviderName);
   const currentSize =
     session.mask.modelConfig?.size ?? ("1024x1024" as ModelSize);
   const currentQuality: ImageQuality =
@@ -277,29 +278,13 @@ export function ChatActions(props: {
 
   const isMobileScreen = useMobileScreen();
 
-  const { setAttachImages, setUploading } = props;
+  const { getModelInfo } = useModelInfo();
+  const capabilityOverrides = useAppConfig(
+    (state) => state.modelCapabilityOverrides,
+  );
   useEffect(() => {
-    const show = isVisionModel(currentModel) || isImageModel(currentModel);
-    setShowUploadImage(show);
-    if (!show) {
-      setAttachImages([]);
-      setUploading(false);
-    }
-
-    // if current model is not available
-    // switch to first available model
-    const isUnavailableModel = !models.some((m) => m.name === currentModel);
-    if (isUnavailableModel && models.length > 0) {
-      // show next model to default model if exist
-      let nextModel = models.find((model) => model.isDefault) || models[0];
-      chatStore.updateTargetSession(session, (session) => {
-        session.mask.modelConfig.model = nextModel.name;
-        session.mask.modelConfig.providerName = nextModel?.provider
-          ?.providerName as ServiceProvider;
-      });
-      showToast(nextModel.name);
-    }
-  }, [chatStore, currentModel, models, session, setAttachImages, setUploading]);
+    setShowUploadImage(isVisionModel(currentModel, currentProviderName));
+  }, [currentModel, currentProviderName, capabilityOverrides, getModelInfo]);
 
   return (
     <div className={styles["chat-input-actions"]}>

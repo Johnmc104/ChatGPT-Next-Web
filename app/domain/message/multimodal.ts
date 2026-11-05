@@ -34,8 +34,23 @@ function dataUriParts(
   };
 }
 
-function imageSource(value: string, mimeType?: string): ImagePart {
+const supportedMime = /^image\/(?:png|jpe?g|webp|gif|heic|heif)$/i;
+
+function imageSource(
+  value: string,
+  mimeType?: string,
+): ImagePart | UnknownPart {
   const data = dataUriParts(value);
+  if (
+    !value ||
+    (value.startsWith("data:") &&
+      (!data ||
+        data.source.type !== "base64" ||
+        !supportedMime.test(data.mimeType ?? "") ||
+        !data.source.value))
+  ) {
+    return { kind: "unknown", raw: value };
+  }
   return {
     kind: "image",
     source: data?.source ?? { type: "url", value },
@@ -49,7 +64,10 @@ function fromPart(part: unknown): NormalizedPart {
   }
 
   const value = part as Record<string, unknown>;
-  if (value.type === "text" && typeof value.text === "string") {
+  if (
+    (value.type === "text" || value.type === undefined) &&
+    typeof value.text === "string"
+  ) {
     return { kind: "text", text: value.text };
   }
 
@@ -68,11 +86,13 @@ function fromPart(part: unknown): NormalizedPart {
         : typeof inline.mimeType === "string"
         ? inline.mimeType
         : undefined;
-    return {
-      kind: "image",
-      source: { type: "base64", value: inline.data },
-      mimeType,
-    };
+    return mimeType && supportedMime.test(mimeType) && inline.data
+      ? {
+          kind: "image",
+          source: { type: "base64", value: inline.data },
+          mimeType,
+        }
+      : { kind: "unknown", raw: part };
   }
 
   const anthropic = value.source as Record<string, unknown> | undefined;

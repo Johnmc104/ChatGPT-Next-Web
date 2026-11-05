@@ -21,6 +21,7 @@ import {
 } from "../constant";
 import { DEFAULT_MODELS } from "../domain/model/catalog";
 import { createPersistStore } from "../utils/store";
+import type { ModelCapabilityOverrides } from "../domain/model/overrides";
 import type { Voice } from "rt-client";
 
 export type ModelType = (typeof DEFAULT_MODELS)[number]["name"];
@@ -67,6 +68,7 @@ export const DEFAULT_CONFIG = {
   hideBuiltinMasks: false, // dont add builtin masks
 
   customModels: "",
+  modelCapabilityOverrides: {} as ModelCapabilityOverrides,
   models: [...DEFAULT_MODELS] as LLMModel[],
 
   modelConfig: {

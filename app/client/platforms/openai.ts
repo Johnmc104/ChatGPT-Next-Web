@@ -8,6 +8,8 @@ import {
   REQUEST_TIMEOUT_MS,
   ServiceProvider,
 } from "@/app/constant";
+import { getConfiguredCapabilities } from "@/app/services/model/capabilities";
+import { resolveImageOutputProtocol } from "@/app/domain/model/image-routing";
 import { DEFAULT_MODELS } from "@/app/domain/model/catalog";
 import {
   ChatMessageTool,
@@ -403,7 +405,18 @@ export class ChatGPTApi extends BaseOpenAICompatibleApi {
     let requestPayload: RequestPayload | ImageGenerationPayload;
 
     const isDalle3 = _isDalle3(options.config.model);
-    const isImageGen = _isImageModel(options.config.model);
+    const producesImages = _isImageModel(
+      options.config.model,
+      options.config.providerName,
+    );
+    const imageProtocol = resolveImageOutputProtocol(
+      options.config.model,
+      getConfiguredCapabilities(
+        options.config.model,
+        options.config.providerName,
+      ),
+    );
+    const isImageGen = producesImages && imageProtocol === "images";
     const isO1OrO3 = isReasoningModel(options.config.model);
     const isGpt5 = isGpt5Model(options.config.model);
     const isGptImageModel = _isGptImageModel(options.config.model);
@@ -420,14 +433,22 @@ export class ChatGPTApi extends BaseOpenAICompatibleApi {
         isImageEdit,
       });
     } else {
-      const visionModel = isVisionModel(options.config.model);
+      const visionModel = isVisionModel(
+        options.config.model,
+        options.config.providerName,
+      );
       const messages: ChatOptions["messages"] = [];
-      for (const v of options.messages) {
-        const content = visionModel
-          ? await preProcessImageContent(v.content)
-          : getMessageTextContent(v);
-        if (!(isO1OrO3 && v.role === "system"))
-          messages.push({ role: v.role, content });
+      try {
+        for (const v of options.messages) {
+          const content = visionModel
+            ? await preProcessImageContent(v.content)
+            : getMessageTextContent(v);
+          if (!(isO1OrO3 && v.role === "system"))
+            messages.push({ role: v.role, content });
+        }
+      } catch {
+        options.onError?.(new Error(Locale.Chat.Images.ReadFailed));
+        return;
       }
 
       // O1 not support image, tools (plugin in ChatGPTNextWeb) and system, stream, logprobs, temperature, top_p, n, presence_penalty, frequency_penalty yet.
@@ -475,11 +496,17 @@ export class ChatGPTApi extends BaseOpenAICompatibleApi {
       );
     }
 
+    if (producesImages && !isImageGen) {
+      (requestPayload as RequestPayload).modalities = ["image", "text"];
+      (requestPayload as RequestPayload).stream = false;
+      delete (requestPayload as RequestPayload).stream_options;
+    }
+
     logger.info("[Request] openai payload: ", requestPayload);
 
     // ALL image-generation models (isImageGen covers DALL-E + gpt-image + cogview)
     // use the non-streaming images/generations endpoint. Force non-stream here.
-    const shouldStream = !isImageGen && !!options.config.stream;
+    const shouldStream = !producesImages && !!options.config.stream;
     const controller = new AbortController();
     options.onController?.(controller);
 

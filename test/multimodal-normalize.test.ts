@@ -86,3 +86,27 @@ describe("normalizeMultimodalContent", () => {
     ]);
   });
 });
+
+test("rejects unsupported MIME and empty image parts instead of constructing broken URLs", () => {
+  const parts = normalizeMultimodalContent([
+    { type: "image_url", image_url: { url: "data:text/html;base64,AAAA" } },
+    { type: "image_url", image_url: { url: "data:image/png,not-base64" } },
+    { inlineData: { mimeType: "application/pdf", data: "AAAA" } },
+    { type: "image_url", image_url: { url: "" } },
+  ]);
+  expect(parts.every((part) => part.kind === "unknown")).toBe(true);
+});
+
+test("normalizes Gemini text parts alongside image input", () => {
+  expect(
+    toOpenAIContent(
+      normalizeMultimodalContent([
+        { text: "describe" },
+        { inlineData: { mimeType: "image/png", data: "AAAA" } },
+      ]),
+    ),
+  ).toEqual([
+    { type: "text", text: "describe" },
+    { type: "image_url", image_url: { url: "data:image/png;base64,AAAA" } },
+  ]);
+});

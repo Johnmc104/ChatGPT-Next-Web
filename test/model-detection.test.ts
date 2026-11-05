@@ -1,3 +1,6 @@
+jest.mock("../app/services/model/capabilities", () => ({
+  getConfiguredCapabilities: () => undefined,
+}));
 /**
  * @jest-environment node
  */

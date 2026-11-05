@@ -1,8 +1,9 @@
-import { CACHE_URL_PREFIX, UPLOAD_URL } from "@/app/constant";
 import {
-  MultimodalContent,
-  RequestMessage,
-} from "@/app/client/api";
+  normalizeMultimodalContent,
+  toOpenAIContent,
+} from "../../domain/message/multimodal";
+import { CACHE_URL_PREFIX, UPLOAD_URL } from "@/app/constant";
+import { MultimodalContent, RequestMessage } from "@/app/client/api";
 
 export function compressImage(file: Blob, maxSize: number): Promise<string> {
   return new Promise((resolve, reject) => {
@@ -43,12 +44,13 @@ export function compressImage(file: Blob, maxSize: number): Promise<string> {
     };
     reader.onerror = reject;
 
-    if (file.type.includes("heic")) {
+    if (/image\/hei[cf]/.test(file.type)) {
       try {
-        const heic2any = require("heic2any");
+        const converter = require("heic2any");
+        const heic2any = converter.default ?? converter;
         heic2any({ blob: file, toType: "image/jpeg" })
-          .then((blob: Blob) => {
-            reader.readAsDataURL(blob);
+          .then((blob: Blob | Blob[]) => {
+            reader.readAsDataURL(Array.isArray(blob) ? blob[0] : blob);
           })
           .catch((e: Error) => {
             reject(e);
@@ -56,6 +58,7 @@ export function compressImage(file: Blob, maxSize: number): Promise<string> {
       } catch (e) {
         reject(e);
       }
+      return;
     }
 
     reader.readAsDataURL(file);
@@ -70,13 +73,16 @@ export async function preProcessImageContentBase(
     return content;
   }
   const result = [];
-  for (const part of content) {
+  const normalized = normalizeMultimodalContent(content);
+  if (normalized.some((part) => part.kind === "unknown"))
+    throw new Error("Unsupported image content");
+  for (const part of toOpenAIContent(normalized)) {
     if (part?.type == "image_url" && part?.image_url?.url) {
       try {
         const url = await cacheImageToBase64Image(part?.image_url?.url);
         result.push(await transformImageUrl(url));
       } catch (error) {
-        console.error("Error processing image URL:", error);
+        throw new Error("Unable to read attached image");
       }
     } else {
       result.push({ ...part });
@@ -206,4 +212,25 @@ export function removeImage(imageUrl: string) {
     mode: "cors",
     credentials: "include",
   });
+}
+
+/** Release only resources owned by this app; never delete an external image. */
+export async function releaseImageResource(url?: string) {
+  if (!url) return;
+  if (url.startsWith("blob:")) {
+    URL.revokeObjectURL(url);
+    return;
+  }
+  try {
+    const parsed = new URL(url, location.origin);
+    if (
+      parsed.origin === location.origin &&
+      parsed.pathname.startsWith(`${CACHE_URL_PREFIX}/`)
+    ) {
+      delete imageCaches[url];
+      await fetch(parsed.toString(), { method: "DELETE" });
+    }
+  } catch {
+    /* Cleanup should not block editing the message. */
+  }
 }

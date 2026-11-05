@@ -49,6 +49,19 @@ const cn = {
     ChatItemCount: (count: number) => `${count} 条对话`,
   },
   Chat: {
+    Images: {
+      ReadFailed: "无法读取图片，请重新上传或移除后重试。",
+      Count: (count: number, limit: number) => `${count}/${limit} 张图片`,
+      Limit: (limit: number) =>
+        `当前模型最多接收 ${limit} 张图片，请删除多余图片。`,
+      Failed: (count: number) => `${count} 张图片处理失败，可重试。`,
+      Unsupported:
+        "当前模型不接收图片。请选择支持图片的模型，或移除图片后发送文字。",
+      InvalidFiles:
+        "已跳过不支持的文件或超过 20 MB 的图片。支持 PNG、JPEG、WebP、HEIC/HEIF。",
+      Retry: "重试失败图片",
+      TextOnly: "移除图片，仅保留文字",
+    },
     SubTitle: (count: number) => `共 ${count} 条对话`,
     EditMessage: {
       Title: "编辑消息记录",
@@ -174,6 +187,33 @@ const cn = {
     Revert: "撤销",
   },
   Settings: {
+    CustomModelEditor: {
+      ID: "模型 ID（发送给后端）",
+      Provider: "模型 Provider",
+      Name: "展示名（可选）",
+      Enabled: "启用",
+      Delete: "删除",
+      Advanced: "高级规则（CUSTOM_MODELS）",
+      Invalid:
+        "模型配置无效或 ID/Provider 重复。请检查必填 ID，字段中不能包含逗号；all 规则请在高级输入中编辑。",
+      Hint: "ID 必须与后端接受的名称一致，展示名只用于界面。接口地址独立配置；在下方选中模型后可声明图片能力和上限。",
+    },
+    ModelCapabilities: {
+      Scope: (model: string, provider: string) =>
+        `仅影响 ${provider} / ${model}；接口地址独立配置。`,
+      imageInput: "接收图片",
+      imageOutput: "生成图片",
+      Auto: "自动识别",
+      Yes: "支持",
+      No: "不支持",
+      Limit: "每条消息的图片上限",
+      LimitHint:
+        "留空使用模型声明或默认 3 张；可填写 1–32。只影响本模型，不会提高上游服务限制。",
+      InvalidLimit: "请输入 1–32 的整数，或留空使用默认值。",
+      Protocol: "图片生成接口",
+      ProtocolHint:
+        "GPT Image / DALL-E 默认使用 Images API；其他多模态生成模型默认使用 Chat Completions。按网关支持的接口选择。",
+    },
     EndpointDiagnostics: {
       Test: "验证连接",
       Testing: "正在验证…",

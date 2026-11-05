@@ -54,7 +54,7 @@ import { Avatar, AvatarPicker } from "./emoji";
 import { getClientConfig } from "../config/client";
 import { TTSConfigList } from "./tts-config";
 import { RealtimeConfigList } from "./realtime-chat/realtime-config";
-import { parseCustomModels } from "@/app/domain/model/custom";
+import { CustomModelEditor } from "./custom-model-editor";
 
 // --- Sub-components from split files ---
 import { UserPromptModal } from "./settings-prompts";
@@ -62,38 +62,6 @@ import { SyncItems } from "./settings-sync";
 import { DangerItems } from "./settings-danger";
 import { ProviderConfigSection } from "./settings-provider";
 import { logger } from "@/app/utils/logger";
-
-function CustomModelInput(props: {
-  value: string;
-  onChange: (value: string) => void;
-}) {
-  const [error, setError] = useState("");
-  return (
-    <div style={{ width: "100%" }}>
-      <input
-        aria-label={Locale.Settings.Access.CustomModel.Title}
-        aria-invalid={error ? true : undefined}
-        style={{ width: "100%", maxWidth: "unset", textAlign: "left" }}
-        type="text"
-        value={props.value}
-        placeholder="+model-id@Provider=Display Name"
-        onChange={(e) => {
-          setError("");
-          props.onChange(e.currentTarget.value);
-        }}
-        onBlur={() => {
-          const errors = parseCustomModels(props.value).errors;
-          setError(errors.join("；"));
-        }}
-      />
-      {error && (
-        <div role="alert" style={{ color: "var(--error)", fontSize: 12 }}>
-          {error}
-        </div>
-      )}
-    </div>
-  );
-}
 
 export function Settings() {
   const navigate = useNavigate();
@@ -538,7 +506,7 @@ export function Settings() {
             subTitle={Locale.Settings.Access.CustomModel.SubTitle}
             vertical={true}
           >
-            <CustomModelInput
+            <CustomModelEditor
               value={config.customModels}
               onChange={(value) =>
                 config.update((config) => (config.customModels = value))
