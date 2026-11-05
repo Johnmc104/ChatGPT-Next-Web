@@ -15,8 +15,14 @@ export function ModelConfigList(props: {
 }) {
   const allModels = useAllModels();
   // Group models by providerName for display
+  const visibleModels = allModels.filter(
+    (model) =>
+      model.available ||
+      (model.name === props.modelConfig.model &&
+        model.provider?.providerName === props.modelConfig.providerName),
+  );
   const groupModels = groupBy(
-    allModels.filter((v) => v.available),
+    visibleModels,
     "provider.providerName",
   );
   const value = `${props.modelConfig.model}@${props.modelConfig?.providerName}`;
@@ -42,8 +48,15 @@ export function ModelConfigList(props: {
           {Object.keys(groupModels).map((providerName, index) => (
             <optgroup label={providerName} key={index}>
               {groupModels[providerName].map((v, i) => (
-                <option value={`${v.name}@${v.provider?.providerName}`} key={i}>
+                <option
+                  value={`${v.name}@${v.provider?.providerName}`}
+                  key={i}
+                  disabled={!v.available}
+                >
                   {v.displayName || v.name}
+                  {!v.available
+                    ? ` (${Locale.Settings.ModelSelector.Unavailable})`
+                    : ""}
                 </option>
               ))}
             </optgroup>

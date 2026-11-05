@@ -372,6 +372,7 @@ const cn = {
     ModelSelector: {
       CustomGroup: "自定义模型",
       BuiltinGroup: "内置模型",
+      Unavailable: "不可用",
     },
     CompressModel: {
       Title: "对话摘要模型",

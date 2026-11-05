@@ -225,7 +225,12 @@ export function ChatActions(props: {
     session.mask.modelConfig?.providerName || ServiceProvider.OpenAI;
   const allModels = useAllModels();
   const models = useMemo(() => {
-    const filteredModels = allModels.filter((m) => m.available);
+    const filteredModels = allModels.filter(
+      (m) =>
+        m.available ||
+        (m.name === currentModel &&
+          m.provider?.providerName === currentProviderName),
+    );
     const defaultModel = filteredModels.find((m) => m.isDefault);
 
     if (defaultModel) {
@@ -237,14 +242,14 @@ export function ChatActions(props: {
     } else {
       return filteredModels;
     }
-  }, [allModels]);
+  }, [allModels, currentModel, currentProviderName]);
   const currentModelName = useMemo(() => {
     const model = models.find(
       (m) =>
         m.name == currentModel &&
         m?.provider?.providerName == currentProviderName,
     );
-    return model?.displayName ?? "";
+    return model?.displayName ?? currentModel;
   }, [models, currentModel, currentProviderName]);
   const [showModelSelector, setShowModelSelector] = useState(false);
   const [showPluginSelector, setShowPluginSelector] = useState(false);
@@ -386,6 +391,7 @@ export function ChatActions(props: {
               displayName: m.displayName,
               provider: m.provider,
               isCustom: (m as any).isCustom,
+              available: m.available,
             }))}
             selectedModel={currentModel}
             selectedProvider={currentProviderName}

@@ -1,4 +1,4 @@
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import styles from "./model-selector.module.scss";
 import { IconButton } from "./button";
 import CloseIcon from "../icons/close.svg";
@@ -12,6 +12,7 @@ export interface ModelItem {
     providerName: string;
   };
   isCustom?: boolean;
+  available?: boolean;
 }
 
 interface ModelSelectorProps {
@@ -63,9 +64,14 @@ export function ModelSelector(props: ModelSelectorProps) {
 
   const [activeProvider, setActiveProvider] = useState(initialProvider);
 
+  useEffect(() => {
+    setActiveProvider(initialProvider);
+  }, [initialProvider]);
+
   const currentModels = groupedModels[activeProvider] || [];
 
   const handleModelClick = (model: ModelItem) => {
+    if (model.available === false) return;
     onSelect(model.name, model.provider?.providerName || "");
     onClose();
   };
@@ -121,12 +127,20 @@ export function ModelSelector(props: ModelSelectorProps) {
                   key={`${model.name}-${index}`}
                   className={`${styles["model-item"]} ${
                     isSelected ? styles["model-item-selected"] : ""
+                  } ${
+                    model.available === false
+                      ? styles["model-item-unavailable"]
+                      : ""
                   }`}
+                  aria-disabled={model.available === false}
                   onClick={() => handleModelClick(model)}
                 >
                   <div className={styles["model-info"]}>
                     <span className={styles["model-name"]}>
                       {model.displayName}
+                      {model.available === false
+                        ? ` (${Locale.Settings.ModelSelector.Unavailable})`
+                        : ""}
                     </span>
                   </div>
                   {isSelected && <div className={styles["model-check"]}>✓</div>}

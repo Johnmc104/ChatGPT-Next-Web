@@ -168,6 +168,11 @@
       color: white;
     }
   }
+
+  &-unavailable {
+    cursor: default;
+    opacity: 0.62;
+  }
 }
 
 .model-info {
