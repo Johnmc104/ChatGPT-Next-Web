@@ -176,6 +176,7 @@ function _Chat() {
   const navigate = useNavigate();
   const {
     attachImages,
+    maxAttachImages,
     setAttachImages,
     uploading,
     setUploading,
@@ -737,7 +738,10 @@ function _Chat() {
                   }}
                 />
                 {attachImages.length != 0 && (
-                  <div className={styles["attach-images"]}>
+                  <div
+                    className={styles["attach-images"]}
+                    title={`${attachImages.length}/${maxAttachImages} images attached`}
+                  >
                     {attachImages.map((image, index) => {
                       return (
                         <div

@@ -17,11 +17,12 @@ export function useChatImages() {
       model,
       getClientModelInfo(model),
     );
-    if (maxImages === 0) return;
+    const availableSlots = Math.max(0, maxImages - attachImages.length);
+    if (availableSlots === 0) return;
     setUploading(true);
     try {
       const results = await Promise.all(
-        files.slice(0, maxImages).map((f) => uploadImageRemote(f)),
+        files.slice(0, availableSlots).map((f) => uploadImageRemote(f)),
       );
       setAttachImages((prev) => {
         const merged = [...prev, ...results];
@@ -71,6 +72,10 @@ export function useChatImages() {
 
   return {
     attachImages,
+    maxAttachImages: resolveMaxInputImages(
+      chatStore.currentSession().mask.modelConfig.model,
+      getClientModelInfo(chatStore.currentSession().mask.modelConfig.model),
+    ),
     setAttachImages,
     uploading,
     setUploading,
