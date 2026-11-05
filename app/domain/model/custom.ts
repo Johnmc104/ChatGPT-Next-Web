@@ -1,0 +1,65 @@
+export interface CustomModelSpec {
+  id: string;
+  provider?: string;
+  displayName?: string;
+  enabled: boolean;
+}
+
+export interface CustomModelParseResult {
+  models: CustomModelSpec[];
+  errors: string[];
+}
+
+function splitModelProvider(value: string) {
+  const separator = value.lastIndexOf("@");
+  if (separator < 0) return { id: value.trim() };
+  return {
+    id: value.slice(0, separator).trim(),
+    provider: value.slice(separator + 1).trim(),
+  };
+}
+
+/** Parse CUSTOM_MODELS while retaining the existing +, -, @ and = syntax. */
+export function parseCustomModels(value: string): CustomModelParseResult {
+  const models: CustomModelSpec[] = [];
+  const errors: string[] = [];
+  const seen = new Set<string>();
+
+  value
+    .split(",")
+    .map((item) => item.trim())
+    .filter(Boolean)
+    .forEach((item) => {
+      const enabled = !item.startsWith("-");
+      const body = item.startsWith("+") || item.startsWith("-")
+        ? item.slice(1).trim()
+        : item;
+      const equal = body.indexOf("=");
+      const modelValue = equal >= 0 ? body.slice(0, equal).trim() : body;
+      const displayName = equal >= 0 ? body.slice(equal + 1).trim() : undefined;
+      const { id, provider } = splitModelProvider(modelValue);
+
+      if (!id) {
+        errors.push(`空模型 ID: ${item}`);
+        return;
+      }
+      if (id === "all") {
+        models.push({ id, provider, displayName, enabled });
+        return;
+      }
+      if (displayName === "") {
+        errors.push(`展示名不能为空: ${item}`);
+        return;
+      }
+
+      const key = `${id.toLowerCase()}@${(provider ?? "").toLowerCase()}`;
+      if (seen.has(key)) {
+        errors.push(`模型重复: ${modelValue}`);
+        return;
+      }
+      seen.add(key);
+      models.push({ id, provider, displayName, enabled });
+    });
+
+  return { models, errors };
+}
