@@ -1,5 +1,5 @@
-import { useEffect } from "react";
-import { useSearchParams } from "react-router-dom";
+import { useEffect, useRef } from "react";
+import { useLocation, useSearchParams } from "react-router-dom";
 import Locale from "./locales";
 
 type Command = (param: string) => void;
@@ -13,23 +13,28 @@ interface Commands {
 
 export function useCommand(commands: Commands = {}) {
   const [searchParams, setSearchParams] = useSearchParams();
+  const location = useLocation();
+  const consumed = useRef<string>();
 
   useEffect(() => {
+    if (consumed.current === location.key) return;
     let shouldUpdate = false;
-    searchParams.forEach((param, name) => {
+    const remaining = new URLSearchParams(searchParams);
+    Array.from(searchParams.entries()).forEach(([name, param]) => {
       const commandName = name as keyof Commands;
       if (typeof commands[commandName] === "function") {
+        consumed.current = location.key;
         commands[commandName]!(param);
-        searchParams.delete(name);
+        remaining.delete(name);
         shouldUpdate = true;
       }
     });
 
     if (shouldUpdate) {
-      setSearchParams(searchParams);
+      setSearchParams(remaining, { replace: true });
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [searchParams, commands]);
+  }, [searchParams, commands, location.key]);
 }
 
 interface ChatCommands {

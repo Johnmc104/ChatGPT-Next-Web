@@ -23,7 +23,8 @@ const en: LocaleType = {
     Input: "access code",
     Confirm: "Confirm",
     Loading: "Loading server configuration...",
-    ConfigError: "Unable to load server configuration. Check your network and retry.",
+    ConfigError:
+      "Unable to load server configuration. Check your network and retry.",
     MissingCode: "Please enter the access code.",
     MissingServerKey: "The server has no API key. Enter your own API key.",
     Later: "Later",
@@ -634,7 +635,16 @@ const en: LocaleType = {
   },
   URLCommand: {
     Code: "Detected access code from url, confirm to apply? ",
-    Settings: "Detected settings from url, confirm to apply?",
+    Settings:
+      "Replace the settings below? Unlisted fields are kept. The default model updates global settings; independently configured chats keep their model. Only use endpoints you trust.",
+    Applied: "Settings imported. Review the endpoint and models in Settings.",
+    Errors: {
+      invalid: "Invalid settings link fields or value types.",
+      version: "Unsupported settings link version.",
+      provider: "Unsupported endpoint provider.",
+      url: "Invalid endpoint. Use HTTP(S) or an application proxy path.",
+      models: "Invalid custom models or default model.",
+    },
   },
   SdPanel: {
     Prompt: "Prompt",

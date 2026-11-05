@@ -80,6 +80,11 @@ import { useChatKeyboardShortcuts } from "./chat-keyboard-shortcuts";
 import { useChatImages } from "./chat-images";
 import { logger } from "@/app/utils/logger";
 import {
+  parseSettingsLink,
+  previewSettingsLink,
+} from "../domain/settings/link";
+import { applySettingsLink } from "../services/settings/link";
+import {
   useSubmitHandler,
   PromptHints as PromptHintsComponent,
   ClearContextDivider,
@@ -450,10 +455,7 @@ function _Chat() {
     session.messages.at(0)?.content !== BOT_HELLO.content
   ) {
     const copiedHello = Object.assign({}, BOT_HELLO);
-    if (
-      accessStore.configStatus === "ready" &&
-      !accessStore.isAuthorized()
-    ) {
+    if (accessStore.configStatus === "ready" && !accessStore.isAuthorized()) {
       copiedHello.content = Locale.Error.Unauthorized;
     }
     context.push(copiedHello);
@@ -552,46 +554,46 @@ function _Chat() {
     submit: (text) => {
       doSubmit(text);
     },
-    code: (text) => {
-      if (accessStore.disableFastLink) return;
-      logger.info("[Command] got code from url: ", text);
-      showConfirm(Locale.URLCommand.Code + `code = ${text}`).then((res) => {
+    code: async (text) => {
+      try {
+        await useAccessStore.getState().fetchConfig();
+      } catch {
+        showToast(Locale.Auth.ConfigError);
+        return;
+      }
+      if (useAccessStore.getState().disableFastLink) return;
+      showConfirm(Locale.URLCommand.Code + "\n••••••••").then((res) => {
         if (res) {
           accessStore.update((access) => (access.accessCode = text));
         }
       });
     },
-    settings: (text) => {
-      if (accessStore.disableFastLink) return;
-
+    settings: async (text) => {
       try {
-        const payload = JSON.parse(text) as {
-          key?: string;
-          url?: string;
-        };
-
-        logger.info("[Command] got settings from url: ", payload);
-
-        if (payload.key || payload.url) {
-          showConfirm(
-            Locale.URLCommand.Settings +
-              `\n${JSON.stringify(payload, null, 4)}`,
-          ).then((res) => {
-            if (!res) return;
-            if (payload.key) {
-              accessStore.update(
-                (access) => (access.openaiApiKey = payload.key!),
-              );
-            }
-            if (payload.url) {
-              accessStore.update((access) => (access.openaiUrl = payload.url!));
-            }
-            accessStore.update((access) => (access.useCustomConfig = true));
-          });
-        }
+        await useAccessStore.getState().fetchConfig();
       } catch {
-        console.error("[Command] failed to get settings from url: ", text);
+        showToast(Locale.Auth.ConfigError);
+        return;
       }
+      if (useAccessStore.getState().disableFastLink) return;
+
+      const result = parseSettingsLink(text);
+      if (!result.ok) {
+        showToast(Locale.URLCommand.Errors[result.error]);
+        return;
+      }
+      void showConfirm(
+        <div>
+          <p>{Locale.URLCommand.Settings}</p>
+          <pre style={{ whiteSpace: "pre-wrap", overflowWrap: "anywhere" }}>
+            {previewSettingsLink(result.value)}
+          </pre>
+        </div>,
+      ).then((confirmed) => {
+        if (!confirmed) return;
+        applySettingsLink(result.value);
+        showToast(Locale.URLCommand.Applied);
+      });
     },
   });
 

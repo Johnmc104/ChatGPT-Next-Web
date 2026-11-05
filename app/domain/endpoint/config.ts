@@ -26,6 +26,9 @@ export function validateEndpointUrl(value: string): EndpointValidation {
   const trimmed = value.trim();
   if (!trimmed) return { valid: false, code: "required" };
   if (trimmed.startsWith("/")) {
+    if (!/^\/api\/[a-z0-9/_-]+$/i.test(trimmed) || trimmed.includes("\\")) {
+      return { valid: false, code: "invalid" };
+    }
     return { valid: true, normalized: trimmed.replace(/\/+$/, "") };
   }
   if (!/^https?:\/\//i.test(trimmed) && trimmed.includes("://")) {

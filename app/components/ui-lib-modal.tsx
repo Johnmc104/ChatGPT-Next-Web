@@ -147,7 +147,10 @@ function showConfirm(content: React.ReactNode) {
             shadow
           ></IconButton>,
         ]}
-        onClose={closeModal}
+        onClose={() => {
+          resolve(false);
+          closeModal();
+        }}
       >
         {content}
       </Modal>,
