@@ -5,7 +5,9 @@
 
 // Polyfill Web Streams APIs for Node.js test environment
 import { TextEncoder, TextDecoder } from "util";
-import { ReadableStream } from "stream/web";
+import { ReadableStream as NodeReadableStream } from "stream/web";
+const ReadableStream =
+  NodeReadableStream as unknown as typeof globalThis.ReadableStream;
 
 Object.assign(globalThis, { TextEncoder, TextDecoder, ReadableStream });
 

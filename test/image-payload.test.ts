@@ -4,43 +4,27 @@
  * and different quality values than DALL-E.
  */
 
-// Inline the payload-building logic extracted from openai.ts for unit testing
-function buildImagePayload(model: string, configQuality?: string, configStyle?: string, configSize?: string, outputFormat?: string) {
-  const isDalle3 = model.includes("dall-e-3");
-  const isGptImageModel = model.toLowerCase().includes("gpt-image");
-  const gptImageValidQualities = ["low", "medium", "high", "auto"];
-  const fmt = outputFormat ?? "png";
+import {
+  buildImageGenerationPayload,
+  type ImagePayloadConfig,
+} from "../app/domain/message/image-payload";
 
-  return {
-    model,
-    prompt: "test prompt",
-    n: 1,
-    size: configSize ?? "1024x1024",
-    // GPT Image models use output_format; DALL-E uses response_format
-    ...(isGptImageModel
-      ? {
-          output_format: fmt,
-          ...((fmt === "jpeg" || fmt === "webp") && {
-            output_compression: 100,
-          }),
-        }
-      : { response_format: "b64_json" as const }),
-    // Quality & style mapping
-    ...(isDalle3
-      ? {
-          quality: configQuality ?? "standard",
-          style: configStyle ?? "vivid",
-        }
-      : isGptImageModel
-        ? {
-            quality: gptImageValidQualities.includes(configQuality ?? "")
-              ? configQuality
-              : configQuality === "hd"
-                ? "high"
-                : "auto",
-          }
-        : {}),
-  };
+function buildImagePayload(
+  model: string,
+  quality?: ImagePayloadConfig["quality"],
+  style?: ImagePayloadConfig["style"],
+  size?: ImagePayloadConfig["size"],
+  outputFormat?: ImagePayloadConfig["outputFormat"],
+) {
+  return buildImageGenerationPayload(
+    { model, quality, style, size, outputFormat },
+    "test prompt",
+    {
+      isDalle3: model.includes("dall-e-3"),
+      isGptImageModel: model.includes("gpt-image"),
+      isImageEdit: false,
+    },
+  );
 }
 
 describe("Image generation payload construction", () => {
@@ -137,25 +121,49 @@ describe("Image generation payload construction", () => {
     });
 
     it("should use jpeg and include output_compression", () => {
-      const payload = buildImagePayload("gpt-image-2", undefined, undefined, undefined, "jpeg");
+      const payload = buildImagePayload(
+        "gpt-image-2",
+        undefined,
+        undefined,
+        undefined,
+        "jpeg",
+      );
       expect(payload.output_format).toBe("jpeg");
       expect(payload.output_compression).toBe(100);
     });
 
     it("should use webp and include output_compression", () => {
-      const payload = buildImagePayload("gpt-image-2", undefined, undefined, undefined, "webp");
+      const payload = buildImagePayload(
+        "gpt-image-2",
+        undefined,
+        undefined,
+        undefined,
+        "webp",
+      );
       expect(payload.output_format).toBe("webp");
       expect(payload.output_compression).toBe(100);
     });
 
     it("should not include output_compression for png", () => {
-      const payload = buildImagePayload("gpt-image-2", undefined, undefined, undefined, "png");
+      const payload = buildImagePayload(
+        "gpt-image-2",
+        undefined,
+        undefined,
+        undefined,
+        "png",
+      );
       expect(payload.output_format).toBe("png");
       expect(payload).not.toHaveProperty("output_compression");
     });
 
     it("DALL-E should not be affected by outputFormat param", () => {
-      const payload = buildImagePayload("dall-e-3", undefined, undefined, undefined, "jpeg");
+      const payload = buildImagePayload(
+        "dall-e-3",
+        undefined,
+        undefined,
+        undefined,
+        "jpeg",
+      );
       expect(payload.response_format).toBe("b64_json");
       expect(payload).not.toHaveProperty("output_format");
       expect(payload).not.toHaveProperty("output_compression");
@@ -165,17 +173,32 @@ describe("Image generation payload construction", () => {
   // --- Size options ---
   describe("size parameter", () => {
     it("should accept auto size for gpt-image-2", () => {
-      const payload = buildImagePayload("gpt-image-2", undefined, undefined, "auto");
+      const payload = buildImagePayload(
+        "gpt-image-2",
+        undefined,
+        undefined,
+        "auto",
+      );
       expect(payload.size).toBe("auto");
     });
 
     it("should accept 4K size for gpt-image-2", () => {
-      const payload = buildImagePayload("gpt-image-2", undefined, undefined, "3840x2160");
+      const payload = buildImagePayload(
+        "gpt-image-2",
+        undefined,
+        undefined,
+        "3840x2160",
+      );
       expect(payload.size).toBe("3840x2160");
     });
 
     it("should accept 2K size for gpt-image-2", () => {
-      const payload = buildImagePayload("gpt-image-2", undefined, undefined, "2048x2048");
+      const payload = buildImagePayload(
+        "gpt-image-2",
+        undefined,
+        undefined,
+        "2048x2048",
+      );
       expect(payload.size).toBe("2048x2048");
     });
   });

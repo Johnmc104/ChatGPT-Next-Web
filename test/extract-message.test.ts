@@ -33,7 +33,7 @@ jest.mock("@/app/config/client", () => ({
   getClientConfig: () => null,
 }));
 
-jest.mock("@/app/utils/chat", () => ({
+jest.mock("@/app/services/media/image", () => ({
   preProcessImageContent: jest.fn((c: any) => c),
   // uploadImage mock: simulate ServiceWorker cache returning a URL
   uploadImage: jest.fn(async (_blob: Blob) => "https://cache.test/img-001"),
@@ -46,8 +46,9 @@ jest.mock("@/app/utils/chat", () => ({
   base64Image2BlobAsync: jest.fn(
     async (b64: string, mime: string) => new Blob([b64], { type: mime }),
   ),
-  streamWithThink: jest.fn(),
 }));
+
+jest.mock("@/app/services/chat/stream", () => ({ streamWithThink: jest.fn() }));
 
 jest.mock("@/app/utils/cloudflare", () => ({
   cloudflareAIGatewayUrl: jest.fn((url: string) => url),
@@ -230,16 +231,12 @@ describe("ChatGPTApi.extractMessage", () => {
       const res = { unexpected: "format" };
       const result = await api.extractMessage(res);
       // Must be string or array, never a plain object
-      expect(
-        typeof result === "string" || Array.isArray(result),
-      ).toBeTruthy();
+      expect(typeof result === "string" || Array.isArray(result)).toBeTruthy();
     });
 
     it("should handle null/undefined gracefully", async () => {
       const result = await api.extractMessage({});
-      expect(
-        typeof result === "string" || Array.isArray(result),
-      ).toBeTruthy();
+      expect(typeof result === "string" || Array.isArray(result)).toBeTruthy();
     });
 
     it("should handle string response directly", async () => {

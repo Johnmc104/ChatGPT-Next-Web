@@ -1,4 +1,4 @@
-import { useState, useCallback } from "react";
+import { useState } from "react";
 import { useChatStore } from "../store";
 import { uploadImage as uploadImageRemote } from "@/app/services/media/image";
 import { isVisionModel } from "../utils";
@@ -13,10 +13,7 @@ export function useChatImages() {
   async function appendImageFiles(files: File[]) {
     if (files.length === 0) return;
     const model = chatStore.currentSession().mask.modelConfig.model;
-    const maxImages = resolveMaxInputImages(
-      model,
-      getClientModelInfo(model),
-    );
+    const maxImages = resolveMaxInputImages(model, getClientModelInfo(model));
     const availableSlots = Math.max(0, maxImages - attachImages.length);
     if (availableSlots === 0) return;
     setUploading(true);
@@ -35,27 +32,26 @@ export function useChatImages() {
     }
   }
 
-  const handlePaste = useCallback(
-    async (event: React.ClipboardEvent<HTMLTextAreaElement>) => {
-      const currentModel = chatStore.currentSession().mask.modelConfig.model;
-      if (!isVisionModel(currentModel)) {
-        return;
+  const handlePaste = async (
+    event: React.ClipboardEvent<HTMLTextAreaElement>,
+  ) => {
+    const currentModel = chatStore.currentSession().mask.modelConfig.model;
+    if (!isVisionModel(currentModel)) {
+      return;
+    }
+    const items = (event.clipboardData || window.clipboardData).items;
+    const files: File[] = [];
+    for (const item of items) {
+      if (item.kind === "file" && item.type.startsWith("image/")) {
+        event.preventDefault();
+        const file = item.getAsFile();
+        if (file) files.push(file);
       }
-      const items = (event.clipboardData || window.clipboardData).items;
-      const files: File[] = [];
-      for (const item of items) {
-        if (item.kind === "file" && item.type.startsWith("image/")) {
-          event.preventDefault();
-          const file = item.getAsFile();
-          if (file) files.push(file);
-        }
-      }
-      if (files.length > 0) {
-        appendImageFiles(files);
-      }
-    },
-    [chatStore],
-  );
+    }
+    if (files.length > 0) {
+      appendImageFiles(files);
+    }
+  };
 
   async function uploadImage() {
     const fileInput = document.createElement("input");

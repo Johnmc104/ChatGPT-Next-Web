@@ -65,18 +65,11 @@ export interface OpenAIListModelResponse {
 export type { RequestPayload } from "./base";
 import type { RequestPayload } from "./base";
 
-export interface ImageGenerationPayload {
-  model: string;
-  prompt: string;
-  response_format?: "url" | "b64_json";
-  output_format?: "png" | "jpeg" | "webp";
-  output_compression?: number;
-  n: number;
-  size: ModelSize;
-  quality?: ImageQuality;
-  style?: DalleStyle;
-  partial_images?: number;
-}
+import {
+  buildImageGenerationPayload,
+  type ImageGenerationPayload,
+} from "@/app/domain/message/image-payload";
+export type { ImageGenerationPayload } from "@/app/domain/message/image-payload";
 
 export class ChatGPTApi extends BaseOpenAICompatibleApi {
   private disableListModels = true;
@@ -309,45 +302,7 @@ export class ChatGPTApi extends BaseOpenAICompatibleApi {
     },
   ): ImageGenerationPayload {
     const prompt = getMessageTextContent(options.messages.slice(-1)?.pop()!);
-    return {
-      model: options.config.model,
-      prompt,
-      n: 1,
-      size: options.config?.size ?? "1024x1024",
-      // GPT Image models use output_format (png/jpeg/webp); DALL-E uses response_format.
-      ...(flags.isGptImageModel
-        ? {
-            output_format: options.config?.outputFormat ?? "png",
-            ...((options.config?.outputFormat === "jpeg" ||
-              options.config?.outputFormat === "webp") && {
-              output_compression: 100,
-            }),
-          }
-        : flags.isDalle3
-        ? { response_format: "b64_json" as const }
-        : { response_format: "b64_json" as const }),
-      // Quality & style mapping per model family
-      ...(flags.isDalle3
-        ? {
-            quality: options.config?.quality ?? "standard",
-            style: options.config?.style ?? "vivid",
-          }
-        : flags.isGptImageModel
-        ? {
-            quality: (["low", "medium", "high", "auto"] as string[]).includes(
-              options.config?.quality ?? "",
-            )
-              ? options.config!.quality
-              : options.config?.quality === "hd"
-              ? "high"
-              : "auto",
-          }
-        : {}),
-      // partial_images for progressive preview (GPT Image only, not edits)
-      ...(flags.isGptImageModel && !flags.isImageEdit
-        ? { partial_images: 2 }
-        : {}),
-    };
+    return buildImageGenerationPayload(options.config, prompt, flags);
   }
 
   /**

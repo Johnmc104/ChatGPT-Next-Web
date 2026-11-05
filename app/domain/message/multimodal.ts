@@ -20,9 +20,9 @@ export interface UnknownPart {
 
 export type NormalizedPart = TextPart | ImagePart | UnknownPart;
 
-function dataUriParts(value: string):
-  | { source: ImageSource; mimeType?: string }
-  | undefined {
+function dataUriParts(
+  value: string,
+): { source: ImageSource; mimeType?: string } | undefined {
   const match = value.match(/^data:([^;,]+)?(;base64)?,(.*)$/s);
   if (!match) return undefined;
   return {
@@ -34,10 +34,7 @@ function dataUriParts(value: string):
   };
 }
 
-function imageSource(
-  value: string,
-  mimeType?: string,
-): ImagePart {
+function imageSource(value: string, mimeType?: string): ImagePart {
   const data = dataUriParts(value);
   return {
     kind: "image",
@@ -80,10 +77,7 @@ function fromPart(part: unknown): NormalizedPart {
 
   const anthropic = value.source as Record<string, unknown> | undefined;
   if (value.type === "image" && anthropic) {
-    if (
-      anthropic.type === "base64" &&
-      typeof anthropic.data === "string"
-    ) {
+    if (anthropic.type === "base64" && typeof anthropic.data === "string") {
       return {
         kind: "image",
         source: { type: "base64", value: anthropic.data },
@@ -110,16 +104,34 @@ export function normalizeMultimodalContent(content: unknown): NormalizedPart[] {
   return content.map(fromPart);
 }
 
+type OpenAIContentPart =
+  | { type: "text"; text: string }
+  | { type: "image_url"; image_url: { url: string } };
+type GeminiContentPart =
+  | { text: string }
+  | { inlineData: { mimeType: string; data: string } }
+  | { fileData: { fileUri: string } };
+type AnthropicContentPart =
+  | { type: "text"; text: string }
+  | {
+      type: "image";
+      source:
+        | { type: "base64"; media_type: string; data: string }
+        | { type: "url"; url: string };
+    };
+
 /** Convert normalized parts to the OpenAI-compatible chat content shape. */
 export function toOpenAIContent(parts: NormalizedPart[]) {
-  return parts.flatMap((part) => {
+  return parts.flatMap<OpenAIContentPart>((part) => {
     if (part.kind === "text") {
       return [{ type: "text" as const, text: part.text }];
     }
     if (part.kind === "image") {
       const url =
         part.source.type === "base64"
-          ? `data:${part.mimeType ?? "application/octet-stream"};base64,${part.source.value}`
+          ? `data:${part.mimeType ?? "application/octet-stream"};base64,${
+              part.source.value
+            }`
           : part.source.value;
       return [{ type: "image_url" as const, image_url: { url } }];
     }
@@ -129,7 +141,7 @@ export function toOpenAIContent(parts: NormalizedPart[]) {
 
 /** Convert normalized parts to Gemini's camelCase content shape. */
 export function toGeminiContent(parts: NormalizedPart[]) {
-  return parts.flatMap((part) => {
+  return parts.flatMap<GeminiContentPart>((part) => {
     if (part.kind === "text") {
       return [{ text: part.text }];
     }
@@ -151,7 +163,7 @@ export function toGeminiContent(parts: NormalizedPart[]) {
 
 /** Convert normalized parts to Anthropic's content block shape. */
 export function toAnthropicContent(parts: NormalizedPart[]) {
-  return parts.flatMap((part) => {
+  return parts.flatMap<AnthropicContentPart>((part) => {
     if (part.kind === "text") {
       return [{ type: "text" as const, text: part.text }];
     }

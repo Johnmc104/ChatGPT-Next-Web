@@ -216,8 +216,9 @@ export function createChatActions(
       modelConfig.model !== rawModelConfig.model ||
       modelConfig.providerName !== rawModelConfig.providerName
     ) {
-      get().updateTargetSession(session, (target) => {
-        target.mask.modelConfig.model = modelConfig.model as ModelConfig["model"];
+      get().updateTargetSession(session, (target: ChatSession) => {
+        target.mask.modelConfig.model =
+          modelConfig.model as ModelConfig["model"];
         target.mask.modelConfig.providerName =
           modelConfig.providerName as ModelConfig["providerName"];
       });
