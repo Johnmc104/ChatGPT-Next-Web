@@ -22,6 +22,10 @@ const en: LocaleType = {
     SubTips: "Or enter your OpenAI API Key",
     Input: "access code",
     Confirm: "Confirm",
+    Loading: "Loading server configuration...",
+    ConfigError: "Unable to load server configuration. Check your network and retry.",
+    MissingCode: "Please enter the access code.",
+    MissingServerKey: "The server has no API key. Enter your own API key.",
     Later: "Later",
   },
   ChatItem: {

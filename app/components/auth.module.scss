@@ -79,6 +79,21 @@
     font-size: 14px;
   }
 
+  .auth-status,
+  .auth-error {
+    margin-bottom: 2vh;
+    text-align: center;
+    font-size: 14px;
+  }
+
+  .auth-status {
+    color: var(--primary);
+  }
+
+  .auth-error {
+    color: var(--error);
+  }
+
   .auth-input {
     margin: 3vh 0;
   }

@@ -20,6 +20,10 @@ const cn = {
     SubTips: "或者输入你的 OpenAI 密钥",
     Input: "在此处填写访问码",
     Confirm: "确认",
+    Loading: "正在读取服务配置…",
+    ConfigError: "无法读取服务配置，请检查网络后重试。",
+    MissingCode: "请输入访问码。",
+    MissingServerKey: "服务器未配置 API Key，请输入您自己的 API Key。",
     Later: "稍后再说",
   },
   ChatItem: {

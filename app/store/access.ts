@@ -14,7 +14,7 @@ import { getModelProvider } from "../utils/model";
 import { fetchJSON } from "../utils/fetch";
 import { logger } from "@/app/utils/logger";
 
-let fetchState = 0; // 0 not fetch, 1 fetching, 2 done
+let fetchPromise: Promise<void> | null = null;
 
 const isApp = getClientConfig()?.buildMode === "export";
 
@@ -56,6 +56,8 @@ const DEFAULT_ACCESS_STATE = {
   visionModels: "",
   hasServerApiKey: false,
   hasCustomBaseUrl: false,
+  configStatus: "idle" as "idle" | "loading" | "ready" | "error",
+  configError: "",
 
   // tts config
   edgeTTSVoiceName: "zh-CN-YunxiNeural",
@@ -95,6 +97,9 @@ export const useAccessStore = createPersistStore(
 
       const state = get();
 
+      // Do not treat the initial defaults as a real authorization result.
+      if (state.configStatus !== "ready") return false;
+
       // User has their own API key for custom endpoint
       if (this.isValidOpenAI()) {
         return true;
@@ -116,10 +121,17 @@ export const useAccessStore = createPersistStore(
 
       return false;
     },
-    fetch() {
-      if (fetchState > 0 || getClientConfig()?.buildMode === "export") return;
-      fetchState = 1;
-      fetchJSON<DangerConfig>("/api/config", {
+    fetchConfig(): Promise<void> {
+      if (getClientConfig()?.buildMode === "export") {
+        if (get().configStatus !== "ready") {
+          set({ configStatus: "ready", configError: "" });
+        }
+        return Promise.resolve();
+      }
+      if (fetchPromise) return fetchPromise;
+
+      set({ configStatus: "loading", configError: "" });
+      fetchPromise = fetchJSON<DangerConfig>("/api/config", {
         method: "post",
         body: null,
         headers: {
@@ -134,14 +146,26 @@ export const useAccessStore = createPersistStore(
             DEFAULT_CONFIG.modelConfig.providerName = providerName as any;
           }
           logger.info("[Config] got config from server", res);
-          set(() => ({ ...res }));
+          set(() => ({
+            ...res,
+            configStatus: "ready",
+            configError: "",
+          }));
         })
-        .catch(() => {
-          console.error("[Config] failed to fetch config");
+        .catch((error) => {
+          const message =
+            error instanceof Error ? error.message : "failed to fetch config";
+          logger.error("[Config] failed to fetch config", error);
+          set({ configStatus: "error", configError: message });
+          throw error;
         })
         .finally(() => {
-          fetchState = 2;
+          fetchPromise = null;
         });
+      return fetchPromise;
+    },
+    fetch() {
+      void this.fetchConfig().catch(() => undefined);
     },
   }),
   {

@@ -10,42 +10,62 @@ import { getClientConfig } from "../config/client";
 import { PasswordInput } from "./ui-lib";
 import LeftIcon from "@/app/icons/left.svg";
 import clsx from "clsx";
+import { resolveAuthorization } from "@/app/domain/auth/authorization";
 
 export function AuthPage() {
   const navigate = useNavigate();
   const accessStore = useAccessStore();
   const [error, setError] = useState("");
+  const loadingConfig =
+    accessStore.configStatus === "idle" ||
+    accessStore.configStatus === "loading";
 
-  const goChat = () => {
+  useEffect(() => {
+    accessStore.fetchConfig().catch(() => {
+      setError(Locale.Auth.ConfigError);
+    });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  const goChat = async () => {
     // Clear any previous error
     setError("");
 
+    if (accessStore.configStatus !== "ready") {
+      try {
+        await accessStore.fetchConfig();
+      } catch {
+        setError(Locale.Auth.ConfigError);
+        return;
+      }
+    }
+
+    const state = useAccessStore.getState();
+
     // Check if user has provided their own API key (unified proxy: only openaiApiKey matters)
-    const hasUserKey = accessStore.isValidOpenAI();
+    const hasUserKey = state.isValidOpenAI();
 
     // Check if server has API key and user provided access code (if needed)
-    const hasServerKey = accessStore.hasServerApiKey;
-    const needCode = accessStore.needCode;
-    const hasAccessCode = accessStore.accessCode.trim().length > 0;
+    const hasServerKey = state.hasServerApiKey;
+    const needCode = state.needCode;
+    const hasAccessCode = state.accessCode.trim().length > 0;
 
-    // Determine if we can proceed
-    if (hasUserKey) {
-      // User has their own key, can proceed
-      navigate(Path.Chat);
-    } else if (!needCode && hasServerKey) {
-      // No access control and server has key
-      navigate(Path.Chat);
-    } else if (needCode && hasAccessCode && hasServerKey) {
-      // Access code provided and server has key
-      navigate(Path.Chat);
-    } else if (needCode && !hasAccessCode) {
-      setError("请输入访问码 / Please enter access code");
-    } else if (!hasServerKey && !hasUserKey) {
-      setError(
-        "服务器未配置 API Key，请输入您自己的 API Key / Server API key not configured, please enter your own API key",
-      );
-    } else {
-      navigate(Path.Chat);
+    const decision = resolveAuthorization({
+      hasUserKey,
+      hasServerKey,
+      needCode,
+      hasAccessCode,
+    });
+    switch (decision.status) {
+      case "authorized":
+        navigate(Path.Chat);
+        break;
+      case "missing-access-code":
+        setError(Locale.Auth.MissingCode);
+        break;
+      case "missing-server-key":
+        setError(Locale.Auth.MissingServerKey);
+        break;
     }
   };
 
@@ -84,6 +104,10 @@ export function AuthPage() {
             (access) => (access.accessCode = e.currentTarget.value),
           );
         }}
+        onKeyDown={(e) => {
+          if (e.key === "Enter") void goChat();
+        }}
+        disabled={loadingConfig}
       />
 
       {!accessStore.hideUserApiKey ? (
@@ -101,12 +125,17 @@ export function AuthPage() {
                 (access) => (access.openaiApiKey = e.currentTarget.value),
               );
             }}
+            disabled={loadingConfig}
           />
         </>
       ) : null}
 
+      {loadingConfig && (
+        <div className={styles["auth-status"]}>{Locale.Auth.Loading}</div>
+      )}
+
       {error && (
-        <div style={{ color: "red", marginBottom: "2vh", textAlign: "center" }}>
+        <div className={styles["auth-error"]} role="alert">
           {error}
         </div>
       )}
@@ -116,6 +145,7 @@ export function AuthPage() {
           text={Locale.Auth.Confirm}
           type="primary"
           onClick={goChat}
+          disabled={loadingConfig}
         />
       </div>
     </div>
