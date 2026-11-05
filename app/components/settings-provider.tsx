@@ -3,7 +3,7 @@
  * Simplified for unified proxy architecture — only OpenAI, Azure, and Stability remain.
  */
 
-import { useMemo } from "react";
+import { useMemo, useState, type ChangeEvent } from "react";
 
 import { ListItem, PasswordInput, Select } from "./ui-lib";
 import Locale from "../locales";
@@ -15,6 +15,52 @@ import {
   ServiceProvider,
   StabilityConfig,
 } from "../constant";
+import { validateEndpointUrl } from "@/app/domain/endpoint/config";
+
+function EndpointInput(props: {
+  value: string;
+  placeholder: string;
+  ariaLabel: string;
+  onChange: (event: ChangeEvent<HTMLInputElement>) => void;
+}) {
+  const [error, setError] = useState<string>("");
+  const validate = () => {
+    const result = validateEndpointUrl(props.value);
+    setError(
+      result.valid
+        ? ""
+        : result.code === "required"
+        ? "接口地址不能为空 / Endpoint is required"
+        : result.code === "protocol"
+        ? "仅支持 http(s) / Only http(s) is supported"
+        : result.code === "credentials"
+        ? "接口地址不能包含账号密码 / Credentials are not allowed in the URL"
+        : "接口地址格式无效 / Invalid endpoint URL",
+    );
+  };
+
+  return (
+    <div>
+      <input
+        aria-label={props.ariaLabel}
+        aria-invalid={error ? true : undefined}
+        type="text"
+        value={props.value}
+        placeholder={props.placeholder}
+        onChange={(event) => {
+          setError("");
+          props.onChange(event);
+        }}
+        onBlur={validate}
+      />
+      {error && (
+        <div role="alert" style={{ color: "var(--error)", fontSize: 12 }}>
+          {error}
+        </div>
+      )}
+    </div>
+  );
+}
 
 /**
  * Renders access-code + custom-endpoint toggle + provider-specific
@@ -70,17 +116,16 @@ export function ProviderConfigSection(props: { showAccessCode: boolean }) {
         title={Locale.Settings.Access.OpenAI.Endpoint.Title}
         subTitle={Locale.Settings.Access.OpenAI.Endpoint.SubTitle}
       >
-        <input
-          aria-label={Locale.Settings.Access.OpenAI.Endpoint.Title}
-          type="text"
-          value={accessStore.openaiUrl}
+        <EndpointInput
+          ariaLabel={Locale.Settings.Access.OpenAI.Endpoint.Title}
           placeholder={OPENAI_BASE_URL}
+          value={accessStore.openaiUrl}
           onChange={(e) =>
             accessStore.update(
               (access) => (access.openaiUrl = e.currentTarget.value),
             )
           }
-        ></input>
+        />
       </ListItem>
       <ListItem
         title={Locale.Settings.Access.OpenAI.ApiKey.Title}
@@ -112,17 +157,16 @@ export function ProviderConfigSection(props: { showAccessCode: boolean }) {
           Locale.Settings.Access.Azure.Endpoint.SubTitle + Azure.ExampleEndpoint
         }
       >
-        <input
-          aria-label={Locale.Settings.Access.Azure.Endpoint.Title}
-          type="text"
-          value={accessStore.azureUrl}
+        <EndpointInput
+          ariaLabel={Locale.Settings.Access.Azure.Endpoint.Title}
           placeholder={Azure.ExampleEndpoint}
+          value={accessStore.azureUrl}
           onChange={(e) =>
             accessStore.update(
               (access) => (access.azureUrl = e.currentTarget.value),
             )
           }
-        ></input>
+        />
       </ListItem>
       <ListItem
         title={Locale.Settings.Access.Azure.ApiKey.Title}
@@ -170,17 +214,16 @@ export function ProviderConfigSection(props: { showAccessCode: boolean }) {
           StabilityConfig.ExampleEndpoint
         }
       >
-        <input
-          aria-label={Locale.Settings.Access.Stability.Endpoint.Title}
-          type="text"
-          value={accessStore.stabilityUrl}
+        <EndpointInput
+          ariaLabel={Locale.Settings.Access.Stability.Endpoint.Title}
           placeholder={StabilityConfig.ExampleEndpoint}
+          value={accessStore.stabilityUrl}
           onChange={(e) =>
             accessStore.update(
               (access) => (access.stabilityUrl = e.currentTarget.value),
             )
           }
-        ></input>
+        />
       </ListItem>
       <ListItem
         title={Locale.Settings.Access.Stability.ApiKey.Title}
