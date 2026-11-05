@@ -16,6 +16,7 @@ import { fetchJSON } from "../utils/fetch";
 import { logger } from "@/app/utils/logger";
 
 let fetchPromise: Promise<void> | null = null;
+let configLoaded = false;
 
 const isApp = getClientConfig()?.buildMode === "export";
 
@@ -99,7 +100,7 @@ export const useAccessStore = createPersistStore(
       const state = get();
 
       // Do not treat the initial defaults as a real authorization result.
-      if (state.configStatus !== "ready") return false;
+      if (!configLoaded || state.configStatus !== "ready") return false;
 
       // User has their own API key for custom endpoint
       if (this.isValidOpenAI()) {
@@ -127,9 +128,10 @@ export const useAccessStore = createPersistStore(
         if (get().configStatus !== "ready") {
           set({ configStatus: "ready", configError: "" });
         }
+        configLoaded = true;
         return Promise.resolve();
       }
-      if (get().configStatus === "ready") return Promise.resolve();
+      if (configLoaded) return Promise.resolve();
       if (fetchPromise) return fetchPromise;
 
       set({ configStatus: "loading", configError: "" });
@@ -148,6 +150,7 @@ export const useAccessStore = createPersistStore(
             DEFAULT_CONFIG.modelConfig.providerName = selection.providerName as typeof DEFAULT_CONFIG.modelConfig.providerName;
           }
           logger.info("[Config] got config from server", res);
+          configLoaded = true;
           set(() => ({
             ...res,
             configStatus: "ready",
@@ -158,6 +161,7 @@ export const useAccessStore = createPersistStore(
           const message =
             error instanceof Error ? error.message : "failed to fetch config";
           logger.error("[Config] failed to fetch config", error);
+          configLoaded = false;
           set({ configStatus: "error", configError: message });
           throw error;
         })
