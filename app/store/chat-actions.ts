@@ -38,6 +38,7 @@ import { extractMcpJson, isMcpJson } from "../mcp/utils";
 import type { ChatMessage, ChatMessageTool, ChatSession } from "./chat-types";
 import { createMessage, DEFAULT_TOPIC } from "./chat-types";
 import { logger } from "@/app/utils/logger";
+import { resolveModelSelection } from "@/app/domain/model/selection";
 
 // ---------------------------------------------------------------------------
 // Public interface — used by chat.ts for proper TypeScript inference
@@ -198,7 +199,29 @@ export function createChatActions(
     isMcpResponse?: boolean,
   ) {
     const session = get().currentSession();
-    const modelConfig = session.mask.modelConfig;
+    const rawModelConfig = session.mask.modelConfig;
+    const selection = resolveModelSelection(
+      rawModelConfig.model,
+      useAppConfig.getState().models,
+    );
+    const modelConfig = {
+      ...rawModelConfig,
+      model: selection.model,
+      providerName: selection.providerName ?? rawModelConfig.providerName,
+    };
+
+    // Persist the canonical model ID so subsequent summaries, retries and
+    // image requests use the same value as the model selector.
+    if (
+      modelConfig.model !== rawModelConfig.model ||
+      modelConfig.providerName !== rawModelConfig.providerName
+    ) {
+      get().updateTargetSession(session, (target) => {
+        target.mask.modelConfig.model = modelConfig.model as ModelConfig["model"];
+        target.mask.modelConfig.providerName =
+          modelConfig.providerName as ModelConfig["providerName"];
+      });
+    }
 
     // MCP Response no need to fill template
     let mContent: string | MultimodalContent[] = isMcpResponse
