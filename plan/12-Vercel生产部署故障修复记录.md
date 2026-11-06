@@ -6,22 +6,14 @@
 
 ## 2. 已完成改动
 
-- 生产 job 显式使用现有的 GitHub `Production` environment。
-- preview 和 production job 都增加部署前凭据检查，缺少 Secret 时直接给出缺失名称和配置位置。
+- GitHub Actions 中删除 preview/production 的 Vercel CLI 部署 job，保留 lint、Jest、TypeScript 和 Vercel 构建质量门禁。
+- 由已配置的 Vercel Git Integration 负责 `main` 生产部署和 PR Preview，移除 Token、Org ID、Project ID 的 GitHub Secret 依赖。
 - 更新 `AGENTS.md`、主版本计划和本记录，保留故障原因、验证证据和后续动作。
 
-## 3. 恢复部署所需动作
+## 3. 当前部署链路
 
-在 GitHub 仓库 `Settings → Environments → Production`（或 repository secrets）配置：
-
-```text
-VERCEL_TOKEN
-VERCEL_ORG_ID
-VERCEL_PROJECT_ID
-```
-
-其中 token 使用 Vercel Personal Access Token，两个 ID 使用目标 Vercel 项目的 team/org 与 project ID。配置后重新运行 workflow；质量 job 通过后，production job 才会执行 `vercel pull`、`vercel build --prod` 和 `vercel deploy --prebuilt --prod`。
+代码推送或 PR 更新时，GitHub Actions 先运行质量门禁；Vercel Git Integration 独立创建 Preview 或 Production 部署。两者均执行 Vercel 构建，但只有 Vercel 负责实际发布，避免重复部署。
 
 ## 4. 当前状态
 
-代码改动已完成，尚未宣称部署恢复。待 Secret 配置后，以新的 GitHub Actions 结果和 `https://chat.johndaily.cn` HTTP 200、`/api/config` HTTP 200 作为验收证据。
+代码改动已完成，GitHub Actions 的凭据失败已从流程中移除。现有线上版本检查结果为 `https://chat.johndaily.cn` HTTP 200、`/api/config` HTTP 200；后续以 Vercel Deployment 状态和这两个端点作为发布验收证据。

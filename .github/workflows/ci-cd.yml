@@ -20,7 +20,7 @@ env:
 
 jobs:
   quality:
-    name: Lint, test, and build
+    name: Lint, test, and Vercel build
     runs-on: ubuntu-latest
     timeout-minutes: 20
     steps:
@@ -50,98 +50,3 @@ jobs:
 
       - name: Build the Vercel artifact
         run: yarn vercel-build
-
-  deploy-preview:
-    name: Deploy Vercel preview
-    if: >-
-      github.event_name == 'pull_request' &&
-      github.event.pull_request.head.repo.full_name == github.repository
-    needs: quality
-    runs-on: ubuntu-latest
-    timeout-minutes: 15
-    env:
-      VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
-      VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
-      VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
-    steps:
-      - name: Checkout pull request
-        uses: actions/checkout@v4
-        with:
-          ref: ${{ github.event.pull_request.head.sha }}
-
-      - name: Set up Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: ${{ env.NODE_VERSION }}
-          cache: yarn
-
-      - name: Install Vercel CLI
-        run: npm install --global vercel@latest
-
-      - name: Validate Vercel credentials
-        run: |
-          missing=()
-          [[ -n "$VERCEL_TOKEN" ]] || missing+=(VERCEL_TOKEN)
-          [[ -n "$VERCEL_ORG_ID" ]] || missing+=(VERCEL_ORG_ID)
-          [[ -n "$VERCEL_PROJECT_ID" ]] || missing+=(VERCEL_PROJECT_ID)
-          if (( ${#missing[@]} > 0 )); then
-            echo "::error title=Missing Vercel credentials::Configure ${missing[*]} as GitHub Actions secrets in the repository or Production environment."
-            exit 1
-          fi
-
-      - name: Install Yarn and dependencies
-        run: |
-          npm install --global yarn@${YARN_VERSION}
-          yarn install --frozen-lockfile
-
-      - name: Deploy preview
-        run: |
-          vercel pull --yes --environment=preview --token="$VERCEL_TOKEN"
-          vercel build --token="$VERCEL_TOKEN"
-          vercel deploy --prebuilt --token="$VERCEL_TOKEN"
-
-  deploy-production:
-    name: Deploy Vercel production
-    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
-    needs: quality
-    runs-on: ubuntu-latest
-    timeout-minutes: 15
-    environment: Production
-    env:
-      VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
-      VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
-      VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
-    steps:
-      - name: Checkout repository
-        uses: actions/checkout@v4
-
-      - name: Set up Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: ${{ env.NODE_VERSION }}
-          cache: yarn
-
-      - name: Install Vercel CLI
-        run: npm install --global vercel@latest
-
-      - name: Validate Vercel credentials
-        run: |
-          missing=()
-          [[ -n "$VERCEL_TOKEN" ]] || missing+=(VERCEL_TOKEN)
-          [[ -n "$VERCEL_ORG_ID" ]] || missing+=(VERCEL_ORG_ID)
-          [[ -n "$VERCEL_PROJECT_ID" ]] || missing+=(VERCEL_PROJECT_ID)
-          if (( ${#missing[@]} > 0 )); then
-            echo "::error title=Missing Vercel credentials::Configure ${missing[*]} as GitHub Actions secrets in the repository or Production environment."
-            exit 1
-          fi
-
-      - name: Install Yarn and dependencies
-        run: |
-          npm install --global yarn@${YARN_VERSION}
-          yarn install --frozen-lockfile
-
-      - name: Deploy production
-        run: |
-          vercel pull --yes --environment=production --token="$VERCEL_TOKEN"
-          vercel build --prod --token="$VERCEL_TOKEN"
-          vercel deploy --prebuilt --prod --token="$VERCEL_TOKEN"

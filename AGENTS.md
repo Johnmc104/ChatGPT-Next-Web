@@ -17,9 +17,9 @@ Use Node.js 26 and Yarn 1.22.19. The supported range is `>=20.19.0 <=26.x`; `.nv
 - `yarn lint` runs Next.js ESLint checks.
 - `yarn test` runs Jest in watch mode; `yarn test:ci` runs the non-interactive suite with coverage.
 
-GitHub Actions in `.github/workflows/ci-cd.yml` runs lint, Jest, TypeScript, and `yarn vercel-build` for pull requests and `main` pushes. Successful checks can deploy Vercel preview or production builds.
+GitHub Actions in `.github/workflows/ci-cd.yml` runs lint, Jest, TypeScript, and `yarn vercel-build` for pull requests and `main` pushes. Vercel Git Integration handles preview and production deployment after its own build checks pass.
 
-Use `.env.local` for local API keys and configuration; never commit secrets. Vercel deployment requires `VERCEL_TOKEN`, `VERCEL_ORG_ID`, and `VERCEL_PROJECT_ID` in the GitHub `Production` environment or repository secrets.
+Use `.env.local` for local API keys and configuration; never commit secrets. Vercel project environment variables are managed in the Vercel dashboard.
 
 ## Coding Style & Naming Conventions
 
