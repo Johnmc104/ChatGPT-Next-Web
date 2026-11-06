@@ -1,5 +1,7 @@
 {
-    "github": {
-        "silent": true
-    }
+  "framework": "nextjs",
+  "buildCommand": "yarn vercel-build",
+  "github": {
+    "silent": true
+  }
 }
