@@ -1,9 +1,6 @@
 import ReactMarkdown from "react-markdown";
-import RemarkMath from "remark-math";
 import RemarkBreaks from "remark-breaks";
-import RehypeKatex from "rehype-katex";
 import RemarkGfm from "remark-gfm";
-import RehypeHighlight from "rehype-highlight";
 import {
   useRef,
   useState,
@@ -314,7 +311,43 @@ function _MarkDownContent(props: { content: string }) {
     () => /\$|\\\[|\\\\?\(/.test(props.content),
     [props.content],
   );
-  if (hasMath) ensureKatexCss();
+  const hasCode = useMemo(() => /```/.test(props.content), [props.content]);
+  const [optionalPlugins, setOptionalPlugins] = useState<{
+    remark: any[];
+    rehype: any[];
+  }>({ remark: [], rehype: [] });
+
+  useEffect(() => {
+    let active = true;
+    const loadPlugins = async () => {
+      const [remarkMath, rehypeKatex, rehypeHighlight] = await Promise.all([
+        hasMath ? import("remark-math").then((module) => module.default) : null,
+        hasMath
+          ? import("rehype-katex").then((module) => module.default)
+          : null,
+        hasCode
+          ? import("rehype-highlight").then((module) => module.default)
+          : null,
+      ]);
+      if (!active) return;
+      if (hasMath) ensureKatexCss();
+      setOptionalPlugins({
+        remark: remarkMath ? [remarkMath] : [],
+        rehype: [
+          ...(rehypeKatex
+            ? [[rehypeKatex, { strict: "ignore", throwOnError: false }]]
+            : []),
+          ...(rehypeHighlight
+            ? [[rehypeHighlight, { detect: false, ignoreMissing: true }]]
+            : []),
+        ],
+      });
+    };
+    void loadPlugins();
+    return () => {
+      active = false;
+    };
+  }, [hasCode, hasMath]);
 
   const maskEnableArtifacts = useChatStore(
     (s) => s.currentSession().mask?.enableArtifacts !== false,
@@ -341,23 +374,8 @@ function _MarkDownContent(props: { content: string }) {
   return (
     <MarkdownFeatureContext.Provider value={features}>
       <ReactMarkdown
-        remarkPlugins={[RemarkMath, RemarkGfm, RemarkBreaks]}
-        rehypePlugins={[
-          [
-            RehypeKatex,
-            {
-              strict: "ignore",
-              throwOnError: false,
-            },
-          ],
-          [
-            RehypeHighlight,
-            {
-              detect: false,
-              ignoreMissing: true,
-            },
-          ],
-        ]}
+        remarkPlugins={[...optionalPlugins.remark, RemarkGfm, RemarkBreaks]}
+        rehypePlugins={optionalPlugins.rehype}
         components={{
           pre: PreCode,
           code: CustomCode,
