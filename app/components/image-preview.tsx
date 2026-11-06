@@ -355,6 +355,7 @@ export function ChatImage({
         <button
           className={styles["chat-image-download"]}
           onClick={onDownload}
+          onDoubleClick={(e) => e.stopPropagation()}
           title="Download"
         >
           <DownloadIcon />

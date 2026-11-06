@@ -311,7 +311,9 @@ function _MarkDownContent(props: { content: string }) {
     () => /\$|\\\[|\\\\?\(/.test(props.content),
     [props.content],
   );
-  const hasCode = useMemo(() => /```/.test(props.content), [props.content]);
+  // `tryWrapHtmlCode` can create a fenced block from raw HTML, so inspect the
+  // transformed content before deciding whether syntax highlighting is needed.
+  const hasCode = useMemo(() => /```/.test(escapedContent), [escapedContent]);
   const [optionalPlugins, setOptionalPlugins] = useState<{
     remark: any[];
     rehype: any[];
