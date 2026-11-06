@@ -12,6 +12,7 @@ Use Node.js 26 and Yarn 1.22.19. The supported range is `>=20.19.0 <=26.x`; `.nv
 - `yarn dev` starts the Next.js development server and watches generated masks.
 - `yarn build` generates masks and creates the standalone production build; run it before deployment changes.
 - `yarn vercel-build` runs the exact production build configured for Vercel.
+- `yarn vercel-build:analyze` creates client, edge, and Node bundle analyzer reports under `.next/analyze/`.
 - `yarn start` serves the production build locally.
 - `yarn lint` runs Next.js ESLint checks.
 - `yarn test` runs Jest in watch mode; `yarn test:ci` runs the non-interactive suite with coverage.
