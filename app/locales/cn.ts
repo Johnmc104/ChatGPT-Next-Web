@@ -66,6 +66,7 @@ const cn = {
       Ready: "已就绪",
       FailedStatus: "失败",
       Sending: "发送中",
+      View: "双击查看",
     },
     SubTitle: (count: number) => `共 ${count} 条对话`,
     EditMessage: {

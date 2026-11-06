@@ -21,6 +21,7 @@ import ReloadButtonIcon from "../icons/reload.svg";
 import React from "react";
 import { useDebouncedCallback } from "use-debounce";
 import { showImageModal, FullScreen } from "./ui-lib";
+import { openImageLightbox } from "./image-preview";
 import {
   ArtifactsShareButton,
   HTMLPreview,
@@ -360,6 +361,21 @@ function _MarkDownContent(props: { content: string }) {
         components={{
           pre: PreCode,
           code: CustomCode,
+          img: (imgProps) => {
+            const src = typeof imgProps.src === "string" ? imgProps.src : "";
+            return (
+              // eslint-disable-next-line @next/next/no-img-element
+              <img
+                {...imgProps}
+                alt={imgProps.alt ?? ""}
+                onDoubleClick={(event) => {
+                  event.stopPropagation();
+                  if (src) openImageLightbox([src]);
+                }}
+                title={Locale.Chat.Images.View}
+              />
+            );
+          },
           p: (pProps) => <p {...pProps} dir="auto" />,
           a: (aProps) => {
             const href = aProps.href || "";

@@ -274,8 +274,9 @@ function _ChatMessageItem({
                 message.content.length === 0 &&
                 !isUser
               }
-              onDoubleClickCapture={() => {
+              onDoubleClickCapture={(event) => {
                 if (!isMobileScreen) return;
+                if ((event.target as HTMLElement).closest("img")) return;
                 onSetUserInput(getMessageTextContent(message));
               }}
               fontSize={fontSize}

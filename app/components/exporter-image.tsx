@@ -3,6 +3,7 @@ import { ChatMessage, useAppConfig, useChatStore } from "../store";
 import Locale from "../locales";
 import styles from "./exporter.module.scss";
 import { showImageModal, showToast } from "./ui-lib";
+import { openImageLightbox } from "./image-preview";
 import {
   getMessageImages,
   getMessageTextContent,
@@ -207,6 +208,10 @@ export function ImagePreviewer(props: {
                     src={getMessageImages(m)[0]}
                     alt="message"
                     className={styles["message-image"]}
+                    onDoubleClick={() =>
+                      openImageLightbox([getMessageImages(m)[0]])
+                    }
+                    title={Locale.Chat.Images.View}
                   />
                 )}
                 {getMessageImages(m).length > 1 && (
@@ -224,6 +229,8 @@ export function ImagePreviewer(props: {
                         src={src}
                         alt="message"
                         className={styles["message-image-multi"]}
+                        onDoubleClick={() => openImageLightbox([src])}
+                        title={Locale.Chat.Images.View}
                       />
                     ))}
                   </div>

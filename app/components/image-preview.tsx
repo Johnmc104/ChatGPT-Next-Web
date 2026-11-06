@@ -15,6 +15,7 @@ import MaxIcon from "../icons/max.svg";
 import MinIcon from "../icons/min.svg";
 
 import styles from "./image-preview.module.scss";
+import Locale from "../locales";
 
 // ─── Lightbox (fullscreen viewer) ────────────────────────────────
 
@@ -328,7 +329,11 @@ export function ChatImage({
   return (
     <div
       className={`${styles["chat-image-wrap"]} ${className ?? ""}`}
-      onClick={() => openImageLightbox(allImages, index)}
+      onDoubleClick={(event) => {
+        event.stopPropagation();
+        openImageLightbox(allImages, index);
+      }}
+      title={Locale.Chat.Images.View}
     >
       {/* eslint-disable-next-line @next/next/no-img-element */}
       <img

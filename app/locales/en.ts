@@ -72,6 +72,7 @@ const en: LocaleType = {
       Ready: "Ready",
       FailedStatus: "Failed",
       Sending: "Sending",
+      View: "Double-click to view",
     },
     SubTitle: (count: number) => `${count} messages`,
     EditMessage: {

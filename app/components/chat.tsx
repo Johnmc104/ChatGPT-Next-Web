@@ -94,6 +94,7 @@ import { useScrollToBottom } from "../hooks/useChatScroll";
 import { ChatMessageItem } from "./chat-message-item";
 import { ChatHeader } from "./chat-header";
 import type { ImageAttachment } from "../domain/media/image-attachment";
+import { openImageLightbox } from "./image-preview";
 
 // --- Module-level singletons ---
 
@@ -131,6 +132,10 @@ function ImageAttachmentCard(props: {
       })}
       style={preview ? { backgroundImage: `url("${preview}")` } : undefined}
       title={`${attachment.fileName}: ${status}`}
+      onDoubleClick={(event) => {
+        event.stopPropagation();
+        if (preview) openImageLightbox([preview]);
+      }}
     >
       <div className={styles["attach-image-status"]}>{status}</div>
       <div className={styles["attach-image-mask"]}>
