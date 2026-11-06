@@ -133,15 +133,15 @@ const McpMarketPage = dynamic(
 );
 
 export function useSwitchTheme() {
-  const config = useAppConfig();
+  const theme = useAppConfig((config) => config.theme);
 
   useEffect(() => {
     document.body.classList.remove("light");
     document.body.classList.remove("dark");
 
-    if (config.theme === "dark") {
+    if (theme === "dark") {
       document.body.classList.add("dark");
-    } else if (config.theme === "light") {
+    } else if (theme === "light") {
       document.body.classList.add("light");
     }
 
@@ -152,7 +152,7 @@ export function useSwitchTheme() {
       'meta[name="theme-color"][media*="light"]',
     );
 
-    if (config.theme === "auto") {
+    if (theme === "auto") {
       metaDescriptionDark?.setAttribute("content", "#151515");
       metaDescriptionLight?.setAttribute("content", "#fafafa");
     } else {
@@ -160,7 +160,7 @@ export function useSwitchTheme() {
       metaDescriptionDark?.setAttribute("content", themeColor);
       metaDescriptionLight?.setAttribute("content", themeColor);
     }
-  }, [config.theme]);
+  }, [theme]);
 }
 
 function useHtmlLang() {
@@ -208,7 +208,7 @@ export function WindowContent(props: { children: React.ReactNode }) {
 }
 
 function Screen() {
-  const config = useAppConfig();
+  const tightBorder = useAppConfig((config) => config.tightBorder);
   const location = useLocation();
   const isArtifact = location.pathname.includes(Path.Artifacts);
   const isHome = location.pathname === Path.Home;
@@ -218,7 +218,7 @@ function Screen() {
 
   const isMobileScreen = useMobileScreen();
   const shouldTightBorder =
-    getClientConfig()?.isApp || (config.tightBorder && !isMobileScreen);
+    getClientConfig()?.isApp || (tightBorder && !isMobileScreen);
 
   useEffect(() => {
     loadAsyncGoogleFont();
@@ -271,20 +271,21 @@ function Screen() {
 }
 
 export function useLoadData() {
-  const config = useAppConfig();
-
-  // getClientApi will automatically use OpenAI client when custom BASE_URL is configured
-  const api: ClientApi = getClientApi(
-    config.modelConfig.providerName as ServiceProvider,
+  const providerName = useAppConfig(
+    (config) => config.modelConfig.providerName,
   );
+  const mergeModels = useAppConfig((config) => config.mergeModels);
+  const hasHydrated = useAppConfig((config) => config._hasHydrated);
 
   useEffect(() => {
+    if (!hasHydrated) return;
+    // getClientApi will automatically use OpenAI client when custom BASE_URL is configured.
+    const api: ClientApi = getClientApi(providerName as ServiceProvider);
     (async () => {
       const models = await api.llm.models();
-      config.mergeModels(models);
+      mergeModels(models);
     })();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [hasHydrated, mergeModels, providerName]);
 }
 
 export function Home() {
