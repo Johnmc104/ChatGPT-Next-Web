@@ -93,10 +93,52 @@ import {
 import { useScrollToBottom } from "../hooks/useChatScroll";
 import { ChatMessageItem } from "./chat-message-item";
 import { ChatHeader } from "./chat-header";
+import type { ImageAttachment } from "../domain/media/image-attachment";
 
 // --- Module-level singletons ---
 
 const localStorage = safeLocalStorage();
+
+function ImageAttachmentCard(props: {
+  attachment: ImageAttachment;
+  onRemove: () => void;
+}) {
+  const { attachment, onRemove } = props;
+  const [filePreview, setFilePreview] = useState("");
+  useEffect(() => {
+    if (!attachment.file || attachment.url) return;
+    const preview = URL.createObjectURL(attachment.file);
+    setFilePreview(preview);
+    return () => URL.revokeObjectURL(preview);
+  }, [attachment.file, attachment.url]);
+  const preview = attachment.url ?? filePreview;
+  const status =
+    attachment.status === "queued"
+      ? Locale.Chat.Images.Queued
+      : attachment.status === "uploading"
+        ? Locale.Chat.Images.Uploading
+        : attachment.status === "failed"
+          ? Locale.Chat.Images.FailedStatus
+          : attachment.status === "sending"
+            ? Locale.Chat.Images.Sending
+            : Locale.Chat.Images.Ready;
+  return (
+    <div
+      className={clsx(styles["attach-image"], {
+        [styles["attach-image-failed"]]: attachment.status === "failed",
+        [styles["attach-image-pending"]]:
+          attachment.status === "queued" || attachment.status === "uploading",
+      })}
+      style={preview ? { backgroundImage: `url("${preview}")` } : undefined}
+      title={`${attachment.fileName}: ${status}`}
+    >
+      <div className={styles["attach-image-status"]}>{status}</div>
+      <div className={styles["attach-image-mask"]}>
+        <DeleteImageButtonComponent deleteImage={onRemove} />
+      </div>
+    </div>
+  );
+}
 
 // ---------------------------------------------------------------------------
 // _Chat — the main chat view (1 instance per session via key={session.id})
@@ -180,6 +222,7 @@ function _Chat() {
   const isMobileScreen = useMobileScreen();
   const navigate = useNavigate();
   const {
+    attachments,
     attachImages,
     maxAttachImages,
     beginImageSubmission,
@@ -189,7 +232,7 @@ function _Chat() {
     handlePaste,
     handleDrop,
     imageError,
-    removeImage,
+    removeAttachment,
     clearImages,
     retryImages,
     canRetryImages,
@@ -758,7 +801,7 @@ function _Chat() {
               <label
                 className={clsx(styles["chat-input-panel-inner"], {
                   [styles["chat-input-panel-inner-attach"]]:
-                    attachImages.length !== 0,
+                    attachments.length !== 0,
                 })}
                 htmlFor="chat-input"
               >
@@ -785,7 +828,7 @@ function _Chat() {
                     fontFamily: fontFamily,
                   }}
                 />
-                {(attachImages.length > 0 || imageError) && (
+                {(attachments.length > 0 || imageError) && (
                   <div role="status" style={{ fontSize: 12, marginTop: 8 }}>
                     {Locale.Chat.Images.Count(
                       attachImages.length,
@@ -799,35 +842,27 @@ function _Chat() {
                         disabled={uploading}
                       />
                     )}
-                    {attachImages.length > 0 && (
+                    {attachments.length > 0 && (
                       <IconButton
                         text={Locale.Chat.Images.TextOnly}
                         onClick={clearImages}
-                        disabled={uploading}
+                        disabled={false}
                       />
                     )}
                   </div>
                 )}
-                {attachImages.length != 0 && (
+                {attachments.length != 0 && (
                   <div
                     className={styles["attach-images"]}
                     title={`${attachImages.length}/${maxAttachImages} images attached`}
                   >
-                    {attachImages.map((image, index) => {
-                      return (
-                        <div
-                          key={index}
-                          className={styles["attach-image"]}
-                          style={{ backgroundImage: `url("${image}")` }}
-                        >
-                          <div className={styles["attach-image-mask"]}>
-                            <DeleteImageButtonComponent
-                              deleteImage={() => removeImage(index)}
-                            />
-                          </div>
-                        </div>
-                      );
-                    })}
+                    {attachments.map((attachment) => (
+                      <ImageAttachmentCard
+                        key={attachment.id}
+                        attachment={attachment}
+                        onRemove={() => removeAttachment(attachment.id)}
+                      />
+                    ))}
                   </div>
                 )}
                 <IconButton

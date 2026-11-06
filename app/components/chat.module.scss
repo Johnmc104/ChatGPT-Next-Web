@@ -17,6 +17,30 @@
   background-size: cover;
   background-position: center;
   background-color: var(--white);
+  position: relative;
+
+  &-pending {
+    opacity: 0.72;
+  }
+
+  &-failed {
+    border-color: var(--color-error, #d33);
+  }
+
+  .attach-image-status {
+    position: absolute;
+    left: 2px;
+    right: 2px;
+    bottom: 2px;
+    padding: 2px 3px;
+    border-radius: 3px;
+    color: var(--white);
+    background: rgba(0, 0, 0, 0.65);
+    font-size: 9px;
+    line-height: 1.1;
+    text-align: center;
+    pointer-events: none;
+  }
 
   .attach-image-mask {
     width: 100%;
@@ -75,7 +99,9 @@
       padding-left: 5px;
       opacity: 0;
       transform: translateX(-5px);
-      transition: opacity ease 0.3s, transform ease 0.3s;
+      transition:
+        opacity ease 0.3s,
+        transform ease 0.3s;
       pointer-events: none;
     }
 
@@ -154,7 +180,10 @@
         border: 1px solid var(--border-in-light);
         background-color: var(--white);
         color: var(--black);
-        transition: border-color ease 0.2s, color ease 0.2s, background-color ease 0.2s;
+        transition:
+          border-color ease 0.2s,
+          color ease 0.2s,
+          background-color ease 0.2s;
         user-select: none;
 
         &:hover {
@@ -215,7 +244,9 @@
     .token-usage-fill {
       height: 100%;
       border-radius: 2px;
-      transition: width 0.3s ease, background-color 0.3s ease;
+      transition:
+        width 0.3s ease,
+        background-color 0.3s ease;
       min-width: 1px;
     }
   }
@@ -277,7 +308,9 @@
     justify-content: center;
     padding: 4px;
     opacity: 0.2;
-    transition: opacity ease 0.3s, background-color ease 0.3s;
+    transition:
+      opacity ease 0.3s,
+      background-color ease 0.3s;
     background-color: rgba(0, 0, 0, 0);
     cursor: pointer;
     border-radius: 4px;
@@ -355,7 +388,9 @@
   align-items: center;
 
   color: var(--black);
-  transition: opacity ease 0.3s, background-color ease 0.3s;
+  transition:
+    opacity ease 0.3s,
+    background-color ease 0.3s;
   cursor: pointer;
   overflow: hidden;
   position: relative;
@@ -374,14 +409,18 @@
   @mixin show {
     transform: translateY(0);
     position: relative;
-    transition: opacity ease 0.3s, transform ease 0.3s;
+    transition:
+      opacity ease 0.3s,
+      transform ease 0.3s;
     opacity: 1;
   }
 
   @mixin hide {
     transform: translateY(-50%);
     position: absolute;
-    transition: opacity ease 0.1s, transform ease 0.1s;
+    transition:
+      opacity ease 0.1s,
+      transform ease 0.1s;
     opacity: 0;
   }
 
@@ -471,7 +510,9 @@
     font-size: 12px;
     align-items: flex-end;
     justify-content: space-between;
-    transition: opacity ease 0.3s, transform ease 0.3s;
+    transition:
+      opacity ease 0.3s,
+      transform ease 0.3s;
     transform: scale(0.9) translateY(5px);
     margin: 0 10px;
     opacity: 0;
@@ -734,7 +775,9 @@
     padding: 6px 10px;
     animation: slide-in ease 0.3s;
     cursor: pointer;
-    transition: background-color ease 0.3s, border-color ease 0.3s;
+    transition:
+      background-color ease 0.3s,
+      border-color ease 0.3s;
     border: transparent 1px solid;
     margin: 4px;
     border-radius: 8px;

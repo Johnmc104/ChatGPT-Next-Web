@@ -67,6 +67,11 @@ const en: LocaleType = {
         "Unsupported files or images over 20 MB were skipped. PNG, JPEG, WebP, HEIC/HEIF are supported.",
       Retry: "Retry failed images",
       TextOnly: "Remove images, keep text",
+      Queued: "Preparing",
+      Uploading: "Uploading",
+      Ready: "Ready",
+      FailedStatus: "Failed",
+      Sending: "Sending",
     },
     SubTitle: (count: number) => `${count} messages`,
     EditMessage: {

@@ -61,6 +61,11 @@ const cn = {
         "已跳过不支持的文件或超过 20 MB 的图片。支持 PNG、JPEG、WebP、HEIC/HEIF。",
       Retry: "重试失败图片",
       TextOnly: "移除图片，仅保留文字",
+      Queued: "准备中",
+      Uploading: "上传中",
+      Ready: "已就绪",
+      FailedStatus: "失败",
+      Sending: "发送中",
     },
     SubTitle: (count: number) => `共 ${count} 条对话`,
     EditMessage: {
