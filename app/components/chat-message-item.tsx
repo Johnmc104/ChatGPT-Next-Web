@@ -86,6 +86,8 @@ export interface ChatMessageItemProps {
   onSetUserInput: (input: string) => void;
   /** Display string for message cost (tokens / $) */
   costDisplay: string;
+  /** Changes when mutable streaming content needs this memoized row to update. */
+  messageRevision: string;
 }
 
 function _ChatMessageItem({
@@ -111,6 +113,7 @@ function _ChatMessageItem({
   onEditMessage,
   onSetUserInput,
   costDisplay,
+  messageRevision: _messageRevision,
 }: ChatMessageItemProps) {
   const isUser = message.role === "user";
   const showActions =

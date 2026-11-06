@@ -221,8 +221,20 @@ function Screen() {
     getClientConfig()?.isApp || (tightBorder && !isMobileScreen);
 
   useEffect(() => {
-    loadAsyncGoogleFont();
-    preloadEncoder(); // start loading tiktoken BPE data in background
+    const idleWindow = window as Window & {
+      requestIdleCallback?: (callback: () => void) => number;
+      cancelIdleCallback?: (handle: number) => void;
+    };
+    const loadDeferredResources = () => {
+      loadAsyncGoogleFont();
+      preloadEncoder(); // start loading tiktoken BPE data after first paint
+    };
+    if (idleWindow.requestIdleCallback) {
+      const handle = idleWindow.requestIdleCallback(loadDeferredResources);
+      return () => idleWindow.cancelIdleCallback?.(handle);
+    }
+    const handle = window.setTimeout(loadDeferredResources, 1);
+    return () => window.clearTimeout(handle);
   }, []);
 
   if (isArtifact) {

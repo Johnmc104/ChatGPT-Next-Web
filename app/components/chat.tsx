@@ -772,6 +772,7 @@ function _Chat() {
                   onEditMessage={onEditMessage}
                   onSetUserInput={setUserInput}
                   costDisplay={getMessageCostDisplay(message)}
+                  messageRevision={`${message.streaming ? "streaming" : "done"}:${getMessageTextContent(message).length}:${message.tools?.length ?? 0}:${message.isError ? "error" : "ok"}`}
                 />
               ))}
             </div>
