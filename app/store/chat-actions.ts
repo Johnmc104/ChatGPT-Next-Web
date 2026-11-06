@@ -299,6 +299,36 @@ export function createChatActions(
       model: modelConfig.model,
     });
 
+    // Upstream streams can emit several partial updates within one frame.
+    // Coalesce those updates before cloning the session and notifying every
+    // subscriber. Final and error paths flush immediately.
+    let pendingMessageUpdate = false;
+    let messageUpdateTimer: ReturnType<typeof setTimeout> | null = null;
+    const flushMessageUpdate = () => {
+      if (messageUpdateTimer !== null) {
+        clearTimeout(messageUpdateTimer);
+        messageUpdateTimer = null;
+      }
+      if (!pendingMessageUpdate) return;
+      pendingMessageUpdate = false;
+      get().updateTargetSession(session, (session: ChatSession) => {
+        session.messages = session.messages.concat();
+      });
+    };
+    const scheduleMessageUpdate = () => {
+      pendingMessageUpdate = true;
+      if (messageUpdateTimer === null) {
+        messageUpdateTimer = setTimeout(flushMessageUpdate, 33);
+      }
+    };
+    const cancelScheduledMessageUpdate = () => {
+      if (messageUpdateTimer !== null) {
+        clearTimeout(messageUpdateTimer);
+        messageUpdateTimer = null;
+      }
+      pendingMessageUpdate = false;
+    };
+
     // get recent messages
     const recentMessages = await getMessagesWithMemory();
     const sendMessages = recentMessages.concat(userMessage);
@@ -327,9 +357,7 @@ export function createChatActions(
         if (message) {
           botMessage.content = message;
         }
-        get().updateTargetSession(session, (session: ChatSession) => {
-          session.messages = session.messages.concat();
-        });
+        scheduleMessageUpdate();
       },
       async onFinish(message, _responseRes, usage) {
         botMessage.streaming = false;
@@ -343,15 +371,17 @@ export function createChatActions(
               totalTokens: usage.totalTokens,
             };
           }
+          cancelScheduledMessageUpdate();
           onNewMessage(botMessage, session);
+        } else {
+          pendingMessageUpdate = true;
+          flushMessageUpdate();
         }
         ChatControllerPool.remove(session.id, botMessage.id);
       },
       onBeforeTool(tool: ChatMessageTool) {
         (botMessage.tools = botMessage?.tools || []).push(tool);
-        get().updateTargetSession(session, (session: ChatSession) => {
-          session.messages = session.messages.concat();
-        });
+        scheduleMessageUpdate();
       },
       onAfterTool(tool: ChatMessageTool) {
         botMessage?.tools?.forEach((t, i, tools) => {
@@ -359,9 +389,7 @@ export function createChatActions(
             tools[i] = { ...tool };
           }
         });
-        get().updateTargetSession(session, (session: ChatSession) => {
-          session.messages = session.messages.concat();
-        });
+        scheduleMessageUpdate();
       },
       onError(error) {
         const isAborted = error.message?.includes?.("aborted");
@@ -374,9 +402,8 @@ export function createChatActions(
         botMessage.streaming = false;
         userMessage.isError = !isAborted;
         botMessage.isError = !isAborted;
-        get().updateTargetSession(session, (session: ChatSession) => {
-          session.messages = session.messages.concat();
-        });
+        pendingMessageUpdate = true;
+        flushMessageUpdate();
         ChatControllerPool.remove(session.id, botMessage.id ?? messageIndex);
 
         console.error("[Chat] failed ", error);
