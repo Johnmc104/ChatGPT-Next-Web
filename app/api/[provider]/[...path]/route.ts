@@ -6,10 +6,11 @@ import { logger } from "@/app/utils/logger";
 
 async function handle(
   req: NextRequest,
-  { params }: { params: { provider: string; path: string[] } },
+  { params }: { params: Promise<{ provider: string; path: string[] }> },
 ) {
-  const apiPath = `/api/${params.provider}`;
-  logger.debug(`[${params.provider} Route] params`, params);
+  const resolvedParams = await params;
+  const apiPath = `/api/${resolvedParams.provider}`;
+  logger.debug(`[${resolvedParams.provider} Route] params`, resolvedParams);
 
   // All providers route through the unified proxy architecture.
   // OpenAI and Azure have special handling (GPT-4 filtering, Azure URL rewriting).
@@ -18,9 +19,13 @@ async function handle(
     case ApiPath.Azure:
     case ApiPath.OpenAI:
     case ApiPath.Stability:
-      return openaiHandler(req, { params });
+      return openaiHandler(req, {
+        params: Promise.resolve({ path: resolvedParams.path }),
+      });
     default:
-      return proxyHandler(req, { params });
+      return proxyHandler(req, {
+        params: Promise.resolve({ path: resolvedParams.path }),
+      });
   }
 }
 

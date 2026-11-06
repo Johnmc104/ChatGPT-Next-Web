@@ -1,19 +1,21 @@
-FROM node:18-alpine AS base
+FROM node:26-bookworm-slim AS base
+
+RUN npm install --global yarn@1.22.19
 
 FROM base AS deps
-
-RUN apk add --no-cache libc6-compat
 
 WORKDIR /app
 
 COPY package.json yarn.lock ./
 
 RUN yarn config set registry 'https://registry.npmmirror.com/'
-RUN yarn install
+RUN yarn install --frozen-lockfile
 
 FROM base AS builder
 
-RUN apk update && apk add --no-cache git
+RUN apt-get update \
+  && apt-get install -y --no-install-recommends git \
+  && rm -rf /var/lib/apt/lists/*
 
 ENV OPENAI_API_KEY=""
 ENV CODE=""
@@ -27,7 +29,9 @@ RUN yarn build
 FROM base AS runner
 WORKDIR /app
 
-RUN apk add proxychains-ng
+RUN apt-get update \
+  && apt-get install -y --no-install-recommends proxychains4 \
+  && rm -rf /var/lib/apt/lists/*
 
 ENV PROXY_URL=""
 ENV OPENAI_API_KEY=""
@@ -60,7 +64,7 @@ CMD if [ -n "$PROXY_URL" ]; then \
     echo "[ProxyList]" >> $conf; \
     echo "$protocol $host $port" >> $conf; \
     cat /etc/proxychains.conf; \
-    proxychains -f $conf node server.js; \
+    proxychains4 -f $conf node server.js; \
     else \
     node server.js; \
     fi

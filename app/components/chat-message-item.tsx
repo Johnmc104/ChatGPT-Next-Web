@@ -71,7 +71,7 @@ export interface ChatMessageItemProps {
   /** TTS speech status */
   speechStatus: boolean;
   /** Scroll container ref for Markdown lazy rendering */
-  scrollRef: React.RefObject<HTMLDivElement>;
+  scrollRef: React.RefObject<HTMLDivElement | null>;
 
   // Callbacks
   onDelete: (msgId: string) => void;

@@ -8,7 +8,7 @@ import { RefObject, useCallback, useEffect, useRef, useState } from "react";
 import { ChatMessage } from "../store";
 
 export function useScrollToBottom(
-  scrollRef: RefObject<HTMLDivElement>,
+  scrollRef: RefObject<HTMLDivElement | null>,
   detach: boolean = false,
   messages: ChatMessage[],
 ) {

@@ -12,8 +12,13 @@ class IndexedDBStorage implements StateStorage {
     { timer: ReturnType<typeof setTimeout>; value: string }
   >();
 
+  private get canUseIndexedDB() {
+    return typeof indexedDB !== "undefined";
+  }
+
   public async getItem(name: string): Promise<string | null> {
     try {
+      if (!this.canUseIndexedDB) return localStorage.getItem(name);
       // If there's a pending write, return that value for consistency
       const pending = this.pendingWrites.get(name);
       if (pending) return pending.value;
@@ -36,7 +41,11 @@ class IndexedDBStorage implements StateStorage {
       if (existing) clearTimeout(existing.timer);
       const timer = setTimeout(() => {
         this.pendingWrites.delete(name);
-        set(name, value).catch(() => localStorage.setItem(name, value));
+        if (this.canUseIndexedDB) {
+          set(name, value).catch(() => localStorage.setItem(name, value));
+        } else {
+          localStorage.setItem(name, value);
+        }
       }, WRITE_DEBOUNCE_MS);
       this.pendingWrites.set(name, { timer, value });
     } catch (error) {
@@ -46,6 +55,10 @@ class IndexedDBStorage implements StateStorage {
 
   public async removeItem(name: string): Promise<void> {
     try {
+      if (!this.canUseIndexedDB) {
+        localStorage.removeItem(name);
+        return;
+      }
       await del(name);
     } catch (error) {
       localStorage.removeItem(name);
@@ -54,6 +67,10 @@ class IndexedDBStorage implements StateStorage {
 
   public async clear(): Promise<void> {
     try {
+      if (!this.canUseIndexedDB) {
+        localStorage.clear();
+        return;
+      }
       await clear();
     } catch (error) {
       localStorage.clear();
@@ -67,7 +84,11 @@ class IndexedDBStorage implements StateStorage {
   public flushPending(): void {
     for (const [name, { timer, value }] of this.pendingWrites) {
       clearTimeout(timer);
-      set(name, value).catch(() => localStorage.setItem(name, value));
+      if (this.canUseIndexedDB) {
+        set(name, value).catch(() => localStorage.setItem(name, value));
+      } else {
+        localStorage.setItem(name, value);
+      }
     }
     this.pendingWrites.clear();
   }

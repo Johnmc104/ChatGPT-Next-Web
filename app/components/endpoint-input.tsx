@@ -23,7 +23,7 @@ export function EndpointInput(props: {
   const [error, setError] = useState("");
   const [result, setResult] = useState<EndpointTestResult>();
   const [testing, setTesting] = useState(false);
-  const request = useRef<AbortController>();
+  const request = useRef<AbortController | undefined>(undefined);
   const invalidate = useCallback(() => {
     request.current?.abort();
     request.current = undefined;

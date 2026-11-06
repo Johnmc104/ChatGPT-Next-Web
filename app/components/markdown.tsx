@@ -88,7 +88,6 @@ export const Mermaid = React.memo(function Mermaid(props: { code: string }) {
           console.error("[Mermaid] ", e.message);
         });
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [props.code]);
 
   function viewSvgInNewWindow() {
@@ -379,7 +378,7 @@ function _MarkDownContent(props: { content: string }) {
               );
             }
             const isInternal = /^\/#/i.test(href);
-            const target = isInternal ? "_self" : aProps.target ?? "_blank";
+            const target = isInternal ? "_self" : (aProps.target ?? "_blank");
             return <a {...aProps} target={target} />;
           },
         }}
@@ -398,7 +397,7 @@ export function Markdown(
     loading?: boolean;
     fontSize?: number;
     fontFamily?: string;
-    parentRef?: RefObject<HTMLDivElement>;
+    parentRef?: RefObject<HTMLDivElement | null>;
     defaultShow?: boolean;
   } & React.DOMAttributes<HTMLDivElement>,
 ) {

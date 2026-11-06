@@ -1,4 +1,3 @@
-/* eslint-disable @next/next/no-img-element */
 import styles from "./ui-lib.module.scss";
 import LoadingIcon from "../icons/three-dots.svg";
 import EyeIcon from "../icons/eye.svg";
@@ -199,8 +198,8 @@ export function Selector<T>(props: {
     Array.isArray(props.defaultSelectedValue)
       ? props.defaultSelectedValue
       : props.defaultSelectedValue !== undefined
-      ? [props.defaultSelectedValue]
-      : [],
+        ? [props.defaultSelectedValue]
+        : [],
   );
 
   const handleSelection = (e: MouseEvent, value: T) => {
@@ -326,7 +325,7 @@ export function Selector<T>(props: {
 }
 export function FullScreen(props: any) {
   const { children, right = 10, top = 10, ...rest } = props;
-  const ref = useRef<HTMLDivElement>();
+  const ref = useRef<HTMLDivElement | undefined>(undefined);
   const [fullScreen, setFullScreen] = useState(false);
   const toggleFullscreen = useCallback(() => {
     if (!document.fullscreenElement) {

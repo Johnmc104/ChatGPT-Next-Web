@@ -14,7 +14,7 @@ interface Commands {
 export function useCommand(commands: Commands = {}) {
   const [searchParams, setSearchParams] = useSearchParams();
   const location = useLocation();
-  const consumed = useRef<string>();
+  const consumed = useRef<string | undefined>(undefined);
 
   useEffect(() => {
     if (consumed.current === location.key) return;

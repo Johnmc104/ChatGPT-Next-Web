@@ -3,7 +3,10 @@ import { NextRequest, NextResponse } from "next/server";
 import { getServerSideConfig } from "@/app/config/server";
 import { logger } from "@/app/utils/logger";
 
-async function handle(req: NextRequest, res: NextResponse) {
+async function handle(
+  req: NextRequest,
+  _context: { params: Promise<Record<string, never>> },
+) {
   const serverConfig = getServerSideConfig();
   const storeUrl = () =>
     `https://api.cloudflare.com/client/v4/accounts/${serverConfig.cloudflareAccountId}/storage/kv/namespaces/${serverConfig.cloudflareKVNamespaceId}`;

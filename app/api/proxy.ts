@@ -14,9 +14,10 @@ import { logger } from "@/app/utils/logger";
 
 export async function handle(
   req: NextRequest,
-  { params }: { params: { path: string[] } },
+  { params }: { params: Promise<{ path: string[] }> },
 ) {
-  logger.debug("[Proxy Route] params", params);
+  const resolvedParams = await params;
+  logger.debug("[Proxy Route] params", resolvedParams);
 
   if (req.method === "OPTIONS") {
     return NextResponse.json({ body: "OK" }, { status: 200 });
@@ -34,7 +35,7 @@ export async function handle(
   req.nextUrl.searchParams.delete("path");
   req.nextUrl.searchParams.delete("provider");
 
-  const subpath = params.path.join("/");
+  const subpath = resolvedParams.path.join("/");
   const baseUrl = req.headers.get("x-base-url") || serverConfig.baseUrl || "";
   const queryString = req.nextUrl.searchParams.toString();
 

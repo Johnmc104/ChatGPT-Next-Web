@@ -29,15 +29,16 @@ function getModels(remoteModelRes: OpenAIListModelResponse) {
 
 export async function handle(
   req: NextRequest,
-  { params }: { params: { path: string[] } },
+  { params }: { params: Promise<{ path: string[] }> },
 ) {
-  logger.debug("[OpenAI Route] params", params);
+  const resolvedParams = await params;
+  logger.debug("[OpenAI Route] params", resolvedParams);
 
   if (req.method === "OPTIONS") {
     return NextResponse.json({ body: "OK" }, { status: 200 });
   }
 
-  const subpath = params.path.join("/");
+  const subpath = resolvedParams.path.join("/");
 
   if (!ALLOWED_PATH.has(subpath)) {
     logger.warn("[OpenAI Route] forbidden path", subpath);

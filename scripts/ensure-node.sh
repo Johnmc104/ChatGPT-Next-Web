@@ -1,14 +1,14 @@
 #!/bin/bash
-# Ensure we're running on a compatible Node.js version for Next.js 14.
-# Node 24+ has breaking changes that cause vendor-chunks build failures.
-# This script auto-switches to Node 20 via nvm if needed.
+# Ensure we're running on a compatible Node.js version for Next.js 16.
+# Node 26 is the current project target; newer majors are held back
+# until the framework and native dependencies are verified together.
 
-REQUIRED_MAJOR=20
+REQUIRED_MAJOR=26
 
 current_major=$(node -v | sed 's/v\([0-9]*\).*/\1/')
 
-if [ "$current_major" -gt 22 ] 2>/dev/null; then
-  echo "[ensure-node] Node.js v$(node -v | tr -d 'v') detected, incompatible with Next.js 14."
+if [ "$current_major" -gt 26 ] 2>/dev/null; then
+  echo "[ensure-node] Node.js v$(node -v | tr -d 'v') is newer than the verified Node 26 line."
   echo "[ensure-node] Switching to Node $REQUIRED_MAJOR via nvm..."
 
   # Try common nvm locations

@@ -20,8 +20,9 @@ const normalizeUrl = (url: string) => {
 
 async function handle(
   req: NextRequest,
-  { params }: { params: { path: string[] } },
+  { params }: { params: Promise<{ path: string[] }> },
 ) {
+  const resolvedParams = await params;
   if (req.method === "OPTIONS") {
     return NextResponse.json({ body: "OK" }, { status: 200 });
   }
@@ -63,7 +64,7 @@ async function handle(
     endpoint += "/";
   }
 
-  const endpointPath = params.path.join("/");
+  const endpointPath = resolvedParams.path.join("/");
   const targetPath = `${endpoint}${endpointPath}`;
 
   // only allow MKCOL, GET, PUT

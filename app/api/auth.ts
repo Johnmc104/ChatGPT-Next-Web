@@ -5,7 +5,7 @@ import { ACCESS_CODE_PREFIX, ModelProvider } from "../constant";
 import { logger } from "@/app/utils/logger";
 
 function getIP(req: NextRequest) {
-  let ip = req.ip ?? req.headers.get("x-real-ip");
+  let ip = req.headers.get("x-real-ip");
   const forwardedFor = req.headers.get("x-forwarded-for");
 
   if (!ip && forwardedFor) {
