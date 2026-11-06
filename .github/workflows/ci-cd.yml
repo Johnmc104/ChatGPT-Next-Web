@@ -78,6 +78,17 @@ jobs:
       - name: Install Vercel CLI
         run: npm install --global vercel@latest
 
+      - name: Validate Vercel credentials
+        run: |
+          missing=()
+          [[ -n "$VERCEL_TOKEN" ]] || missing+=(VERCEL_TOKEN)
+          [[ -n "$VERCEL_ORG_ID" ]] || missing+=(VERCEL_ORG_ID)
+          [[ -n "$VERCEL_PROJECT_ID" ]] || missing+=(VERCEL_PROJECT_ID)
+          if (( ${#missing[@]} > 0 )); then
+            echo "::error title=Missing Vercel credentials::Configure ${missing[*]} as GitHub Actions secrets in the repository or Production environment."
+            exit 1
+          fi
+
       - name: Install Yarn and dependencies
         run: |
           npm install --global yarn@${YARN_VERSION}
@@ -95,7 +106,7 @@ jobs:
     needs: quality
     runs-on: ubuntu-latest
     timeout-minutes: 15
-    environment: production
+    environment: Production
     env:
       VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
       VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
@@ -112,6 +123,17 @@ jobs:
 
       - name: Install Vercel CLI
         run: npm install --global vercel@latest
+
+      - name: Validate Vercel credentials
+        run: |
+          missing=()
+          [[ -n "$VERCEL_TOKEN" ]] || missing+=(VERCEL_TOKEN)
+          [[ -n "$VERCEL_ORG_ID" ]] || missing+=(VERCEL_ORG_ID)
+          [[ -n "$VERCEL_PROJECT_ID" ]] || missing+=(VERCEL_PROJECT_ID)
+          if (( ${#missing[@]} > 0 )); then
+            echo "::error title=Missing Vercel credentials::Configure ${missing[*]} as GitHub Actions secrets in the repository or Production environment."
+            exit 1
+          fi
 
       - name: Install Yarn and dependencies
         run: |

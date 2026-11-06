@@ -19,7 +19,7 @@ Use Node.js 26 and Yarn 1.22.19. The supported range is `>=20.19.0 <=26.x`; `.nv
 
 GitHub Actions in `.github/workflows/ci-cd.yml` runs lint, Jest, TypeScript, and `yarn vercel-build` for pull requests and `main` pushes. Successful checks can deploy Vercel preview or production builds.
 
-Use `.env.local` for local API keys and configuration; never commit secrets.
+Use `.env.local` for local API keys and configuration; never commit secrets. Vercel deployment requires `VERCEL_TOKEN`, `VERCEL_ORG_ID`, and `VERCEL_PROJECT_ID` in the GitHub `Production` environment or repository secrets.
 
 ## Coding Style & Naming Conventions
 
@@ -31,4 +31,4 @@ Add or update focused Jest tests in `test/` for behavior changes, especially API
 
 ## Commit & Pull Request Guidelines
 
-Use concise, imperative commit subjects with the repository's established prefixes, such as `fix:`, `feat:`, `refactor:`, `perf:`, `docs:`, or `test:`; scopes are acceptable (for example, `fix(auth): ...`). Pull requests should select a change type in `.github/PULL_REQUEST_TEMPLATE.md`, describe the user-visible or architectural impact, list relevant tests, and include screenshots for UI changes. Keep each PR focused and mention Vercel configuration or migration steps when applicable. Deployment requires `VERCEL_TOKEN`, `VERCEL_ORG_ID`, and `VERCEL_PROJECT_ID` repository secrets.
+Use concise, imperative commit subjects with the repository's established prefixes, such as `fix:`, `feat:`, `refactor:`, `perf:`, `docs:`, or `test:`; scopes are acceptable (for example, `fix(auth): ...`). Pull requests should select a change type in `.github/PULL_REQUEST_TEMPLATE.md`, describe the user-visible or architectural impact, list relevant tests, and include screenshots for UI changes. Keep each PR focused and mention Vercel configuration or migration steps when applicable.
