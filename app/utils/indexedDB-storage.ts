@@ -1,10 +1,15 @@
 import { StateStorage } from "zustand/middleware";
 import { get, set, del, clear } from "idb-keyval";
 import { safeLocalStorage } from "./platform";
+import { StoreKey } from "../constant";
 
 const localStorage = safeLocalStorage();
 
 const WRITE_DEBOUNCE_MS = 300;
+
+export function shouldSkipStreamingChatWrite(name: string, value: string) {
+  return name === StoreKey.Chat && value.includes('"streaming":true');
+}
 
 class IndexedDBStorage implements StateStorage {
   private pendingWrites = new Map<
@@ -31,8 +36,8 @@ class IndexedDBStorage implements StateStorage {
 
   public async setItem(name: string, value: string): Promise<void> {
     try {
-      const _value = JSON.parse(value);
-      if (!_value?.state?._hasHydrated) {
+      if (shouldSkipStreamingChatWrite(name, value)) return;
+      if (value.includes('"_hasHydrated":false')) {
         console.warn("skip setItem", name);
         return;
       }
