@@ -218,6 +218,7 @@ function Lightbox({ images, initialIndex = 0, onClose }: LightboxProps) {
           className={styles["lightbox-img"]}
           src={src}
           alt=""
+          decoding="async"
           onLoad={onLoad}
           draggable={false}
           style={{
@@ -342,6 +343,7 @@ export function ChatImage({
         src={src}
         alt=""
         loading="lazy"
+        decoding="async"
         onLoad={onLoad}
         draggable={false}
       />

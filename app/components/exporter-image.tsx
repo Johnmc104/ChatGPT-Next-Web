@@ -207,6 +207,7 @@ export function ImagePreviewer(props: {
                     key={i}
                     src={getMessageImages(m)[0]}
                     alt="message"
+                    decoding="async"
                     className={styles["message-image"]}
                     onDoubleClick={() =>
                       openImageLightbox([getMessageImages(m)[0]])
@@ -228,6 +229,7 @@ export function ImagePreviewer(props: {
                         key={i}
                         src={src}
                         alt="message"
+                        decoding="async"
                         className={styles["message-image-multi"]}
                         onDoubleClick={() => openImageLightbox([src])}
                         title={Locale.Chat.Images.View}

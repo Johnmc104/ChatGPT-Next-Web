@@ -395,6 +395,7 @@ function _MarkDownContent(props: { content: string }) {
               <img
                 {...imgProps}
                 alt={imgProps.alt ?? ""}
+                decoding="async"
                 onDoubleClick={(event) => {
                   event.stopPropagation();
                   if (src) openImageLightbox([src]);
