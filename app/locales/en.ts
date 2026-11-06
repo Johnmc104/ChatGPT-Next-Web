@@ -208,6 +208,11 @@ const en: LocaleType = {
       Delete: "Delete",
       Empty: "No custom models yet. Fill in the fields above and click Create.",
       Advanced: "Advanced rules (CUSTOM_MODELS)",
+      Internal: "Internal model name (optional)",
+      InternalPlaceholder: "Internal name, e.g. openai/gpt-4o",
+      InternalHint: "Set an internal name to match pricing and capabilities.",
+      Price: (value: string) => `Price ${value} /1M tokens (in/out)`,
+      PriceUnknown: "No pricing found for this internal name.",
       Invalid:
         "Invalid model fields or duplicate ID/provider. An ID is required; fields cannot contain commas. Edit all rules in the advanced input.",
       Hint: "Use the model ID accepted by your backend; display names are UI-only. Configure endpoints separately. Select a model below to declare image capabilities and limits.",

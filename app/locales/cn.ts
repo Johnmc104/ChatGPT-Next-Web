@@ -201,6 +201,11 @@ const cn = {
       Delete: "删除",
       Empty: "暂无自定义模型，在上方填写后点击新建。",
       Advanced: "高级规则（CUSTOM_MODELS）",
+      Internal: "内部模型名（可选）",
+      InternalPlaceholder: "内部模型名，如 openai/gpt-4o",
+      InternalHint: "填写内部模型名以匹配定价与能力。",
+      Price: (value: string) => `价格 ${value} /百万 token（输入/输出）`,
+      PriceUnknown: "未找到该内部模型名的定价。",
       Invalid:
         "模型配置无效或 ID/Provider 重复。请检查必填 ID，字段中不能包含逗号；all 规则请在高级输入中编辑。",
       Hint: "ID 必须与后端接受的名称一致，展示名只用于界面。接口地址独立配置；在下方选中模型后可声明图片能力和上限。",

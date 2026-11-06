@@ -2,6 +2,8 @@ export interface CustomModelSpec {
   id: string;
   provider?: string;
   displayName?: string;
+  /** Internal/canonical model name used to look up pricing and capabilities. */
+  internalName?: string;
   enabled: boolean;
 }
 
@@ -40,7 +42,21 @@ export function parseCustomModels(
           : item;
       const equal = body.indexOf("=");
       const modelValue = equal >= 0 ? body.slice(0, equal).trim() : body;
-      const displayName = equal >= 0 ? body.slice(equal + 1).trim() : undefined;
+      const displaySegment =
+        equal >= 0 ? body.slice(equal + 1).trim() : undefined;
+      // Optional "#internalName" suffix maps a custom model to a canonical
+      // name used for pricing and capability lookups.
+      const hash = displaySegment?.indexOf("#") ?? -1;
+      const displayName =
+        displaySegment === undefined
+          ? undefined
+          : hash >= 0
+            ? displaySegment.slice(0, hash).trim()
+            : displaySegment;
+      const internalName =
+        hash >= 0
+          ? displaySegment!.slice(hash + 1).trim() || undefined
+          : undefined;
       const { id, provider } = splitModelProvider(modelValue);
 
       if (!id) {
@@ -66,7 +82,13 @@ export function parseCustomModels(
         return;
       }
       seen.add(key);
-      models.push({ id, provider, displayName, enabled });
+      models.push({
+        id,
+        provider,
+        displayName,
+        ...(internalName ? { internalName } : {}),
+        enabled,
+      });
     });
 
   return { models, errors };

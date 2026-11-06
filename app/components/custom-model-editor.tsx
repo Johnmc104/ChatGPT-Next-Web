@@ -7,15 +7,19 @@ import { IconButton } from "./button";
 import Locale from "../locales";
 import clsx from "clsx";
 import styles from "./form-controls.module.scss";
+import { useModelInfo } from "../hooks/useModelInfo";
+import { formatModelPricing } from "../domain/model/pricing";
 
 const serialize = (models: CustomModelSpec[]) =>
   models
-    .map(
-      (model) =>
-        `${model.enabled ? "+" : "-"}${model.id}${
-          model.provider ? `@${model.provider}` : ""
-        }${model.displayName ? `=${model.displayName}` : ""}`,
-    )
+    .map((model) => {
+      const display = model.internalName
+        ? `${model.displayName ?? model.id}#${model.internalName}`
+        : model.displayName;
+      return `${model.enabled ? "+" : "-"}${model.id}${
+        model.provider ? `@${model.provider}` : ""
+      }${display ? `=${display}` : ""}`;
+    })
     .join(",");
 
 export function CustomModelEditor(props: {
@@ -28,9 +32,12 @@ export function CustomModelEditor(props: {
   const [id, setId] = useState("");
   const [provider, setProvider] = useState("OpenAI");
   const [displayName, setDisplayName] = useState("");
+  const [internalName, setInternalName] = useState("");
   const [enabled, setEnabled] = useState(true);
   const [editing, setEditing] = useState<number>();
   const models = parseCustomModels(props.value).models;
+  const { getModelInfo } = useModelInfo();
+  const draftPricing = formatModelPricing(getModelInfo(internalName.trim()));
   useEffect(() => {
     setDraft(props.value);
   }, [props.value]);
@@ -48,7 +55,8 @@ export function CustomModelEditor(props: {
       id.trim() === "all" ||
       /[,=\s]/.test(id.trim()) ||
       /[,@=\s]/.test(provider.trim()) ||
-      displayName.includes(",")
+      displayName.includes(",") ||
+      /[,#=\s]/.test(internalName.trim())
     ) {
       setError(labels.Invalid);
       return;
@@ -57,6 +65,7 @@ export function CustomModelEditor(props: {
       id: id.trim(),
       provider: provider.trim() || undefined,
       displayName: displayName.trim() || undefined,
+      internalName: internalName.trim() || undefined,
       enabled,
     };
     const next = [...models];
@@ -65,6 +74,7 @@ export function CustomModelEditor(props: {
     if (commit(serialize(next))) {
       setId("");
       setDisplayName("");
+      setInternalName("");
       setEditing(undefined);
     }
   };
@@ -72,6 +82,7 @@ export function CustomModelEditor(props: {
     setEditing(undefined);
     setId("");
     setDisplayName("");
+    setInternalName("");
   };
   return (
     <div className={clsx(styles.field, styles["field-full"])}>
@@ -123,6 +134,22 @@ export function CustomModelEditor(props: {
           />
         </div>
       </div>
+      <div className={styles["model-internal"]}>
+        <input
+          type="text"
+          aria-label={labels.Internal}
+          placeholder={labels.InternalPlaceholder}
+          value={internalName}
+          onChange={(e) => setInternalName(e.target.value)}
+        />
+        <span className={styles["model-price"]}>
+          {internalName.trim()
+            ? draftPricing
+              ? labels.Price(draftPricing)
+              : labels.PriceUnknown
+            : labels.InternalHint}
+        </span>
+      </div>
       {error && (
         <div
           role="alert"
@@ -162,6 +189,13 @@ export function CustomModelEditor(props: {
                 <span className={styles["model-row-meta"]}>
                   {model.id}
                   {model.provider ? ` @ ${model.provider}` : ""}
+                  {model.internalName ? ` → ${model.internalName}` : ""}
+                  {(() => {
+                    const price = formatModelPricing(
+                      getModelInfo(model.internalName ?? ""),
+                    );
+                    return price ? ` · ${labels.Price(price)}` : "";
+                  })()}
                 </span>
               </label>
               <div className={styles["model-row-actions"]}>
@@ -173,6 +207,7 @@ export function CustomModelEditor(props: {
                       setId(model.id);
                       setProvider(model.provider ?? "");
                       setDisplayName(model.displayName ?? "");
+                      setInternalName(model.internalName ?? "");
                       setEnabled(model.enabled);
                       setEditing(index);
                     }}

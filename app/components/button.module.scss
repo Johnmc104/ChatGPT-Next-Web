@@ -10,7 +10,7 @@
   overflow: hidden;
   user-select: none;
   outline: none;
-  border: none;
+  border: 1px solid transparent;
   color: var(--black);
 
   &[disabled] {
