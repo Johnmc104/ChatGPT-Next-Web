@@ -19,11 +19,43 @@ import {
 } from "../constant";
 import { IconButton } from "./button";
 import { EndpointInput } from "./endpoint-input";
+import clsx from "clsx";
+import formStyles from "./form-controls.module.scss";
 
 /**
  * Renders access-code + custom-endpoint toggle + provider-specific
  * config fields. Used inside the Settings page.
  */
+function AccessStatus() {
+  const accessStore = useAccessStore();
+  const verified =
+    accessStore.authorizationStatus === "authorized" &&
+    accessStore.isAuthorized();
+  const message = accessStore.authorizationError
+    ? Locale.Auth.Validation[accessStore.authorizationError]
+    : verified
+      ? Locale.Auth.AccessVerified
+      : accessStore.configError
+        ? Locale.Auth.ConfigError
+        : "";
+  return (
+    <div role="status">
+      {message && (
+        <div
+          className={clsx(
+            formStyles.message,
+            verified
+              ? formStyles["message-success"]
+              : formStyles["message-error"],
+          )}
+        >
+          {message}
+        </div>
+      )}
+    </div>
+  );
+}
+
 export function ProviderConfigSection(props: { showAccessCode: boolean }) {
   const accessStore = useAccessStore();
   const clientConfig = useMemo(() => getClientConfig(), []);
@@ -35,7 +67,7 @@ export function ProviderConfigSection(props: { showAccessCode: boolean }) {
       title={Locale.Settings.Access.AccessCode.Title}
       subTitle={Locale.Settings.Access.AccessCode.SubTitle}
     >
-      <div>
+      <div className={formStyles.field}>
         <PasswordInput
           value={accessStore.accessCode}
           type="text"
@@ -48,30 +80,26 @@ export function ProviderConfigSection(props: { showAccessCode: boolean }) {
             });
           }}
         />
-        <IconButton
-          text={Locale.Auth.CheckAccess}
-          disabled={checkingAccess}
-          onClick={async () => {
-            setCheckingAccess(true);
-            try {
-              await accessStore.verifyAuthorization();
-            } catch {
-              /* store exposes config errors */
-            } finally {
-              setCheckingAccess(false);
-            }
-          }}
-        />
-        <div role="status">
-          {accessStore.authorizationError
-            ? Locale.Auth.Validation[accessStore.authorizationError]
-            : accessStore.authorizationStatus === "authorized" &&
-              accessStore.isAuthorized()
-            ? Locale.Auth.AccessVerified
-            : accessStore.configError
-            ? Locale.Auth.ConfigError
-            : ""}
+        <div className={formStyles.actions}>
+          <IconButton
+            className={formStyles["small-button"]}
+            bordered
+            type="primary"
+            text={Locale.Auth.CheckAccess}
+            disabled={checkingAccess}
+            onClick={async () => {
+              setCheckingAccess(true);
+              try {
+                await accessStore.verifyAuthorization();
+              } catch {
+                /* store exposes config errors */
+              } finally {
+                setCheckingAccess(false);
+              }
+            }}
+          />
         </div>
+        <AccessStatus />
       </div>
     </ListItem>
   );

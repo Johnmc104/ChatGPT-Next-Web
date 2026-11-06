@@ -24,7 +24,8 @@
   }
 
   &-failed {
-    border-color: var(--color-error, #d33);
+    border-color: var(--error);
+    box-shadow: 0 0 0 1px var(--error);
   }
 
   .attach-image-status {
@@ -34,9 +35,9 @@
     bottom: 2px;
     padding: 2px 3px;
     border-radius: 3px;
-    color: var(--white);
-    background: rgba(0, 0, 0, 0.65);
-    font-size: 9px;
+    color: white;
+    background: rgba(0, 0, 0, 0.6);
+    font-size: 10px;
     line-height: 1.1;
     text-align: center;
     pointer-events: none;
@@ -803,6 +804,61 @@
     &:hover {
       border-color: var(--primary);
     }
+  }
+}
+
+.attach-status-bar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 4px 12px;
+  margin-bottom: 8px;
+  padding: 6px 12px;
+  border-radius: 10px;
+  border: var(--border-in-light);
+  background-color: var(--white);
+  font-size: 12px;
+  line-height: 1.5;
+  animation: slide-in ease 0.2s;
+
+  &-error {
+    border-color: transparent;
+    background-color: var(--error-bg);
+  }
+}
+
+.attach-status-count {
+  font-weight: 500;
+  opacity: 0.75;
+}
+
+.attach-status-error {
+  flex: 1;
+  min-width: 0;
+  color: var(--error);
+}
+
+.attach-status-actions {
+  display: flex;
+  gap: 12px;
+  margin-left: auto;
+}
+
+.attach-status-link {
+  padding: 0;
+  border: none;
+  background: none;
+  color: var(--primary);
+  font: inherit;
+  cursor: pointer;
+
+  &:hover {
+    text-decoration: underline;
+  }
+
+  &[disabled] {
+    cursor: not-allowed;
+    opacity: 0.5;
   }
 }
 

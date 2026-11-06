@@ -148,7 +148,11 @@ export function AuthPage() {
         <div className={styles["auth-status"]}>{Locale.Auth.Loading}</div>
       )}
 
-      {submitting && <div role="status">{Locale.Auth.Checking}</div>}
+      {submitting && (
+        <div className={styles["auth-status"]} role="status">
+          {Locale.Auth.Checking}
+        </div>
+      )}
 
       {error && (
         <div className={styles["auth-error"]} role="alert">
@@ -173,7 +177,7 @@ export function AuthPage() {
           disabled={submitting}
         />
       </div>
-      <div className={styles["auth-tips"]}>{Locale.Auth.ConnectionHint}</div>
+      <div className={styles["auth-hint"]}>{Locale.Auth.ConnectionHint}</div>
     </div>
   );
 }

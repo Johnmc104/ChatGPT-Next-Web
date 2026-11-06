@@ -206,6 +206,7 @@ const en: LocaleType = {
       Name: "Display name (optional)",
       Enabled: "Enabled",
       Delete: "Delete",
+      Empty: "No custom models yet. Fill in the fields above and click Create.",
       Advanced: "Advanced rules (CUSTOM_MODELS)",
       Invalid:
         "Invalid model fields or duplicate ID/provider. An ID is required; fields cannot contain commas. Edit all rules in the advanced input.",

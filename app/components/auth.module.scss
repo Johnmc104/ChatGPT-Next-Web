@@ -92,6 +92,21 @@
 
   .auth-error {
     color: var(--error);
+    background-color: var(--error-bg);
+    padding: 8px 14px;
+    border-radius: 10px;
+    max-width: 360px;
+    line-height: 1.5;
+  }
+
+  .auth-hint {
+    max-width: 360px;
+    margin-top: 3vh;
+    padding: 0 20px;
+    font-size: 12px;
+    line-height: 1.6;
+    text-align: center;
+    opacity: 0.6;
   }
 
   .auth-input {
@@ -106,6 +121,7 @@
     display: flex;
     justify-content: center;
     flex-direction: column;
+    width: 240px;
 
     button:not(:last-child) {
       margin-bottom: 10px;

@@ -803,6 +803,50 @@ function _Chat() {
                 setShowChatSidePanel={setShowChatSidePanel}
                 userInput={userInput}
               />
+              {(attachments.length > 0 || imageError) && (
+                <div
+                  role="status"
+                  className={clsx(styles["attach-status-bar"], {
+                    [styles["attach-status-bar-error"]]: !!imageError,
+                  })}
+                >
+                  <span className={styles["attach-status-count"]}>
+                    {Locale.Chat.Images.Count(
+                      attachImages.length,
+                      maxAttachImages,
+                    )}
+                  </span>
+                  {imageError && (
+                    <span
+                      role="alert"
+                      className={styles["attach-status-error"]}
+                    >
+                      {imageError}
+                    </span>
+                  )}
+                  <span className={styles["attach-status-actions"]}>
+                    {canRetryImages && (
+                      <button
+                        type="button"
+                        className={styles["attach-status-link"]}
+                        onClick={retryImages}
+                        disabled={uploading}
+                      >
+                        {Locale.Chat.Images.Retry}
+                      </button>
+                    )}
+                    {attachments.length > 0 && (
+                      <button
+                        type="button"
+                        className={styles["attach-status-link"]}
+                        onClick={clearImages}
+                      >
+                        {Locale.Chat.Images.TextOnly}
+                      </button>
+                    )}
+                  </span>
+                </div>
+              )}
               <label
                 className={clsx(styles["chat-input-panel-inner"], {
                   [styles["chat-input-panel-inner-attach"]]:
@@ -833,29 +877,6 @@ function _Chat() {
                     fontFamily: fontFamily,
                   }}
                 />
-                {(attachments.length > 0 || imageError) && (
-                  <div role="status" style={{ fontSize: 12, marginTop: 8 }}>
-                    {Locale.Chat.Images.Count(
-                      attachImages.length,
-                      maxAttachImages,
-                    )}
-                    {imageError && <div role="alert">{imageError}</div>}
-                    {canRetryImages && (
-                      <IconButton
-                        text={Locale.Chat.Images.Retry}
-                        onClick={retryImages}
-                        disabled={uploading}
-                      />
-                    )}
-                    {attachments.length > 0 && (
-                      <IconButton
-                        text={Locale.Chat.Images.TextOnly}
-                        onClick={clearImages}
-                        disabled={false}
-                      />
-                    )}
-                  </div>
-                )}
                 {attachments.length != 0 && (
                   <div
                     className={styles["attach-images"]}

@@ -286,10 +286,18 @@
   gap: 4px;
   margin-top: 4px;
   font-size: 10px;
-  opacity: 0.75;
+  line-height: 16px;
+
   span {
-    border: 1px solid var(--border-in-light);
-    border-radius: 4px;
-    padding: 1px 4px;
+    padding: 0 6px;
+    border-radius: 999px;
+    background-color: var(--hover-color);
+    opacity: 0.85;
+  }
+
+  span:first-child {
+    background-color: var(--second);
+    color: var(--primary);
+    opacity: 1;
   }
 }

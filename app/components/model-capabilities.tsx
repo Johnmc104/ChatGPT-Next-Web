@@ -7,6 +7,8 @@ import {
 } from "../domain/model/overrides";
 import { ListItem, Select } from "./ui-lib";
 import Locale from "../locales";
+import clsx from "clsx";
+import formStyles from "./form-controls.module.scss";
 
 export function ModelCapabilitiesEditor({
   model,
@@ -83,7 +85,7 @@ export function ModelCapabilitiesEditor({
         </Select>
       </ListItem>
       <ListItem title={labels.Limit} subTitle={labels.LimitHint}>
-        <div>
+        <div className={formStyles.field}>
           <input
             type="number"
             aria-label={labels.Limit}
@@ -102,7 +104,14 @@ export function ModelCapabilitiesEditor({
               else setError(labels.InvalidLimit);
             }}
           />
-          {error && <div role="alert">{error}</div>}
+          {error && (
+            <div
+              role="alert"
+              className={clsx(formStyles.message, formStyles["message-error"])}
+            >
+              {error}
+            </div>
+          )}
         </div>
       </ListItem>
     </>

@@ -7,6 +7,8 @@ import {
   type EndpointTestResult,
 } from "../services/endpoint/test";
 import { IconButton } from "./button";
+import clsx from "clsx";
+import styles from "./form-controls.module.scss";
 
 export function EndpointInput(props: {
   value: string;
@@ -73,7 +75,7 @@ export function EndpointInput(props: {
     request.current = undefined;
   };
   return (
-    <div>
+    <div className={styles.field}>
       <input
         aria-label={props.ariaLabel}
         aria-invalid={!!error}
@@ -88,23 +90,33 @@ export function EndpointInput(props: {
         onBlur={save}
       />
       {error && (
-        <div role="alert" style={{ color: "var(--error)", fontSize: 12 }}>
+        <div
+          role="alert"
+          className={clsx(styles.message, styles["message-error"])}
+        >
           {error}
         </div>
       )}
-      <div style={{ display: "flex", gap: 8, marginTop: 8, flexWrap: "wrap" }}>
+      <div className={styles.actions}>
         <IconButton
+          className={styles["small-button"]}
+          bordered
+          type="primary"
           text={testing ? labels.Testing : labels.Test}
           onClick={() => void test()}
           disabled={testing}
         />
         {testing && (
           <IconButton
+            className={styles["small-button"]}
+            bordered
             text={Locale.UI.Cancel}
             onClick={() => request.current?.abort()}
           />
         )}
         <IconButton
+          className={styles["small-button"]}
+          bordered
           text={labels.Reset}
           onClick={() => {
             invalidate();
@@ -115,13 +127,19 @@ export function EndpointInput(props: {
         />
       </div>
       {result && (
-        <div role="status" style={{ fontSize: 12, marginTop: 8 }}>
+        <div
+          role="status"
+          className={clsx(
+            styles.message,
+            result.ok ? styles["message-success"] : styles["message-error"],
+          )}
+        >
           {labels.Codes[result.code]}{" "}
           {result.status ? `HTTP ${result.status} · ` : ""}
           {result.latencyMs} ms
         </div>
       )}
-      <div style={{ fontSize: 12, marginTop: 4 }}>{labels.Hint}</div>
+      <div className={styles.hint}>{labels.Hint}</div>
     </div>
   );
 }

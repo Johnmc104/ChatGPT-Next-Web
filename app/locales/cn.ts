@@ -199,6 +199,7 @@ const cn = {
       Name: "展示名（可选）",
       Enabled: "启用",
       Delete: "删除",
+      Empty: "暂无自定义模型，在上方填写后点击新建。",
       Advanced: "高级规则（CUSTOM_MODELS）",
       Invalid:
         "模型配置无效或 ID/Provider 重复。请检查必填 ID，字段中不能包含逗号；all 规则请在高级输入中编辑。",
