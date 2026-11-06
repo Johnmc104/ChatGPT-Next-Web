@@ -349,6 +349,15 @@ function _MarkDownContent(props: { content: string }) {
     };
   }, [hasCode, hasMath]);
 
+  const remarkPlugins = useMemo(
+    () => [...optionalPlugins.remark, RemarkGfm, RemarkBreaks],
+    [optionalPlugins.remark],
+  );
+  const rehypePlugins = useMemo(
+    () => optionalPlugins.rehype,
+    [optionalPlugins.rehype],
+  );
+
   const maskEnableArtifacts = useChatStore(
     (s) => s.currentSession().mask?.enableArtifacts !== false,
   );
@@ -374,8 +383,8 @@ function _MarkDownContent(props: { content: string }) {
   return (
     <MarkdownFeatureContext.Provider value={features}>
       <ReactMarkdown
-        remarkPlugins={[...optionalPlugins.remark, RemarkGfm, RemarkBreaks]}
-        rehypePlugins={optionalPlugins.rehype}
+        remarkPlugins={remarkPlugins}
+        rehypePlugins={rehypePlugins}
         components={{
           pre: PreCode,
           code: CustomCode,
