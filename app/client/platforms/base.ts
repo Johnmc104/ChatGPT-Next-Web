@@ -9,8 +9,6 @@ import Locale from "../../locales";
  * Subclasses only need to supply a small config object; everything else
  * (path construction, extractMessage, streaming, tool calls, error handling)
  * is handled here.
- *
- * Sprint 2.3 (Phase 2) — platform client abstraction.
  */
 
 import { REQUEST_TIMEOUT_MS } from "@/app/constant";
@@ -34,7 +32,6 @@ import {
 import { getClientConfig } from "@/app/config/client";
 import {
   getMessageTextContent,
-  getMessageTextContentWithoutThinking,
   getTimeoutMSByModel,
   isVisionModel,
 } from "@/app/utils";
@@ -68,12 +65,12 @@ export interface RequestPayload {
 // ---------------------------------------------------------------------------
 
 export interface ProviderConfig {
-  /** Human-readable name used in log lines, e.g. "Moonshot" */
+  /** Human-readable name used in log lines, e.g. "OpenAI" */
   providerName: string;
 
   /**
    * Key on `useAccessStore.getState()` that holds the user-configured
-   * base URL for this provider, e.g. `"moonshotUrl"`.
+   * base URL for this provider, e.g. `"openaiUrl"`.
    */
   urlConfigKey: string;
 
@@ -105,12 +102,6 @@ export interface ProviderConfig {
    * - "auto": check isVisionModel(model) to decide
    */
   supportsVision?: boolean | "auto";
-
-  /**
-   * When true, assistant messages are processed with
-   * getMessageTextContentWithoutThinking to strip <think> blocks.
-   */
-  stripAssistantThinking?: boolean;
 }
 
 // ---------------------------------------------------------------------------
@@ -174,8 +165,7 @@ export class BaseOpenAICompatibleApi implements LLMApi {
 
   /**
    * Build the `messages` array for the request payload.
-   * Override in subclasses that need special handling (e.g. DeepSeek filters
-   * ordering, Alibaba needs different image format, etc.).
+   * Override in subclasses that need provider-specific message handling.
    */
   protected async buildMessages(
     messages: ChatOptions["messages"],
@@ -192,9 +182,7 @@ export class BaseOpenAICompatibleApi implements LLMApi {
 
     for (const v of messages) {
       let content: string | MultimodalContent[];
-      if (v.role === "assistant" && this.config.stripAssistantThinking) {
-        content = getMessageTextContentWithoutThinking(v);
-      } else if (useVision) {
+      if (useVision) {
         content = await preProcessImageContent(v.content);
       } else {
         content = getMessageTextContent(v);

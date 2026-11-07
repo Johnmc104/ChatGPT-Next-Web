@@ -28,7 +28,7 @@
 ## 主要功能
 
 - **一键部署**：Vercel / Docker / 宝塔 一分钟上线
-- **多模型支持**：OpenAI (GPT-4/5)、Claude、DeepSeek、Gemini、通义千问、文心一言、讯飞星火、智谱 GLM、Moonshot、SiliconFlow、302.AI、RAGFlow 等 14+ 平台
+- **多模型支持**：内置 OpenAI、Azure、Stability、RAGFlow；Claude、DeepSeek、Gemini、通义千问等其他模型通过 `BASE_URL` 统一网关接入
 - **统一代理**：配置 `BASE_URL` 即可通过 OpenRouter / one-api 等统一网关接入所有模型
 - **MCP 工具调用**：支持 Model Context Protocol（设置 `ENABLE_MCP=true`）
 - **实时语音**：支持 OpenAI / Azure Realtime API
@@ -113,82 +113,6 @@ Azure 密钥。
 
 Azure Api 版本，你可以在这里找到：[Azure 文档](https://learn.microsoft.com/en-us/azure/ai-services/openai/reference#chat-completions)。
 
-### `GOOGLE_API_KEY` (可选)
-
-Google Gemini Pro 密钥.
-
-### `GOOGLE_URL` (可选)
-
-Google Gemini Pro Api Url.
-
-### `ANTHROPIC_API_KEY` (可选)
-
-anthropic claude Api Key.
-
-### `ANTHROPIC_API_VERSION` (可选)
-
-anthropic claude Api version.
-
-### `ANTHROPIC_URL` (可选)
-
-anthropic claude Api Url.
-
-### `BAIDU_API_KEY` (可选)
-
-Baidu Api Key.
-
-### `BAIDU_SECRET_KEY` (可选)
-
-Baidu Secret Key.
-
-### `BAIDU_URL` (可选)
-
-Baidu Api Url.
-
-### `BYTEDANCE_API_KEY` (可选)
-
-ByteDance Api Key.
-
-### `BYTEDANCE_URL` (可选)
-
-ByteDance Api Url.
-
-### `ALIBABA_API_KEY` (可选)
-
-阿里云（千问）Api Key.
-
-### `ALIBABA_URL` (可选)
-
-阿里云（千问）Api Url.
-
-### `IFLYTEK_URL` (可选)
-
-讯飞星火Api Url.
-
-### `IFLYTEK_API_KEY` (可选)
-
-讯飞星火Api Key.
-
-### `IFLYTEK_API_SECRET` (可选)
-
-讯飞星火Api Secret.
-
-### `CHATGLM_API_KEY` (可选)
-
-ChatGLM Api Key.
-
-### `CHATGLM_URL` (可选)
-
-ChatGLM Api Url.
-
-### `DEEPSEEK_API_KEY` (可选)
-
-DeepSeek Api Key.
-
-### `DEEPSEEK_URL` (可选)
-
-DeepSeek Api Url.
-
 ### `RAGFLOW_API_KEY` (可选)
 
 RAGFlow Api Key.
@@ -239,9 +163,9 @@ CORS 允许的来源域名。生产环境建议设置为具体域名以增强安
 > 示例：`+gpt-3.5-turbo@Azure=gpt35`这个配置会在模型列表显示一个`gpt35(Azure)`的选项。
 > 如果你只能使用Azure模式，那么设置 `-all,+gpt-3.5-turbo@Azure=gpt35` 则可以让对话的默认使用 `gpt35(Azure)`
 
-在ByteDance的模式下，支持使用`modelName@bytedance=deploymentName`的方式配置模型名称和部署名称(deploy-name)
+可选的 `#内部模型名` 后缀用于匹配定价与能力元数据。
 
-> 示例: `+Doubao-lite-4k@bytedance=ep-xxxxx-xxx`这个配置会在模型列表显示一个`Doubao-lite-4k(ByteDance)`的选项
+> 示例：`+gpt-mine@OpenAI=我的GPT#openai/gpt-4o`
 
 ### `DEFAULT_MODEL` （可选）
 
@@ -269,22 +193,6 @@ Stability API密钥
 ### `ENABLE_MCP` (optional)
 
 启用MCP（Model Context Protocol）功能
-
-### `SILICONFLOW_API_KEY` (optional)
-
-SiliconFlow API Key.
-
-### `SILICONFLOW_URL` (optional)
-
-SiliconFlow API URL.
-
-### `AI302_API_KEY` (optional)
-
-302.AI API Key.
-
-### `AI302_URL` (optional)
-
-302.AI API URL.
 
 ## 开发
 

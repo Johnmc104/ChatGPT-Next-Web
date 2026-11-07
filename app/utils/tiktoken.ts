@@ -70,30 +70,6 @@ export function countTokens(text: string): number {
 }
 
 /**
- * Count tokens for a chat message (role + content).
- * Each message has ~4 overhead tokens (role markers, separators).
- */
-export function countMessageTokens(role: string, content: string): number {
-  const MESSAGE_OVERHEAD = 4; // <|im_start|>role\n ... <|im_end|>\n
-  return countTokens(role) + countTokens(content) + MESSAGE_OVERHEAD;
-}
-
-/**
- * Count total tokens for an array of messages.
- * Adds 3 tokens for the priming overhead (every conversation has this).
- */
-export function countMessagesTokens(
-  messages: { role: string; content: string }[],
-): number {
-  const PRIMING_TOKENS = 3;
-  let total = PRIMING_TOKENS;
-  for (const msg of messages) {
-    total += countMessageTokens(msg.role, msg.content);
-  }
-  return total;
-}
-
-/**
  * Format a token count for display, e.g. 1234 → "1.2K", 567890 → "568K".
  */
 export function formatTokenCount(count: number): string {

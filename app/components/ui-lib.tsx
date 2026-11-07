@@ -49,12 +49,6 @@ export function Popover(props: {
   );
 }
 
-export function Card(props: { children: JSX.Element[]; className?: string }) {
-  return (
-    <div className={clsx(styles.card, props.className)}>{props.children}</div>
-  );
-}
-
 export function ListItem(props: {
   title?: string;
   subTitle?: string | JSX.Element;

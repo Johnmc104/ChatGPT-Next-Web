@@ -1,7 +1,3 @@
-export function deepClone<T>(obj: T) {
-  return JSON.parse(JSON.stringify(obj));
-}
-
 export function ensure<T extends object>(
   obj: T,
   keys: Array<[keyof T][number]>,

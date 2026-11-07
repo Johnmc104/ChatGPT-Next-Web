@@ -231,16 +231,6 @@ export function collectModelsWithDefaultModel(
   return allModels;
 }
 
-export function isModelAvailableInServer(
-  customModels: string,
-  modelName: string,
-  providerName: string,
-) {
-  const fullName = `${modelName}@${providerName}`;
-  const modelTable = collectModelTable(DEFAULT_MODELS, customModels);
-  return modelTable[fullName]?.available === false;
-}
-
 /**
  * Check if the model name is a GPT-4 related model
  *

@@ -1,6 +1,5 @@
 export type ImageSource =
-  | { type: "url"; value: string }
-  | { type: "base64"; value: string };
+  { type: "url"; value: string } | { type: "base64"; value: string };
 
 export interface TextPart {
   kind: "text";
@@ -84,8 +83,8 @@ function fromPart(part: unknown): NormalizedPart {
       typeof inline.mime_type === "string"
         ? inline.mime_type
         : typeof inline.mimeType === "string"
-        ? inline.mimeType
-        : undefined;
+          ? inline.mimeType
+          : undefined;
     return mimeType && supportedMime.test(mimeType) && inline.data
       ? {
           kind: "image",
@@ -127,18 +126,6 @@ export function normalizeMultimodalContent(content: unknown): NormalizedPart[] {
 type OpenAIContentPart =
   | { type: "text"; text: string }
   | { type: "image_url"; image_url: { url: string } };
-type GeminiContentPart =
-  | { text: string }
-  | { inlineData: { mimeType: string; data: string } }
-  | { fileData: { fileUri: string } };
-type AnthropicContentPart =
-  | { type: "text"; text: string }
-  | {
-      type: "image";
-      source:
-        | { type: "base64"; media_type: string; data: string }
-        | { type: "url"; url: string };
-    };
 
 /** Convert normalized parts to the OpenAI-compatible chat content shape. */
 export function toOpenAIContent(parts: NormalizedPart[]) {
@@ -154,58 +141,6 @@ export function toOpenAIContent(parts: NormalizedPart[]) {
             }`
           : part.source.value;
       return [{ type: "image_url" as const, image_url: { url } }];
-    }
-    return [];
-  });
-}
-
-/** Convert normalized parts to Gemini's camelCase content shape. */
-export function toGeminiContent(parts: NormalizedPart[]) {
-  return parts.flatMap<GeminiContentPart>((part) => {
-    if (part.kind === "text") {
-      return [{ text: part.text }];
-    }
-    if (part.kind === "image" && part.source.type === "base64") {
-      return [
-        {
-          inlineData: {
-            mimeType: part.mimeType ?? "application/octet-stream",
-            data: part.source.value,
-          },
-        },
-      ];
-    }
-    return part.kind === "image"
-      ? [{ fileData: { fileUri: part.source.value } }]
-      : [];
-  });
-}
-
-/** Convert normalized parts to Anthropic's content block shape. */
-export function toAnthropicContent(parts: NormalizedPart[]) {
-  return parts.flatMap<AnthropicContentPart>((part) => {
-    if (part.kind === "text") {
-      return [{ type: "text" as const, text: part.text }];
-    }
-    if (part.kind === "image") {
-      if (part.source.type === "base64") {
-        return [
-          {
-            type: "image" as const,
-            source: {
-              type: "base64" as const,
-              media_type: part.mimeType ?? "application/octet-stream",
-              data: part.source.value,
-            },
-          },
-        ];
-      }
-      return [
-        {
-          type: "image" as const,
-          source: { type: "url" as const, url: part.source.value },
-        },
-      ];
     }
     return [];
   });

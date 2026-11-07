@@ -87,7 +87,7 @@ const defaultModels = [
 
 // Map provider id to display name (= ServiceProvider enum value)
 // This is the single source of truth for id → display name mapping.
-export const PROVIDER_DISPLAY_NAMES: Record<string, string> = {
+const PROVIDER_DISPLAY_NAMES: Record<string, string> = {
   ragflow: "RAGFlow",
   anthropic: "Anthropic",
   openai: "OpenAI",
@@ -103,93 +103,33 @@ export const PROVIDER_DISPLAY_NAMES: Record<string, string> = {
 };
 
 /** Get display name from provider id. Falls back to capitalized id. */
-export function getProviderDisplayName(id: string): string {
+function getProviderDisplayName(id: string): string {
   return PROVIDER_DISPLAY_NAMES[id] ?? id.charAt(0).toUpperCase() + id.slice(1);
 }
 
-// Model provider mapping - only id and sorted are needed.
-// providerName (display name) is derived from id via getProviderDisplayName().
-const getProviderFromModelName = (
-  name: string,
-): {
-  id: string;
-  providerName: string;
-  sorted: number;
-} => {
-  if (name.startsWith("ragflow/")) {
-    return {
-      id: "ragflow",
-      providerName: "RAGFlow",
-      sorted: 1,
-    };
-  } else if (name.startsWith("anthropic/")) {
-    return {
-      id: "anthropic",
-      providerName: "Anthropic",
-      sorted: 2,
-    };
-  } else if (name.startsWith("openai/")) {
-    return {
-      id: "openai",
-      providerName: "OpenAI",
-      sorted: 3,
-    };
-  } else if (name.startsWith("google/")) {
-    return {
-      id: "google",
-      providerName: "Google",
-      sorted: 4,
-    };
-  } else if (name.startsWith("x-ai/")) {
-    return { id: "xai", providerName: "XAI", sorted: 5 };
-  } else if (name.startsWith("deepseek/")) {
-    return {
-      id: "deepseek",
-      providerName: "DeepSeek",
-      sorted: 6,
-    };
-  } else if (name.startsWith("z-ai/") || name.startsWith("zhipu/")) {
-    return {
-      id: "chatglm",
-      providerName: "ChatGLM",
-      sorted: 7,
-    };
-  } else if (name.startsWith("minimax/")) {
-    return {
-      id: "minimax",
-      providerName: "MiniMax",
-      sorted: 8,
-    };
-  } else if (name.startsWith("qwen/") || name.startsWith("alibaba/")) {
-    return {
-      id: "alibaba",
-      providerName: "Alibaba",
-      sorted: 9,
-    };
-  } else if (name.startsWith("moonshot/") || name.startsWith("moonshotai/")) {
-    return {
-      id: "moonshot",
-      providerName: "Moonshot",
-      sorted: 10,
-    };
-  } else if (name.startsWith("meta-llama/") || name.startsWith("llama/")) {
-    return {
-      id: "meta",
-      providerName: "Meta",
-      sorted: 11,
-    };
-  } else if (name.startsWith("mistral/")) {
-    return {
-      id: "mistral",
-      providerName: "Mistral",
-      sorted: 12,
-    };
-  }
-  return {
-    id: "other",
-    providerName: "Other",
-    sorted: 99,
-  };
+// Model-name prefix → provider id. Order defines provider sort order.
+const PROVIDER_PREFIXES: ReadonlyArray<[id: string, prefixes: string[]]> = [
+  ["ragflow", ["ragflow/"]],
+  ["anthropic", ["anthropic/"]],
+  ["openai", ["openai/"]],
+  ["google", ["google/"]],
+  ["xai", ["x-ai/"]],
+  ["deepseek", ["deepseek/"]],
+  ["chatglm", ["z-ai/", "zhipu/"]],
+  ["minimax", ["minimax/"]],
+  ["alibaba", ["qwen/", "alibaba/"]],
+  ["moonshot", ["moonshot/", "moonshotai/"]],
+  ["meta", ["meta-llama/", "llama/"]],
+  ["mistral", ["mistral/"]],
+];
+
+const getProviderFromModelName = (name: string) => {
+  const index = PROVIDER_PREFIXES.findIndex(([, prefixes]) =>
+    prefixes.some((prefix) => name.startsWith(prefix)),
+  );
+  if (index < 0) return { id: "other", providerName: "Other", sorted: 99 };
+  const id = PROVIDER_PREFIXES[index][0];
+  return { id, providerName: getProviderDisplayName(id), sorted: index + 1 };
 };
 
 let seq = 1000; // 内置的模型序号生成器从1000开始

@@ -1,12 +1,5 @@
 @import "../styles/animation.scss";
 
-.card {
-  background-color: var(--white);
-  border-radius: 10px;
-  box-shadow: var(--card-shadow);
-  padding: 10px;
-}
-
 .popover {
   position: relative;
   z-index: 2;
@@ -348,4 +341,3 @@
     }
   }
 }
-

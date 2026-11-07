@@ -7,7 +7,6 @@ export const UPDATE_URL = `${REPO_URL}#keep-updated`;
 export const RELEASE_URL = `${REPO_URL}/releases`;
 export const FETCH_COMMIT_URL = `https://api.github.com/repos/${OWNER}/${REPO}/commits?per_page=1`;
 export const FETCH_TAG_URL = `https://api.github.com/repos/${OWNER}/${REPO}/tags?per_page=1`;
-export const RUNTIME_CONFIG_DOM = "danger-runtime-config";
 
 export const OPENAI_BASE_URL = "https://api.openai.com";
 export const RAGFLOW_BASE_URL = "http://git.johndaily.cn:8081";
@@ -70,7 +69,6 @@ export const NARROW_SIDEBAR_WIDTH = 100;
 
 export const ACCESS_CODE_PREFIX = "nk-";
 
-export const LAST_INPUT_KEY = "last-input";
 export const UNFINISHED_INPUT = (id: string) => "unfinished-input-" + id;
 
 export const STORAGE_KEY = "chatgpt-next-web";
@@ -303,8 +301,6 @@ export const DEFAULT_TTS_VOICES = [
 export {
   VISION_MODEL_REGEXES,
   EXCLUDE_VISION_MODEL_REGEXES,
-  PROVIDER_DISPLAY_NAMES,
-  getProviderDisplayName,
   DEFAULT_MODELS,
 } from "./domain/model/catalog";
 
@@ -312,7 +308,6 @@ export {
 // Example: +qwen/qwen3-235b-a22b,+meta-llama/llama-4-maverick
 
 export const CHAT_PAGE_SIZE = 15;
-export const MAX_RENDER_MSG_COUNT = 45;
 
 // some famous webdav endpoints
 export const internalAllowedWebDavEndpoints = [
