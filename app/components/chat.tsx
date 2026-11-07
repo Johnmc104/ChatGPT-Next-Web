@@ -7,6 +7,8 @@
  *   chat-input.tsx          — PromptToast, PromptHints, useSubmitHandler, ClearContextDivider, RenderPrompt
  *   chat-hooks.tsx          — useScrollToBottom
  *   chat-message-item.tsx   — ChatMessageItem (per-message row, React.memo'd)
+ *   chat-message-actions.ts — useChatMessageActions (delete/resend/pin/edit/stop)
+ *   chat-render-window.ts   — useChatRenderWindow (paged message window, scroll)
  */
 
 import { useDebouncedCallback } from "use-debounce";
@@ -35,14 +37,11 @@ import {
 
 import {
   autoGrowTextArea,
-  getMessageImages,
   getMessageTextContent,
   safeLocalStorage,
   useMobileScreen,
-  selectOrCopy,
 } from "../utils";
 
-import { ChatControllerPool } from "../client/controller";
 import { usePromptStore } from "../store/prompt";
 import Locale from "../locales";
 
@@ -52,7 +51,6 @@ import styles from "./chat.module.scss";
 import { showConfirm, showToast } from "./ui-lib";
 import { useNavigate } from "react-router-dom";
 import {
-  CHAT_PAGE_SIZE,
   Path,
   REQUEST_TIMEOUT_MS,
   ServiceProvider,
@@ -63,7 +61,6 @@ import { ChatCommandPrefix, useChatCommand, useCommand } from "../command";
 import { prettyObject } from "../utils/format";
 import { ExportMessageModal } from "./exporter";
 import { getClientConfig } from "../config/client";
-import { MultimodalContent } from "../client/api";
 
 import isEmpty from "lodash-es/isEmpty";
 import { RealtimeChat } from "@/app/components/realtime-chat";
@@ -78,6 +75,8 @@ import { ShortcutKeyModal as ShortcutKeyModalComponent } from "./chat-modals";
 import { useChatTTS } from "./chat-tts";
 import { useChatKeyboardShortcuts } from "./chat-keyboard-shortcuts";
 import { useChatImages } from "./chat-images";
+import { useChatMessageActions } from "./chat-message-actions";
+import { useChatRenderWindow } from "./chat-render-window";
 import { logger } from "@/app/utils/logger";
 import {
   parseSettingsLink,
@@ -223,7 +222,6 @@ function _Chat() {
     (isScrolledToBottom || isAttachWithTop) && !isTyping,
     session.messages,
   );
-  const [hitBottom, setHitBottom] = useState(true);
   const isMobileScreen = useMobileScreen();
   const navigate = useNavigate();
   const {
@@ -353,13 +351,6 @@ function _Chat() {
     }, 30);
   };
 
-  const onUserStop = useCallback(
-    (messageId: string) => {
-      ChatControllerPool.stop(session.id, messageId);
-    },
-    [session.id],
-  );
-
   useEffect(() => {
     chatStore.updateTargetSession(session, (session) => {
       const stopTiming = Date.now() - REQUEST_TIMEOUT_MS;
@@ -401,126 +392,6 @@ function _Chat() {
       e.preventDefault();
     }
   };
-
-  const onRightClick = (e: any, message: ChatMessage) => {
-    if (selectOrCopy(e.currentTarget, getMessageTextContent(message))) {
-      if (userInput.length === 0) {
-        setUserInput(getMessageTextContent(message));
-      }
-      e.preventDefault();
-    }
-  };
-
-  const deleteMessage = useCallback(
-    (msgId?: string) => {
-      chatStore.updateTargetSession(
-        session,
-        (session) =>
-          (session.messages = session.messages.filter((m) => m.id !== msgId)),
-      );
-    },
-    [chatStore, session],
-  );
-
-  const onDelete = useCallback(
-    (msgId: string) => {
-      deleteMessage(msgId);
-    },
-    [deleteMessage],
-  );
-
-  const onResend = useCallback(
-    async (message: ChatMessage) => {
-      const resendingIndex = session.messages.findIndex(
-        (m) => m.id === message.id,
-      );
-
-      if (resendingIndex < 0 || resendingIndex >= session.messages.length) {
-        console.error("[Chat] failed to find resending message", message);
-        return;
-      }
-
-      let userMessage: ChatMessage | undefined;
-      let botMessage: ChatMessage | undefined;
-
-      if (message.role === "assistant") {
-        botMessage = message;
-        for (let i = resendingIndex; i >= 0; i -= 1) {
-          if (session.messages[i].role === "user") {
-            userMessage = session.messages[i];
-            break;
-          }
-        }
-      } else if (message.role === "user") {
-        userMessage = message;
-        for (let i = resendingIndex; i < session.messages.length; i += 1) {
-          if (session.messages[i].role === "assistant") {
-            botMessage = session.messages[i];
-            break;
-          }
-        }
-      }
-
-      if (userMessage === undefined) {
-        console.error("[Chat] failed to resend", message);
-        return;
-      }
-
-      try {
-        if (!(await useAccessStore.getState().verifyAuthorization())) {
-          const code = useAccessStore.getState().authorizationError;
-          showToast(
-            code ? Locale.Auth.Validation[code] : Locale.Auth.MissingCode,
-          );
-          return;
-        }
-      } catch {
-        showToast(Locale.Auth.ConfigError);
-        return;
-      }
-      deleteMessage(userMessage.id);
-      deleteMessage(botMessage?.id);
-
-      setIsLoading(true);
-      const textContent = getMessageTextContent(userMessage);
-      const images = getMessageImages(userMessage);
-      chatStore
-        .onUserInput(textContent, images)
-        .then(() => setIsLoading(false));
-      inputRef.current?.focus();
-    },
-    [chatStore, session.messages, deleteMessage],
-  );
-
-  const onPinMessage = useCallback(
-    (message: ChatMessage) => {
-      chatStore.updateTargetSession(session, (session) =>
-        session.mask.context.push(message),
-      );
-
-      showToast(Locale.Chat.Actions.PinToastContent, {
-        text: Locale.Chat.Actions.PinToastAction,
-        onClick: () => {
-          setShowPromptModal(true);
-        },
-      });
-    },
-    [chatStore, session],
-  );
-
-  const onEditMessage = useCallback(
-    (messageId: string, newContent: string | MultimodalContent[]) => {
-      chatStore.updateTargetSession(session, (session) => {
-        const m = session.mask.context
-          .concat(session.messages)
-          .find((m) => m.id === messageId);
-        if (m) {
-          m.content = newContent;
-        }
-      });
-    },
-    [chatStore, session],
-  );
 
   const accessStore = useAccessStore();
   const { speechStatus, speechLoading, openaiSpeech } = useChatTTS();
@@ -578,50 +449,18 @@ function _Chat() {
       );
   }, [sendPreviewBubble, context, isLoading, session.messages, userInput]);
 
-  const [msgRenderIndex, _setMsgRenderIndex] = useState(
-    Math.max(0, renderMessages.length - CHAT_PAGE_SIZE),
-  );
-
-  function setMsgRenderIndex(newIndex: number) {
-    newIndex = Math.min(renderMessages.length - CHAT_PAGE_SIZE, newIndex);
-    newIndex = Math.max(0, newIndex);
-    _setMsgRenderIndex(newIndex);
-  }
-
-  const messages = useMemo(() => {
-    const endRenderIndex = Math.min(
-      msgRenderIndex + 3 * CHAT_PAGE_SIZE,
-      renderMessages.length,
-    );
-    return renderMessages.slice(msgRenderIndex, endRenderIndex);
-  }, [msgRenderIndex, renderMessages]);
-
-  const onChatBodyScroll = (e: HTMLElement) => {
-    const bottomHeight = e.scrollTop + e.clientHeight;
-    const edgeThreshold = e.clientHeight;
-
-    const isTouchTopEdge = e.scrollTop <= edgeThreshold;
-    const isTouchBottomEdge = bottomHeight >= e.scrollHeight - edgeThreshold;
-    const isHitBottom =
-      bottomHeight >= e.scrollHeight - (isMobileScreen ? 4 : 10);
-
-    const prevPageMsgIndex = msgRenderIndex - CHAT_PAGE_SIZE;
-    const nextPageMsgIndex = msgRenderIndex + CHAT_PAGE_SIZE;
-
-    if (isTouchTopEdge && !isTouchBottomEdge) {
-      setMsgRenderIndex(prevPageMsgIndex);
-    } else if (isTouchBottomEdge) {
-      setMsgRenderIndex(nextPageMsgIndex);
-    }
-
-    setHitBottom(isHitBottom);
-    setAutoScroll(isHitBottom);
-  };
-
-  function scrollToBottom() {
-    setMsgRenderIndex(renderMessages.length - CHAT_PAGE_SIZE);
-    scrollDomToBottom();
-  }
+  const {
+    messages,
+    msgRenderIndex,
+    hitBottom,
+    onChatBodyScroll,
+    scrollToBottom,
+  } = useChatRenderWindow({
+    renderMessages,
+    isMobileScreen,
+    setAutoScroll,
+    scrollDomToBottom,
+  });
 
   const clearContextIndex =
     (session.clearContextIndex ?? -1) >= 0
@@ -629,6 +468,17 @@ function _Chat() {
       : -1;
 
   const [showPromptModal, setShowPromptModal] = useState(false);
+
+  const { onDelete, onResend, onPinMessage, onEditMessage, onUserStop } =
+    useChatMessageActions({
+      chatStore,
+      session,
+      userInput,
+      setUserInput,
+      setIsLoading,
+      setShowPromptModal,
+      inputRef,
+    });
 
   const clientConfig = useMemo(() => getClientConfig(), []);
 
