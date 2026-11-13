@@ -20,10 +20,10 @@
 - 平台客户端抽象基类，新增平台适配仅需 ~20 行
 - 性能优化：mermaid/tiktoken 动态加载、fetchWithRetry 重试机制
 - 安全加固：日志脱敏、CORS 环境变量化
-- 测试体系：113 个测试用例
+- 测试体系：Jest 单元测试，覆盖领域逻辑、流式解析、代理鉴权等
 - 新增功能：Token 用量追踪、成本估算、RAGFlow 知识库支持
 
-详见 [开发计划](./docs/archive/development-plan.md) 和 [工程分析](./docs/01-project-analysis.md)。
+迭代计划、分析报告和验收记录以 [`plan/`](./plan) 为准；`docs/` 下的早期分析文档已过时，仅供参考。
 
 ## 主要功能
 
@@ -227,18 +227,20 @@ yarn test:ci    # CI 模式 + 覆盖率
 
 ```
 app/
-├── api/          # Next.js 服务端 API 路由（auth, proxy, provider 等）
-├── client/       # 客户端 API 层（14 个平台适配器 + 基类）
-├── components/   # React 组件（chat, settings 等，已模块化拆分）
-├── store/        # Zustand 状态管理
-├── utils/        # 工具函数（logger, stream, chat 等）
+├── api/          # 服务端路由：统一入口 [provider]、代理、鉴权、图片生成、同步等
+├── client/       # 客户端协议层：OpenAI 兼容客户端 + RAGFlow
+├── domain/       # 纯业务逻辑：鉴权、对话流解析、端点、模型、消息
+├── services/     # 有副作用的服务：对话流、图片缓存、端点测试
+├── components/   # React 组件
+├── store/        # Zustand 状态（IndexedDB 持久化）
+├── utils/        # 工具函数
 ├── mcp/          # MCP (Model Context Protocol) 支持
 └── locales/      # 国际化
-docs/             # 开发文档
-test/             # 测试用例（113 个）
+plan/             # 迭代计划、分析报告与验收记录
+test/             # Jest 测试
 ```
 
-详细架构说明见 [工程分析报告](./docs/01-project-analysis.md)。
+架构与模块地图见 [代码清理与架构功能分析报告](./plan/16-代码清理与架构功能分析报告.md)。
 
 ## 部署
 
