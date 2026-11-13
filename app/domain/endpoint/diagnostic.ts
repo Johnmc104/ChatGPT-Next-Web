@@ -1,4 +1,8 @@
-import { ACCESS_CODE_PREFIX, ServiceProvider } from "../../constant";
+import {
+  ACCESS_CODE_HEADER,
+  ACCESS_CODE_PREFIX,
+  ServiceProvider,
+} from "../../constant";
 import { validateEndpointUrl } from "./config";
 
 export interface EndpointDiagnosticConfig {
@@ -34,6 +38,7 @@ export function buildEndpointDiagnostic(config: EndpointDiagnosticConfig) {
   const key = config.apiKey.trim();
   const headers: Record<string, string> = { Accept: "application/json" };
   if (config.accessCode?.trim()) {
+    headers[ACCESS_CODE_HEADER] = config.accessCode.trim();
     headers.Authorization = `Bearer ${ACCESS_CODE_PREFIX}${config.accessCode.trim()}`;
   } else if (key) {
     headers.Authorization = `Bearer ${key}`;

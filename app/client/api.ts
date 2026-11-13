@@ -1,4 +1,5 @@
 import {
+  ACCESS_CODE_HEADER,
   ACCESS_CODE_PREFIX,
   ModelProvider,
   ServiceProvider,
@@ -9,16 +10,12 @@ import {
   ImageQuality,
   ModelSize,
 } from "../typing";
-import {
-  ChatMessageTool,
-  useAccessStore,
-} from "../store";
+import { ChatMessageTool, useAccessStore } from "../store";
 import { ChatGPTApi } from "./platforms/openai";
 import { RAGFlowApi } from "./platforms/ragflow";
 
 export const ROLES = ["system", "user", "assistant"] as const;
 export type MessageRole = (typeof ROLES)[number];
-
 
 export interface MultimodalContent {
   type: "text" | "image_url";
@@ -120,7 +117,6 @@ export class ClientApi {
         this.llm = new ChatGPTApi();
     }
   }
-
 }
 
 export function getBearerToken(
@@ -163,8 +159,10 @@ export function getHeaders(
       ? ""
       : accessStore.openaiApiKey;
 
-  // 1. Always send access code if available (for server-side authentication)
+  // 1. Always send access code if available (for server-side authentication).
+  // The dedicated header survives when Authorization carries a user key.
   if (validString(accessStore.accessCode)) {
+    headers[ACCESS_CODE_HEADER] = accessStore.accessCode.trim();
     headers["Authorization"] = getBearerToken(
       ACCESS_CODE_PREFIX + accessStore.accessCode.trim(),
     );

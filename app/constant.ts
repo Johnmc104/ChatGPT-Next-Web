@@ -63,6 +63,11 @@ export const MIN_SIDEBAR_WIDTH = 230;
 export const NARROW_SIDEBAR_WIDTH = 100;
 
 export const ACCESS_CODE_PREFIX = "nk-";
+/**
+ * Request header carrying the site access code, so `Authorization` stays
+ * free for the user's own key or a plugin token. Never forwarded upstream.
+ */
+export const ACCESS_CODE_HEADER = "X-Access-Code";
 
 export const UNFINISHED_INPUT = (id: string) => "unfinished-input-" + id;
 

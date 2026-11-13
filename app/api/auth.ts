@@ -1,7 +1,11 @@
 import { NextRequest } from "next/server";
 import { getServerSideConfig, getAccessCodeSet } from "../config/server";
 import { sha256 } from "../utils/hash";
-import { ACCESS_CODE_PREFIX, ModelProvider } from "../constant";
+import {
+  ACCESS_CODE_HEADER,
+  ACCESS_CODE_PREFIX,
+  ModelProvider,
+} from "../constant";
 import { logger } from "@/app/utils/logger";
 
 function getIP(req: NextRequest) {
@@ -25,6 +29,26 @@ function parseApiKey(bearToken: string) {
   };
 }
 
+/** Access code from `X-Access-Code`, else from an `nk-` bearer token. */
+function readAccessCode(req: NextRequest, fromAuthorization: string) {
+  return req.headers.get(ACCESS_CODE_HEADER)?.trim() || fromAuthorization;
+}
+
+export type AccessCodeStatus = "valid" | "missing" | "invalid";
+
+/** Whether the request carries a valid site access code. */
+export async function checkAccessCode(
+  req: NextRequest,
+): Promise<AccessCodeStatus> {
+  const { accessCode: fromAuthorization } = parseApiKey(
+    req.headers.get("Authorization") ?? "",
+  );
+  const accessCode = readAccessCode(req, fromAuthorization);
+  if (!accessCode) return "missing";
+  const accessCodes = await getAccessCodeSet();
+  return accessCodes.has(await sha256(accessCode)) ? "valid" : "invalid";
+}
+
 export interface AuthResult {
   error: boolean;
   msg?: string;
@@ -43,7 +67,9 @@ export async function auth(
   const authToken = req.headers.get("Authorization") ?? "";
 
   // check if it is openai api key or user token
-  const { accessCode, apiKey } = parseApiKey(authToken);
+  const parsed = parseApiKey(authToken);
+  const apiKey = parsed.apiKey;
+  const accessCode = readAccessCode(req, parsed.accessCode);
 
   const hashedCode = await sha256(accessCode ?? "");
 

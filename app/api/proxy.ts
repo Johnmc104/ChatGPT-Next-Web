@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getServerSideConfig } from "@/app/config/server";
-import { auth } from "./auth";
+import { auth, checkAccessCode } from "./auth";
 import { resolveAuthHeaderValue } from "./common";
 import { ModelProvider } from "@/app/constant";
 import {
@@ -91,6 +91,22 @@ export async function handle(
       { error: true, message: upstream.error },
       { status: 400 },
     );
+  }
+
+  // A client-chosen upstream turns this route into a general relay; when the
+  // site requires an access code, a user key alone is not enough for it.
+  if (!upstream.trusted && getServerSideConfig().needCode) {
+    const codeStatus = await checkAccessCode(req);
+    if (codeStatus !== "valid") {
+      return NextResponse.json(
+        {
+          error: true,
+          code: codeStatus === "missing" ? "missing-code" : "invalid-code",
+          msg: "An access code is required for custom endpoints and plugins.",
+        },
+        { status: 401 },
+      );
+    }
   }
 
   // remove path params from searchParams

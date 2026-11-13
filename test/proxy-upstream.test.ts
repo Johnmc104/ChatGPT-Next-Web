@@ -5,14 +5,21 @@ import { NextRequest } from "next/server";
 import { ModelProvider } from "@/app/constant";
 
 const fetchWithRetry = jest.fn();
+// `var` (hoisted): common.ts reads the config at import time, before this
+// initializer runs; the factory below tolerates that.
+var mockServerConfig = {
+  baseUrl: "https://gateway.example.com",
+  ragflowUrl: "https://ragflow.example.com",
+  needCode: false,
+};
 
 jest.mock("@/app/config/server", () => ({
-  getServerSideConfig: () => ({
-    baseUrl: "https://gateway.example.com",
-    ragflowUrl: "https://ragflow.example.com",
-  }),
+  getServerSideConfig: () => mockServerConfig ?? {},
 }));
-jest.mock("@/app/api/auth", () => ({ auth: jest.fn() }));
+jest.mock("@/app/api/auth", () => ({
+  auth: jest.fn(),
+  checkAccessCode: jest.fn(),
+}));
 jest.mock("@/app/api/url-builder", () => ({
   ...jest.requireActual("@/app/api/url-builder"),
   fetchWithRetry: (...args: unknown[]) => fetchWithRetry(...args),
@@ -21,10 +28,11 @@ jest.mock("@/app/utils/logger", () => ({
   logger: { debug: jest.fn(), info: jest.fn(), warn: jest.fn() },
 }));
 
-import { auth } from "@/app/api/auth";
+import { auth, checkAccessCode } from "@/app/api/auth";
 import { handle, resolveUpstream } from "@/app/api/proxy";
 
 const authMock = auth as jest.Mock;
+const checkAccessCodeMock = checkAccessCode as jest.Mock;
 const gptTarget = {
   serverBaseUrl: "https://gateway.example.com",
   provider: ModelProvider.GPT,
@@ -55,6 +63,8 @@ async function proxied(headers: Record<string, string>) {
 beforeEach(() => {
   fetchWithRetry.mockReset();
   authMock.mockReset();
+  checkAccessCodeMock.mockReset();
+  mockServerConfig.needCode = false;
 });
 
 describe("resolveUpstream", () => {
@@ -166,5 +176,51 @@ describe("[provider] route for RAGFlow", () => {
     expect((init.headers as Headers).get("Authorization")).toBe(
       "Bearer ragflow-key",
     );
+  });
+});
+
+describe("custom upstreams when the site requires an access code", () => {
+  beforeEach(() => {
+    mockServerConfig.needCode = true;
+    authMock.mockResolvedValue({ error: false });
+  });
+
+  test("a user key alone cannot relay to a client-chosen upstream", async () => {
+    checkAccessCodeMock.mockResolvedValue("missing");
+    const { res } = await proxied({
+      Authorization: "Bearer sk-anything",
+      "X-Base-URL": "https://relay-target.example",
+    });
+    expect(res.status).toBe(401);
+    expect(await res.json()).toMatchObject({ code: "missing-code" });
+    expect(fetchWithRetry).not.toHaveBeenCalled();
+  });
+
+  test("an invalid access code is rejected", async () => {
+    checkAccessCodeMock.mockResolvedValue("invalid");
+    const { res } = await proxied({
+      "X-Access-Code": "wrong",
+      "X-Base-URL": "https://custom.example",
+    });
+    expect(await res.json()).toMatchObject({ code: "invalid-code" });
+  });
+
+  test("a valid access code plus user key reaches the custom upstream without the code", async () => {
+    checkAccessCodeMock.mockResolvedValue("valid");
+    const { url, headers } = await proxied({
+      Authorization: "Bearer sk-user",
+      "X-User-Api-Key": "sk-user",
+      "X-Access-Code": "code",
+      "X-Base-URL": "https://custom.example",
+    });
+    expect(url).toBe("https://custom.example/v1/chat/completions");
+    expect(headers?.get("Authorization")).toBe("Bearer sk-user");
+    expect(headers?.has("X-Access-Code")).toBe(false);
+  });
+
+  test("the server's own upstream does not need the extra check", async () => {
+    const { res } = await proxied({ Authorization: "Bearer sk-user" });
+    expect(res.status).toBe(200);
+    expect(checkAccessCodeMock).not.toHaveBeenCalled();
   });
 });

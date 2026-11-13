@@ -56,3 +56,11 @@ test.each([
     expected,
   );
 });
+
+test("sends the access code in its own header next to the user key", () => {
+  const request = buildEndpointDiagnostic(config);
+  expect(request?.headers).toMatchObject({
+    "X-Access-Code": "code",
+    "X-User-Api-Key": "sample",
+  });
+});

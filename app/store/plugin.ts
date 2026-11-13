@@ -1,12 +1,11 @@
 import OpenAPIClientAxios from "openapi-client-axios";
-import { StoreKey } from "../constant";
+import { ACCESS_CODE_HEADER, StoreKey } from "../constant";
 import { nanoid } from "nanoid";
 import { createPersistStore } from "../utils/store";
 import { fetchJSON, fetchText } from "../utils/fetch";
 import yaml from "js-yaml";
 import { getOperationId } from "../utils";
 import { useAccessStore } from "./access";
-
 
 export type Plugin = {
   id: string;
@@ -48,8 +47,8 @@ export const FunctionToolService = {
       plugin?.authType == "basic"
         ? `Basic ${plugin?.authToken}`
         : plugin?.authType == "bearer"
-        ? `Bearer ${plugin?.authToken}`
-        : plugin?.authToken;
+          ? `Bearer ${plugin?.authToken}`
+          : plugin?.authToken;
     const authLocation = plugin?.authLocation || "header";
     const definition = yaml.load(plugin.content) as Record<string, unknown> & {
       servers?: { url: string }[];
@@ -81,6 +80,13 @@ export const FunctionToolService = {
     });
     try {
       api.initSync();
+      // Read the access code per request so a later change applies to
+      // already-registered plugins; the proxy requires it for plugin hosts.
+      api.client.interceptors.request.use((request) => {
+        const accessCode = useAccessStore.getState().accessCode.trim();
+        if (accessCode) request.headers.set(ACCESS_CODE_HEADER, accessCode);
+        return request;
+      });
     } catch (e) {}
     const operations = api.getOperations();
     return (this.tools[plugin.id] = {

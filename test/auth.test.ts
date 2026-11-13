@@ -28,7 +28,7 @@ jest.mock("@/app/utils/logger", () => ({
   },
 }));
 
-import { auth } from "@/app/api/auth";
+import { auth, checkAccessCode } from "@/app/api/auth";
 import { getServerSideConfig, getAccessCodeSet } from "@/app/config/server";
 
 const mockGetServerSideConfig = getServerSideConfig as jest.MockedFunction<
@@ -237,5 +237,34 @@ describe("auth", () => {
     // Should pass - user key is accepted (bypasses code check)
     expect(result.error).toBe(false);
     expect(result.systemApiKey).toBeUndefined();
+  });
+
+  // --- Dedicated access-code header ---
+
+  test("accepts the access code from X-Access-Code", async () => {
+    const code = "header-code";
+    mockGetServerSideConfig.mockReturnValue(
+      makeConfig({ needCode: true, apiKey: "sk-server" }),
+    );
+    mockGetAccessCodeSet.mockResolvedValue(new Set([await sha256(code)]));
+    const req = new NextRequest("https://example.com/api/chat", {
+      headers: { "X-Access-Code": code },
+    });
+    const result = await auth(req, ModelProvider.GPT);
+    expect(result.error).toBe(false);
+    expect(result.systemApiKey).toBe("sk-server");
+  });
+
+  test("checkAccessCode reports valid, invalid and missing codes", async () => {
+    mockGetAccessCodeSet.mockResolvedValue(new Set([await sha256("ok")]));
+    const withHeader = (value: string) =>
+      new NextRequest("https://example.com/api/chat", {
+        headers: { "X-Access-Code": value },
+      });
+    expect(await checkAccessCode(withHeader("ok"))).toBe("valid");
+    expect(await checkAccessCode(withHeader("nope"))).toBe("invalid");
+    expect(await checkAccessCode(makeRequest(`Bearer ${ACCESS_CODE_PREFIX}ok`))).toBe("valid");
+    // A user key in Authorization is not an access code.
+    expect(await checkAccessCode(makeRequest("Bearer sk-user"))).toBe("missing");
   });
 });
