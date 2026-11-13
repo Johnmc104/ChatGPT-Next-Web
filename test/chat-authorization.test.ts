@@ -1,4 +1,4 @@
-import { createChatActions } from "../app/store/chat-actions";
+import { createChatActions } from "../app/store/chat-requests";
 import { useAccessStore } from "../app/store/access";
 import { getClientApi } from "../app/client/api";
 

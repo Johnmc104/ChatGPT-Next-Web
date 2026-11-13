@@ -20,13 +20,13 @@ const config: Config = {
   // Allow Jest to transform ESM-only packages
   transformIgnorePatterns: ["/node_modules/(?!(nanoid)/)"],
   injectGlobals: true,
+  // Whole app source, so the reported coverage reflects the codebase.
   collectCoverageFrom: [
-    "app/api/auth.ts",
-    "app/api/url-builder.ts",
-    "app/utils/logger.ts",
-    "app/api/proxy.ts",
-    "app/api/common.ts",
-    "app/api/provider.ts",
+    "app/**/*.{ts,tsx}",
+    "!app/**/*.d.ts",
+    "!app/locales/**",
+    "!app/masks/**",
+    "!app/icons/**",
   ],
 };
 

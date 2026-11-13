@@ -18,7 +18,7 @@ import {
   RTResponse,
   TurnDetection,
 } from "rt-client";
-import { AudioHandler } from "@/app/lib/audio";
+import { AudioHandler } from "@/app/utils/realtime-audio";
 import { uploadImage } from "@/app/services/media/image";
 import { VoicePrint } from "@/app/components/voice-print";
 

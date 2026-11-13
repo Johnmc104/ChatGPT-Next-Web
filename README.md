@@ -4,9 +4,9 @@
 
 一键免费部署你的私人 ChatGPT 网页应用，支持 GPT-4/5、Claude、DeepSeek、Gemini、通义千问 等主流大模型。
 
-[演示 Demo](https://chat-gpt-next-web.vercel.app/) / [反馈 Issues](https://github.com/ChatGPTNextWeb/ChatGPT-Next-Web/issues) / [English](./README.md)
+[反馈 Issues](https://github.com/Johnmc104/ChatGPT-Next-Web/issues)
 
-[<img src="https://vercel.com/button" alt="Deploy on Vercel" height="30">](https://vercel.com/new/clone?repository-url=https%3A%2F%2Fgithub.com%2FChatGPTNextWeb%2FChatGPT-Next-Web&env=OPENAI_API_KEY&env=CODE&project-name=nextchat&repository-name=NextChat) [<img src="https://zeabur.com/button.svg" alt="Deploy on Zeabur" height="30">](https://zeabur.com/templates/ZBUEFA)
+[<img src="https://vercel.com/button" alt="Deploy on Vercel" height="30">](https://vercel.com/new/clone?repository-url=https%3A%2F%2Fgithub.com%2FJohnmc104%2FChatGPT-Next-Web&env=OPENAI_API_KEY&env=CODE&project-name=nextchat&repository-name=NextChat)
 
 </div>
 
@@ -27,7 +27,7 @@
 
 ## 主要功能
 
-- **一键部署**：Vercel / Docker / 宝塔 一分钟上线
+- **一键部署**：Vercel 一分钟上线，也可用本仓库的 Dockerfile 自托管
 - **多模型支持**：内置 OpenAI、Azure、Stability、RAGFlow；Claude、DeepSeek、Gemini、通义千问等其他模型通过 `BASE_URL` 统一网关接入
 - **统一代理**：配置 `BASE_URL` 即可通过 OpenRouter / one-api 等统一网关接入所有模型
 - **MCP 工具调用**：支持 Model Context Protocol（设置 `ENABLE_MCP=true`）
@@ -42,7 +42,7 @@
 
 1. 准备好你的 API Key（OpenAI / Claude / DeepSeek 等均可）；
 2. 点击按钮开始部署：
-   [![Deploy with Vercel](https://vercel.com/button)](https://vercel.com/new/clone?repository-url=https%3A%2F%2Fgithub.com%2FChatGPTNextWeb%2FChatGPT-Next-Web&env=OPENAI_API_KEY&env=CODE&project-name=nextchat&repository-name=NextChat)，记得在环境变量页填入 API Key 和[页面访问密码](#配置页面访问密码) CODE；
+   [![Deploy with Vercel](https://vercel.com/button)](https://vercel.com/new/clone?repository-url=https%3A%2F%2Fgithub.com%2FJohnmc104%2FChatGPT-Next-Web&env=OPENAI_API_KEY&env=CODE&project-name=nextchat&repository-name=NextChat)，记得在环境变量页填入 API Key 和[页面访问密码](#配置页面访问密码) CODE；
 3. 部署完毕后，即可开始使用；
 4. （可选）[绑定自定义域名](https://vercel.com/docs/concepts/projects/domains/add-a-domain)：Vercel 分配的域名 DNS 在某些区域被污染了，绑定自定义域名即可直连。
 
@@ -54,7 +54,7 @@
 
 ## 保持更新
 
-Fork 本项目后，在 Actions 页面启用 **Upstream Sync** Workflow 即可每小时自动同步上游更新。也可手动 [Sync Fork](https://docs.github.com/en/pull-requests/collaborating-with-pull-requests/working-with-forks/syncing-a-fork)。
+本仓库从 [ChatGPTNextWeb/ChatGPT-Next-Web](https://github.com/ChatGPTNextWeb/ChatGPT-Next-Web) 分叉后已独立演进，不再同步上游。请直接跟随本仓库的 `main` 分支更新；Vercel 会在推送后自动重新部署。
 
 ## 配置页面访问密码
 
@@ -244,62 +244,35 @@ test/             # Jest 测试
 
 ## 部署
 
-### 宝塔面板部署
+### 容器部署
 
-> [简体中文 > 如何通过宝塔一键部署](./docs/guides/bt-cn.md)
-
-### 容器部署 （推荐）
-
-> Docker 版本需要在 20 及其以上，否则会提示找不到镜像。
-
+本仓库不发布镜像，请用仓库内的 `Dockerfile` 自行构建：
 
 ```shell
-docker pull chatgptnextweb/chatgpt-next-web
+git clone https://github.com/Johnmc104/ChatGPT-Next-Web.git
+cd ChatGPT-Next-Web
+docker build -t nextchat .
 
 docker run -d -p 3000:3000 \
    -e OPENAI_API_KEY=sk-xxxx \
    -e CODE=页面访问密码 \
-   chatgptnextweb/chatgpt-next-web
+   nextchat
 ```
 
-你也可以指定 proxy：
+也可以使用 `docker compose --profile no-proxy up -d --build`（需要代理时用 `--profile proxy` 并设置 `PROXY_URL`），环境变量从同目录的 `.env` 读取，参考 [`.env.template`](./.env.template)。
+
+如需启用 MCP 功能，增加 `-e ENABLE_MCP=true`；如果本地代理需要账号密码，可以使用 `-e PROXY_URL="http://127.0.0.1:7890 user password"`。其他环境变量同样通过 `-e 变量名=值` 指定。
+
+### 本地运行
+
+需要 Node.js 26 和 Yarn 1.22：
 
 ```shell
-docker run -d -p 3000:3000 \
-   -e OPENAI_API_KEY=sk-xxxx \
-   -e CODE=页面访问密码 \
-   --net=host \
-   -e PROXY_URL=http://127.0.0.1:7890 \
-   chatgptnextweb/chatgpt-next-web
+cp .env.template .env.local   # 填入 OPENAI_API_KEY、CODE 等
+yarn install
+yarn build
+yarn start
 ```
-
-如需启用 MCP 功能，可以使用：
-
-```shell
-docker run -d -p 3000:3000 \
-   -e OPENAI_API_KEY=sk-xxxx \
-   -e CODE=页面访问密码 \
-   -e ENABLE_MCP=true \
-   chatgptnextweb/chatgpt-next-web
-```
-
-如果你的本地代理需要账号密码，可以使用：
-
-```shell
--e PROXY_URL="http://127.0.0.1:7890 user password"
-```
-
-如果你需要指定其他环境变量，请自行在上述命令中增加 `-e 环境变量=环境变量值` 来指定。
-
-### 本地部署
-
-在控制台运行下方命令：
-
-```shell
-bash <(curl -s https://raw.githubusercontent.com/ChatGPTNextWeb/ChatGPT-Next-Web/main/scripts/setup.sh)
-```
-
-⚠️ 注意：如果你安装过程中遇到了问题，请使用 docker 部署。
 
 ## 相关项目
 

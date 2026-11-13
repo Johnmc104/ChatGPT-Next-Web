@@ -1,7 +1,7 @@
 {
   "name": "nextchat",
-  "private": false,
-  "license": "mit",
+  "private": true,
+  "license": "MIT",
   "scripts": {
     "mask": "npx tsx app/masks/build.ts",
     "mask:watch": "npx watch \"yarn mask\" app/masks",
@@ -13,7 +13,6 @@
     "lint": "eslint .",
     "prompts": "node ./scripts/fetch-prompts.mjs",
     "prepare": "husky install",
-    "proxy-dev": "sh ./scripts/init-proxy.sh && proxychains -f ./scripts/proxychains.conf yarn dev",
     "test": "node --no-warnings --experimental-vm-modules $(yarn bin jest) --watch",
     "test:ci": "node --no-warnings --experimental-vm-modules $(yarn bin jest) --ci --coverage"
   },

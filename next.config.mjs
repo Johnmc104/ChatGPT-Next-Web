@@ -38,7 +38,6 @@ const nextConfig = {
   },
   output: "standalone",
   experimental: {
-    forceSwcTransforms: true,
     // Optimize barrel re-exports for these packages to reduce bundle size.
     // Next.js SWC will tree-shake unused exports at the module level.
     optimizePackageImports: [

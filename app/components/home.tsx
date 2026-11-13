@@ -1,7 +1,5 @@
 "use client";
 
-require("../polyfill");
-
 import { useEffect, useState } from "react";
 import styles from "./home.module.scss";
 
@@ -214,8 +212,7 @@ function Screen() {
   const isSdNew = location.pathname === Path.SdNew;
 
   const isMobileScreen = useMobileScreen();
-  const shouldTightBorder =
-    tightBorder && !isMobileScreen;
+  const shouldTightBorder = tightBorder && !isMobileScreen;
 
   useEffect(() => {
     const idleWindow = window as Window & {

@@ -8,7 +8,7 @@ import Locale from "../locales";
 import { createPersistStore } from "../utils/store";
 import { useAppConfig } from "./config";
 import { Mask } from "./mask";
-import { createChatActions } from "./chat-actions";
+import { createChatActions } from "./chat-requests";
 import { CHAT_STORE_VERSION, migrateChatStore } from "./chat-migrations";
 import { repairChatSessions } from "./chat-repair";
 
@@ -48,7 +48,7 @@ export const useChatStore = createPersistStore(
       };
     }
 
-    // LLM calls, summarization, MCP actions — see chat-actions.ts
+    // LLM calls, summarization, MCP actions — see chat-requests.ts
     const actions = createChatActions(set, get);
 
     const methods = {
@@ -204,7 +204,7 @@ export const useChatStore = createPersistStore(
         return session;
       },
 
-      // LLM calls, summarization, MCP actions — delegated to chat-actions.ts
+      // LLM calls, summarization, MCP actions — delegated to chat-requests.ts
       onNewMessage(message: ChatMessage, targetSession: ChatSession) {
         actions.onNewMessage(message, targetSession);
       },

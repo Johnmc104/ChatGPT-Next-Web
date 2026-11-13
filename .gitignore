@@ -36,6 +36,10 @@ yarn-error.log*
 next-env.d.ts
 dev
 
+# build caches and personal tool workspaces
+/.swc/
+/.vtool/
+
 .vscode
 .idea
 

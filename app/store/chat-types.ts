@@ -2,7 +2,7 @@
  * Shared types and factory functions for the chat store.
  *
  * This file exists to break the circular dependency between
- * chat.ts ↔ chat-actions.ts ↔ chat-migrations.ts.
+ * chat.ts ↔ chat-requests.ts ↔ chat-migrations.ts.
  * All three import from here; none import from each other's types.
  */
 

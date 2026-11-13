@@ -95,3 +95,11 @@ Thumbs.db
 # secret key
 *.key
 *.key.pub
+
+# Not needed to build or run the app (.git stays: the build reads the commit)
+.github
+.husky
+docs
+plan
+test
+coverage

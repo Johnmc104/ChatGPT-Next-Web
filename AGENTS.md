@@ -2,7 +2,7 @@
 
 ## Project Structure & Module Organization
 
-This Next.js/React application is deployed on Vercel. Application code, API routes, state, and UI components live under `app/`; static files are in `public/`. Jest tests are in `test/` and use `*.test.ts` or `*.test.tsx`. Build helpers are in `scripts/`, documentation in `docs/`, and staged engineering records in `plan/`. Keep provider behavior near its route or helper in `app/api/`.
+This Next.js/React application is deployed on Vercel. Application code, API routes, state, and UI components live under `app/`; static files are in `public/`. Jest tests are in `test/` and use `*.test.ts` or `*.test.tsx`. Build helpers are in `scripts/`. `plan/` holds the current engineering plans, reports and acceptance records; `docs/guides/` holds user guides and `docs/archive/` holds outdated early analyses kept for history. Keep provider behavior near its route or helper in `app/api/`.
 
 ## Build, Test, and Development Commands
 
@@ -19,11 +19,11 @@ Use Node.js 26 and Yarn 1.22.19. The supported range is `>=20.19.0 <=26.x`; `.nv
 
 GitHub Actions in `.github/workflows/ci-cd.yml` runs lint, Jest, TypeScript, and `yarn vercel-build` for pull requests and `main` pushes. Vercel Git Integration handles preview and production deployment after its own build checks pass.
 
-Use `.env.local` for local API keys and configuration; never commit secrets. Vercel project environment variables are managed in the Vercel dashboard.
+Use `.env.local` for local API keys and configuration; never commit secrets. `.env.template` is the single env template and `test/env-template.test.ts` keeps it in sync with `app/config/server.ts` and `build.ts`, so document every new server variable there. Vercel project environment variables are managed in the Vercel dashboard.
 
 ## Coding Style & Naming Conventions
 
-Write TypeScript and React using two-space indentation, semicolons, double quotes, trailing commas, and an 80-column target, as defined in `.prettierrc.js`. Use PascalCase for React components and types, camelCase for functions and variables, and descriptive kebab-case filenames where the surrounding module uses them. Run `yarn lint` before submitting changes; the pre-commit hook also runs `lint-staged`.
+Write TypeScript and React using two-space indentation, semicolons, double quotes, trailing commas, and an 80-column target, as defined in `.prettierrc.js`. Use PascalCase for React components and types, camelCase for functions and variables, and descriptive kebab-case filenames where the surrounding module uses them. Run `yarn lint` before submitting changes; the pre-commit hook also runs `lint-staged` on `app/` and `test/`. Unused imports are an ESLint error and `tsconfig.json` enables `noUnusedLocals`.
 
 ## Testing Guidelines
 
