@@ -1,7 +1,7 @@
 # NextChat 后续开发计划 v2
 
 > 编写日期: 2026-04-24  
-> 基于: [架构评审报告](02-architecture-review.md)、[开发计划 v1](archive/development-plan.md)、[工程分析报告](01-project-analysis.md)、[图片功能方案](03-image-features-plan.md)、[社区需求 PRD](../prd.md)  
+> 基于: [架构评审报告](02-architecture-review.md)、[开发计划 v1](development-plan.md)、[工程分析报告](01-project-analysis.md)、[图片功能方案](03-image-features-plan.md)、[社区需求 PRD](../prd.md)  
 > 前置条件: R1–R15 架构重构已全部完成，16 套件 235 测试全通过
 
 ---
