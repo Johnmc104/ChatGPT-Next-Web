@@ -67,12 +67,11 @@ describe("ChatGPTApi.extractMessage", () => {
   });
 
   describe("error responses", () => {
-    it("should format error as code block", async () => {
+    it("throws a readable error instead of returning the body", async () => {
       const res = { error: { message: "Invalid API key", type: "auth" } };
-      const result = await api.extractMessage(res);
-      expect(typeof result).toBe("string");
-      expect(result).toContain("```");
-      expect(result).toContain("Invalid API key");
+      await expect(api.extractMessage(res)).rejects.toThrow(
+        "Invalid API key (auth)",
+      );
     });
   });
 
@@ -218,23 +217,50 @@ describe("ChatGPTApi.extractMessage", () => {
 
     it("should handle empty choices gracefully", async () => {
       const res = { choices: [] };
-      const result = await api.extractMessage(res);
-      expect(typeof result).toBe("string");
+      expect(await api.extractMessage(res)).toBe("");
     });
 
     it("should handle missing message", async () => {
       const res = { choices: [{}] };
-      const result = await api.extractMessage(res);
-      expect(typeof result).toBe("string");
+      expect(await api.extractMessage(res)).toBe("");
+    });
+
+    it("returns empty text, not the response JSON, when content is null", async () => {
+      // Reasoning models: answer budget spent on reasoning, content null.
+      const res = {
+        id: "chatcmpl-1",
+        object: "chat.completion",
+        choices: [
+          {
+            message: { content: null, reasoning_content: "thinking…" },
+            finish_reason: "length",
+          },
+        ],
+      };
+      expect(await api.extractMessage(res)).toBe("");
+    });
+
+    it("joins text parts of array content", async () => {
+      const res = {
+        choices: [
+          {
+            message: {
+              content: [
+                { type: "output_text", text: "Hello " },
+                { type: "text", text: "world" },
+              ],
+            },
+          },
+        ],
+      };
+      expect(await api.extractMessage(res)).toBe("Hello world");
     });
   });
 
   describe("edge cases", () => {
-    it("should never return a raw object", async () => {
+    it("never returns the response body as text", async () => {
       const res = { unexpected: "format" };
-      const result = await api.extractMessage(res);
-      // Must be string or array, never a plain object
-      expect(typeof result === "string" || Array.isArray(result)).toBeTruthy();
+      expect(await api.extractMessage(res)).toBe("");
     });
 
     it("should handle null/undefined gracefully", async () => {
@@ -242,9 +268,8 @@ describe("ChatGPTApi.extractMessage", () => {
       expect(typeof result === "string" || Array.isArray(result)).toBeTruthy();
     });
 
-    it("should handle string response directly", async () => {
-      const result = await api.extractMessage("raw string");
-      expect(result).toBe("raw string");
+    it("ignores a non-object response", async () => {
+      expect(await api.extractMessage("raw string")).toBe("");
     });
   });
 });
@@ -258,18 +283,19 @@ describe("multimodal image generation request routing", () => {
       ok: true,
       status: 200,
       headers: new Headers({ "content-type": "application/json" }),
-      json: async () => ({
-        choices: [
-          {
-            message: {
-              content: "Image",
-              images: [
-                { image_url: { url: "https://fixture.test/generated.png" } },
-              ],
+      text: async () =>
+        JSON.stringify({
+          choices: [
+            {
+              message: {
+                content: "Image",
+                images: [
+                  { image_url: { url: "https://fixture.test/generated.png" } },
+                ],
+              },
             },
-          },
-        ],
-      }),
+          ],
+        }),
     });
     await api.chat({
       messages: [{ role: "user", content: "draw a tree" }],
@@ -291,5 +317,55 @@ describe("multimodal image generation request routing", () => {
       type: "image_url",
       image_url: { url: "https://fixture.test/generated.png" },
     });
+  });
+});
+
+describe("chat request payload", () => {
+  const { streamWithThink } = jest.requireMock("@/app/services/chat/stream");
+
+  async function sentPayload(model: string, messages: any[]) {
+    (streamWithThink as jest.Mock).mockClear();
+    const api = new ChatGPTApi();
+    jest.spyOn(api, "path").mockReturnValue("/fixture/chat");
+    await api.chat({
+      messages,
+      config: { model, providerName: "OpenAI", stream: true },
+      onFinish: jest.fn(),
+    });
+    return (streamWithThink as jest.Mock).mock.calls[0][1];
+  }
+
+  const history = [
+    { role: "user", content: "first" },
+    {
+      role: "assistant",
+      content: "<!--THINKING-->\n> private reasoning\n<!--/THINKING-->\n\nreply",
+    },
+    {
+      role: "user",
+      content: [
+        { type: "text", text: "what is this?" },
+        { type: "image_url", image_url: { url: "data:image/png;base64,AA" } },
+      ],
+    },
+  ];
+
+  test.each(["gpt-4o", "o3-mini", "gpt-5"])(
+    "%s: sends no output token cap",
+    async (model) => {
+      const payload = await sentPayload(model, history);
+      expect(payload).not.toHaveProperty("max_tokens");
+      expect(payload).not.toHaveProperty("max_completion_tokens");
+    },
+  );
+
+  test("strips reasoning blocks from assistant history", async () => {
+    const payload = await sentPayload("gpt-4o", history);
+    const assistant = payload.messages.find(
+      (m: any) => m.role === "assistant",
+    );
+    expect(assistant.content).toBe("reply");
+    // The user's image is still sent.
+    expect(JSON.stringify(payload.messages.at(-1))).toContain("image_url");
   });
 });

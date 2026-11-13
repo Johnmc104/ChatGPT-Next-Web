@@ -26,6 +26,13 @@ import {
   cacheBase64Image,
 } from "@/app/services/media/image";
 import { streamWithThink } from "@/app/services/chat/stream";
+import {
+  emptyOutputError,
+  isEmptyOutput,
+  readJsonResponse,
+} from "@/app/services/chat/response";
+import { describeUpstreamError, textFromContent } from "@/app/domain/chat/sse";
+import { stripThinkingFromContent } from "@/app/utils/message";
 import { cloudflareAIGatewayUrl } from "@/app/utils/cloudflare";
 import { ModelSize, DalleStyle, ImageQuality } from "@/app/typing";
 
@@ -161,9 +168,18 @@ export class ChatGPTApi extends BaseOpenAICompatibleApi {
     return undefined;
   }
 
-  async extractMessage(res: any) {
-    if (res.error) {
-      return "```\n" + JSON.stringify(res, null, 4) + "\n```";
+  /**
+   * Extract the assistant output from a non-streaming response.
+   * Returns "" when there is no answer text; never stringifies the response
+   * body (that used to leak raw JSON into messages and session titles).
+   */
+  async extractMessage(res: any): Promise<string | MultimodalContent[]> {
+    if (
+      res?.error !== undefined &&
+      res?.error !== null &&
+      res?.error !== false
+    ) {
+      throw new Error(describeUpstreamError(res));
     }
     // dalle3 model return url, using url create image message
     if (res.data) {
@@ -183,11 +199,8 @@ export class ChatGPTApi extends BaseOpenAICompatibleApi {
       return parts;
     }
 
-    const message = res.choices?.at(0)?.message;
-    if (!message) {
-      // No choices — return stringified response, never a raw object
-      return typeof res === "string" ? res : JSON.stringify(res);
-    }
+    const message = res?.choices?.at(0)?.message;
+    if (!message) return "";
 
     // Handle image generation responses:
     // 1. OpenRouter format: message.images[].image_url.url
@@ -208,15 +221,12 @@ export class ChatGPTApi extends BaseOpenAICompatibleApi {
     // Check if content is multimodal array (may contain images + text)
     if (Array.isArray(message.content)) {
       for (const part of message.content) {
-        if (part.type === "image_url" && part.image_url?.url) {
+        if (part?.type === "image_url" && part.image_url?.url) {
           rawUrls.push(part.image_url.url);
-        } else if (part.type === "text" && part.text) {
-          textContent += part.text;
         }
       }
-    } else if (typeof message.content === "string") {
-      textContent = message.content;
     }
+    textContent = textFromContent(message.content);
 
     // Cache all base64 data URIs in parallel (non-blocking blob conversion)
     if (rawUrls.length > 0) {
@@ -248,9 +258,7 @@ export class ChatGPTApi extends BaseOpenAICompatibleApi {
       return parts;
     }
 
-    // Always return a string — never a raw API response object,
-    // which would break getMessageTextContent ("content is not iterable")
-    return textContent || (typeof res === "string" ? res : JSON.stringify(res));
+    return textContent;
   }
 
   async speech(options: SpeechOptions): Promise<ArrayBuffer> {
@@ -440,9 +448,12 @@ export class ChatGPTApi extends BaseOpenAICompatibleApi {
       const messages: ChatOptions["messages"] = [];
       try {
         for (const v of options.messages) {
-          const content = visionModel
+          let content = visionModel
             ? await preProcessImageContent(v.content)
             : getMessageTextContent(v);
+          if (v.role === "assistant") {
+            content = stripThinkingFromContent(content);
+          }
           if (!(isO1OrO3 && v.role === "system"))
             messages.push({ role: v.role, content });
         }
@@ -460,19 +471,17 @@ export class ChatGPTApi extends BaseOpenAICompatibleApi {
         presence_penalty: !isO1OrO3 ? modelConfig.presence_penalty : 0,
         frequency_penalty: !isO1OrO3 ? modelConfig.frequency_penalty : 0,
         top_p: !isO1OrO3 ? modelConfig.top_p : 1,
-        // max_tokens: Math.max(modelConfig.max_tokens, 1024),
-        // Please do not ask me why not send max_tokens, no reason, this param is just shit, I dont want to explain anymore.
         ...(options.config.stream
           ? { stream_options: { include_usage: true } }
           : {}),
       };
 
-      if (isGpt5) {
-        // Remove max_tokens if present
-        delete requestPayload.max_tokens;
-        // Add max_completion_tokens (or max_completion_tokens if that's what you meant)
-        requestPayload["max_completion_tokens"] = modelConfig.max_tokens;
-      } else if (isO1OrO3) {
+      // No output cap is sent (max_tokens / max_completion_tokens). Reasoning
+      // tokens count toward those caps, so the former fixed 4000-token cap
+      // made reasoning models end with finish_reason "length" and an empty
+      // answer on image and long multi-turn requests. `modelConfig.max_tokens`
+      // is still used as the history token budget.
+      if (isO1OrO3) {
         // by default the o1/o3 models will not attempt to produce output that includes markdown formatting
         // manually add "Formatting re-enabled" developer message to encourage markdown inclusion in model responses
         // (https://learn.microsoft.com/en-us/azure/ai-services/openai/how-to/reasoning?tabs=python-secure#markdown-output)
@@ -480,14 +489,6 @@ export class ChatGPTApi extends BaseOpenAICompatibleApi {
           role: "developer",
           content: "Formatting re-enabled",
         });
-
-        // o1/o3 uses max_completion_tokens to control the number of tokens (https://platform.openai.com/docs/guides/reasoning#controlling-costs)
-        requestPayload["max_completion_tokens"] = modelConfig.max_tokens;
-      }
-
-      // add max_tokens to vision model
-      if (visionModel && !isO1OrO3 && !isGpt5) {
-        requestPayload["max_tokens"] = Math.max(modelConfig.max_tokens, 4000);
       }
 
       // Ensure messages don't end with assistant role (some models reject prefill)
@@ -542,8 +543,8 @@ export class ChatGPTApi extends BaseOpenAICompatibleApi {
           isImageEdit
             ? OpenaiPath.ImageEditPath
             : isImageGen
-            ? OpenaiPath.ImagePath
-            : OpenaiPath.ChatPath,
+              ? OpenaiPath.ImagePath
+              : OpenaiPath.ChatPath,
         );
       }
       const customBaseUrl = this.getCustomBaseUrl();
@@ -568,9 +569,8 @@ export class ChatGPTApi extends BaseOpenAICompatibleApi {
           tools as ChatMessageTool[],
           funcs,
           controller,
-          // Reuse base class parseSSE/processToolMessage (eliminates ~65 lines of duplication)
-          (text: string, runTools: ChatMessageTool[]) =>
-            this.parseSSEWithThink(text, runTools),
+          (data: string, runTools: ChatMessageTool[], event?: string) =>
+            this.parseStreamChunk(data, runTools, event),
           (
             rp: object,
             toolCallMessage: Record<string, unknown>,
@@ -685,10 +685,13 @@ export class ChatGPTApi extends BaseOpenAICompatibleApi {
           }
           resJson = JSON.parse(jsonPayload || "{}");
         } else {
-          resJson = await res.json();
+          resJson = await readJsonResponse(res);
         }
 
         const message = await this.extractMessage(resJson);
+        if (isEmptyOutput(message)) {
+          throw emptyOutputError(resJson);
+        }
         // Extract usage from non-streaming response
         const usage = resJson.usage
           ? {

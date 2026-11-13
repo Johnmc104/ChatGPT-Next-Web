@@ -22,6 +22,10 @@ export const ChatControllerPool = {
     Object.values(this.controllers).forEach((v) => v.abort());
   },
 
+  isActive(sessionId: string, messageId: string) {
+    return this.key(sessionId, messageId) in this.controllers;
+  },
+
   hasPending() {
     return Object.values(this.controllers).length > 0;
   },

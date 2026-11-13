@@ -10,8 +10,9 @@ import {
   isDalle3,
   isImageModel,
   isVisionModel,
-  trimTopic,
 } from "../utils";
+import { stripThinkingBlocks } from "../utils/message";
+import { sanitizeTopic } from "../domain/chat/topic";
 
 import type { ClientApi, MultimodalContent } from "../client/api";
 import { getClientApi } from "../client/api";
@@ -61,7 +62,7 @@ export interface ChatActions {
   getMessagesWithMemory(): Promise<ChatMessage[]>;
   summarizeSession(refreshTitle: boolean, targetSession: ChatSession): void;
   updateStat(message: ChatMessage, session: ChatSession): void;
-  checkMcpJson(message: ChatMessage): void;
+  checkMcpJson(message: ChatMessage): Promise<void>;
 }
 
 // ---------------------------------------------------------------------------
@@ -94,6 +95,32 @@ export function getSummarizeModel(
   }
 
   return [currentModel, providerName];
+}
+
+/**
+ * Messages for the title request: recent text only, with reasoning blocks,
+ * images, failed and unfinished replies removed, followed by the title prompt.
+ */
+export function buildTopicMessages(
+  messages: ChatMessage[],
+  historyCount: number,
+): ChatMessage[] {
+  return messages
+    .slice(-Math.max(1, historyCount))
+    .filter((m) => !m.isError && !m.streaming)
+    .map((m) =>
+      createMessage({
+        role: m.role,
+        content: stripThinkingBlocks(getMessageTextContent(m)).trim(),
+      }),
+    )
+    .filter((m) => m.content.length > 0)
+    .concat(
+      createMessage({
+        role: "user",
+        content: Locale.Store.Prompt.Topic,
+      }),
+    );
 }
 
 export function countMessages(msgs: ChatMessage[]) {
@@ -193,7 +220,7 @@ export function createChatActions(
 
     updateStat(message, targetSession);
 
-    checkMcpJson(message);
+    checkMcpJson(message).catch((e) => console.error("[Check MCP JSON]", e));
 
     summarizeSession(false, targetSession);
   }
@@ -583,39 +610,27 @@ export function createChatActions(
         countMessages(messages) >= SUMMARIZE_MIN_LEN) ||
       refreshTitle
     ) {
-      const startIndex = Math.max(
-        0,
-        messages.length - modelConfig.historyMessageCount,
-      );
-      const topicMessages = messages
-        .slice(
-          startIndex < messages.length ? startIndex : messages.length - 1,
-          messages.length,
-        )
-        .concat(
-          createMessage({
-            role: "user",
-            content: Locale.Store.Prompt.Topic,
-          }),
-        );
       api.llm.chat({
-        messages: topicMessages,
+        messages: buildTopicMessages(messages, modelConfig.historyMessageCount),
         config: {
           model,
           stream: false,
           providerName,
         },
-        onFinish(message, responseRes) {
-          if (responseRes?.status === 200) {
-            // summarize uses text-only model, message is always string
-            const text = typeof message === "string" ? message : "";
-            get().updateTargetSession(
-              session,
-              (session: ChatSession) =>
-                (session.topic =
-                  text.length > 0 ? trimTopic(text) : DEFAULT_TOPIC),
-            );
+        onFinish(message) {
+          const topic = sanitizeTopic(
+            typeof message === "string"
+              ? message
+              : getMessageTextContent({ role: "assistant", content: message }),
+          );
+          if (!topic) {
+            logger.warn("[Title] discarded unusable title reply", message);
+            return;
           }
+          get().updateTargetSession(
+            session,
+            (session: ChatSession) => (session.topic = topic),
+          );
         },
         onError(error) {
           console.error("[Title] error generating title:", error);
@@ -675,21 +690,16 @@ export function createChatActions(
           model,
           providerName,
         },
-        onUpdate(message) {
-          if (typeof message === "string") {
-            session.memoryPrompt = message;
-          }
-        },
-        onFinish(message, responseRes) {
-          if (responseRes?.status === 200) {
-            // memory summary uses text-only model
-            const text = typeof message === "string" ? message : "";
-            logger.info("[Memory] ", text);
-            get().updateTargetSession(session, (session: ChatSession) => {
-              session.lastSummarizeIndex = lastSummarizeIndex;
-              session.memoryPrompt = text; // Update the memory prompt for stored it in local storage
-            });
-          }
+        onFinish(message) {
+          const text = stripThinkingBlocks(
+            typeof message === "string" ? message : "",
+          );
+          logger.info("[Memory] ", text);
+          if (!text) return;
+          get().updateTargetSession(session, (session: ChatSession) => {
+            session.lastSummarizeIndex = lastSummarizeIndex;
+            session.memoryPrompt = text;
+          });
         },
         onError(err) {
           console.error("[Summarize] ", err);
@@ -709,9 +719,8 @@ export function createChatActions(
 
   // -- checkMcpJson --------------------------------------------------------
 
-  function checkMcpJson(message: ChatMessage) {
-    const mcpEnabled = isMcpEnabled();
-    if (!mcpEnabled) return;
+  async function checkMcpJson(message: ChatMessage) {
+    if (!(await isMcpEnabled())) return;
     const content = getMessageTextContent(message);
     if (isMcpJson(content)) {
       try {

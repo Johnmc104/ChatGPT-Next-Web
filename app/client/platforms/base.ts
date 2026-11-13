@@ -36,6 +36,18 @@ import {
   isVisionModel,
 } from "@/app/utils";
 import { preProcessImageContent } from "@/app/services/media/image";
+import {
+  accumulateToolCalls,
+  emptyOutputError,
+  isEmptyOutput,
+  readJsonResponse,
+} from "@/app/services/chat/response";
+import type { StreamChunk } from "@/app/services/chat/stream";
+import {
+  parseChatCompletionChunk,
+  textFromContent,
+} from "@/app/domain/chat/sse";
+import { stripThinkingFromContent } from "@/app/utils/message";
 import { fetch } from "@/app/utils/stream";
 import { logger } from "@/app/utils/logger";
 
@@ -152,7 +164,7 @@ export class BaseOpenAICompatibleApi implements LLMApi {
   // ---- Response extraction -----------------------------------------------
 
   extractMessage(res: any): string | Promise<string | MultimodalContent[]> {
-    return res.choices?.at(0)?.message?.content ?? "";
+    return textFromContent(res?.choices?.at(0)?.message?.content);
   }
 
   // ---- Speech stub -------------------------------------------------------
@@ -187,6 +199,7 @@ export class BaseOpenAICompatibleApi implements LLMApi {
       } else {
         content = getMessageTextContent(v);
       }
+      if (v.role === "assistant") content = stripThinkingFromContent(content);
       result.push({ role: v.role, content });
     }
 
@@ -258,88 +271,27 @@ export class BaseOpenAICompatibleApi implements LLMApi {
     return payload;
   }
 
-  // ---- Standard OpenAI parseSSE ------------------------------------------
+  // ---- Stream frame parsing ----------------------------------------------
 
-  protected parseSSE(text: string, runTools: ChatMessageTool[]): string {
-    const json = JSON.parse(text);
-    const choices = json.choices as Array<{
-      delta: {
-        content: string;
-        tool_calls: ChatMessageTool[];
-      };
-    }>;
-    const tool_calls = choices[0]?.delta?.tool_calls;
-    if (tool_calls?.length > 0) {
-      const index = tool_calls[0]?.index;
-      const id = tool_calls[0]?.id;
-      const args = tool_calls[0]?.function?.arguments;
-      if (id) {
-        runTools.push({
-          id,
-          type: tool_calls[0]?.type,
-          function: {
-            name: tool_calls[0]?.function?.name as string,
-            arguments: args,
-          },
-        });
-      } else {
-        // @ts-ignore
-        runTools[index]["function"]["arguments"] += args;
-      }
-    }
-    return choices[0]?.delta?.content;
-  }
-
-  // ---- Standard OpenAI parseSSE with thinking ----------------------------
-
-  protected parseSSEWithThink(
-    text: string,
+  /**
+   * Parse one stream frame and accumulate tool-call deltas into `runTools`.
+   * Reasoning is dropped for providers that do not render thinking.
+   */
+  protected parseStreamChunk(
+    data: string,
     runTools: ChatMessageTool[],
-  ): { isThinking: boolean; content: string } {
-    const json = JSON.parse(text);
-    const choices = json.choices as Array<{
-      delta: {
-        content: string | null;
-        tool_calls: ChatMessageTool[];
-        reasoning_content: string | null;
-      };
-    }>;
-    const tool_calls = choices[0]?.delta?.tool_calls;
-    if (tool_calls?.length > 0) {
-      const index = tool_calls[0]?.index;
-      const id = tool_calls[0]?.id;
-      const args = tool_calls[0]?.function?.arguments;
-      if (id) {
-        runTools.push({
-          id,
-          type: tool_calls[0]?.type,
-          function: {
-            name: tool_calls[0]?.function?.name as string,
-            arguments: args,
-          },
-        });
-      } else {
-        // @ts-ignore
-        runTools[index]["function"]["arguments"] += args;
-      }
-    }
-    const reasoning = choices[0]?.delta?.reasoning_content;
-    const content = choices[0]?.delta?.content;
-
-    if (
-      (!reasoning || reasoning.length === 0) &&
-      (!content || content.length === 0)
-    ) {
-      return { isThinking: false, content: "" };
-    }
-
-    if (reasoning && reasoning.length > 0) {
-      return { isThinking: true, content: reasoning };
-    } else if (content && content.length > 0) {
-      return { isThinking: false, content };
-    }
-
-    return { isThinking: false, content: "" };
+    event?: string,
+  ): StreamChunk | null {
+    const chunk = parseChatCompletionChunk(data, event);
+    if (!chunk) return null;
+    accumulateToolCalls(chunk.toolCalls, runTools);
+    return {
+      error: chunk.error,
+      reasoning: this.config.supportsThinking ? chunk.reasoning : "",
+      content: chunk.content,
+      finishReason: chunk.finishReason,
+      usage: chunk.usage,
+    };
   }
 
   // ---- Standard tool-message processor -----------------------------------
@@ -404,25 +356,12 @@ export class BaseOpenAICompatibleApi implements LLMApi {
         headers: getHeaders(),
       };
 
-      const requestTimeoutId = setTimeout(
-        () => controller.abort(),
-        getTimeoutMSByModel(options.config.model),
-      );
-
       if (shouldStream) {
         const [tools, funcs] = usePluginStore
           .getState()
           .getAsTools(
             useChatStore.getState().currentSession().mask?.plugin || [],
           );
-
-        const parseSSEFn = this.config.supportsThinking
-          ? (text: string, runTools: ChatMessageTool[]) =>
-              this.parseSSEWithThink(text, runTools)
-          : (text: string, runTools: ChatMessageTool[]) => ({
-              isThinking: false as const,
-              content: this.parseSSE(text, runTools),
-            });
 
         return streamWithThink(
           chatPath,
@@ -431,7 +370,8 @@ export class BaseOpenAICompatibleApi implements LLMApi {
           tools as ChatMessageTool[],
           funcs,
           controller,
-          parseSSEFn,
+          (data: string, runTools: ChatMessageTool[], event?: string) =>
+            this.parseStreamChunk(data, runTools, event),
           (
             rp: object,
             toolCallMessage: Record<string, unknown>,
@@ -445,11 +385,18 @@ export class BaseOpenAICompatibleApi implements LLMApi {
           options,
         );
       } else {
+        const requestTimeoutId = setTimeout(
+          () => controller.abort(),
+          getTimeoutMSByModel(options.config.model),
+        );
         const res = await fetch(chatPath, chatPayload);
         clearTimeout(requestTimeoutId);
 
-        const resJson = await res.json();
+        const resJson = await readJsonResponse(res);
         const message = await this.extractMessage(resJson);
+        if (isEmptyOutput(message)) {
+          throw emptyOutputError(resJson);
+        }
         options.onFinish(message, res);
       }
     } catch (e) {

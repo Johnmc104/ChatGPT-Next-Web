@@ -53,6 +53,20 @@ const en: LocaleType = {
     ChatItemCount: (count: number) => `${count} messages`,
   },
   Chat: {
+    Stream: {
+      Timeout: (seconds: number) =>
+        `Request timed out: the upstream did not start responding within ${seconds}s.`,
+      Length:
+        "The model produced no answer: the output hit its length limit (reasoning may have used up the output budget).",
+      Empty: (finishReason?: string) =>
+        finishReason
+          ? `The upstream returned an empty reply (finish_reason: ${finishReason}).`
+          : "The upstream returned an empty reply.",
+      HttpError: (status: number, detail: string) =>
+        detail
+          ? `Upstream request failed (HTTP ${status}): ${detail}`
+          : `Upstream request failed (HTTP ${status})`,
+    },
     Images: {
       ReadFailed:
         "Unable to read an image. Upload it again or remove it and retry.",

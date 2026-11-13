@@ -49,6 +49,20 @@ const cn = {
     ChatItemCount: (count: number) => `${count} 条对话`,
   },
   Chat: {
+    Stream: {
+      Timeout: (seconds: number) =>
+        `请求超时：上游在 ${seconds} 秒内没有开始响应。`,
+      Length:
+        "模型没有生成正文：输出达到长度上限（推理过程可能耗尽了输出额度）。",
+      Empty: (finishReason?: string) =>
+        finishReason
+          ? `上游返回了空回复（finish_reason: ${finishReason}）。`
+          : "上游返回了空回复。",
+      HttpError: (status: number, detail: string) =>
+        detail
+          ? `上游请求失败（HTTP ${status}）：${detail}`
+          : `上游请求失败（HTTP ${status}）`,
+    },
     Images: {
       ReadFailed: "无法读取图片，请重新上传或移除后重试。",
       Count: (count: number, limit: number) => `${count}/${limit} 张图片`,

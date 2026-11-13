@@ -10,6 +10,7 @@ import { useAppConfig } from "./config";
 import { Mask } from "./mask";
 import { createChatActions } from "./chat-actions";
 import { CHAT_STORE_VERSION, migrateChatStore } from "./chat-migrations";
+import { repairChatSessions } from "./chat-repair";
 
 // Re-export shared types so existing imports from "./chat" still work.
 export type {
@@ -230,7 +231,7 @@ export const useChatStore = createPersistStore(
         actions.updateStat(message, session);
       },
       checkMcpJson(message: ChatMessage) {
-        actions.checkMcpJson(message);
+        return actions.checkMcpJson(message);
       },
 
       updateMessage(
@@ -280,5 +281,12 @@ export const useChatStore = createPersistStore(
     name: StoreKey.Chat,
     version: CHAT_STORE_VERSION,
     migrate: migrateChatStore as any,
+    onRehydrateStorage: () => (state) => {
+      // Runs before _hasHydrated flips to true; that update persists the
+      // repaired sessions.
+      if (state?.sessions && repairChatSessions(state.sessions)) {
+        useChatStore.setState({ sessions: state.sessions.slice() });
+      }
+    },
   },
 );

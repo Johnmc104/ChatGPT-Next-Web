@@ -50,15 +50,11 @@ import styles from "./chat.module.scss";
 
 import { showConfirm, showToast } from "./ui-lib";
 import { useNavigate } from "react-router-dom";
-import {
-  Path,
-  REQUEST_TIMEOUT_MS,
-  ServiceProvider,
-  UNFINISHED_INPUT,
-} from "../constant";
+import { Path, ServiceProvider, UNFINISHED_INPUT } from "../constant";
 import { Avatar } from "./emoji";
 import { ChatCommandPrefix, useChatCommand, useCommand } from "../command";
-import { prettyObject } from "../utils/format";
+import { ChatControllerPool } from "../client/controller";
+import { settleStaleMessage } from "../store/chat-repair";
 import { ExportMessageModal } from "./exporter";
 import { getClientConfig } from "../config/client";
 
@@ -353,21 +349,11 @@ function _Chat() {
 
   useEffect(() => {
     chatStore.updateTargetSession(session, (session) => {
-      const stopTiming = Date.now() - REQUEST_TIMEOUT_MS;
-      session.messages.forEach((m) => {
-        if (m.isError || new Date(m.date).getTime() < stopTiming) {
-          if (m.streaming) {
-            m.streaming = false;
-          }
-          if (m.content.length === 0) {
-            m.isError = true;
-            m.content = prettyObject({
-              error: true,
-              message: "empty response",
-            });
-          }
-        }
-      });
+      // Settle replies whose request is gone (reload, crash, other tab).
+      // A reply that is still waiting for its first token stays untouched.
+      session.messages.forEach((m) =>
+        settleStaleMessage(m, ChatControllerPool.isActive(session.id, m.id)),
+      );
 
       if (session.mask.syncGlobalConfig) {
         logger.info("[Mask] syncing from global, name = ", session.mask.name);
