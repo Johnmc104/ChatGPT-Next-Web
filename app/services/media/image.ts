@@ -118,7 +118,6 @@ function setImageCache(key: string, value: string) {
 export function cacheImageToBase64Image(imageUrl: string) {
   if (imageUrl.includes(CACHE_URL_PREFIX)) {
     if (!imageCaches[imageUrl]) {
-      const reader = new FileReader();
       return fetch(imageUrl, {
         method: "GET",
         mode: "cors",

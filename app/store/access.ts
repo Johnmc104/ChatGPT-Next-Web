@@ -2,11 +2,8 @@ import {
   ServiceProvider,
   StoreKey,
   ApiPath,
-  OPENAI_BASE_URL,
-  RAGFLOW_BASE_URL,
 } from "../constant";
 import { getHeaders } from "../client/api";
-import { getClientConfig } from "../config/client";
 import { createPersistStore } from "../utils/store";
 import { ensure } from "../utils/clone";
 import { DEFAULT_CONFIG } from "./config";
@@ -30,10 +27,9 @@ const credentials = (code: string, key: string) =>
 let fetchPromise: Promise<void> | null = null;
 let configLoaded = false;
 
-const isApp = getClientConfig()?.buildMode === "export";
 
-const DEFAULT_OPENAI_URL = isApp ? OPENAI_BASE_URL : ApiPath.OpenAI;
-const DEFAULT_RAGFLOW_URL = isApp ? RAGFLOW_BASE_URL : ApiPath.RAGFlow;
+const DEFAULT_OPENAI_URL: string = ApiPath.OpenAI;
+const DEFAULT_RAGFLOW_URL: string = ApiPath.RAGFlow;
 
 const DEFAULT_ACCESS_STATE = {
   accessCode: "",
@@ -146,8 +142,6 @@ export const useAccessStore = createPersistStore(
     async verifyAuthorization(): Promise<boolean> {
       await this.fetchConfig();
       const state = get();
-      if (getClientConfig()?.buildMode === "export")
-        return this.isValidOpenAI();
       const key = state.hideUserApiKey ? "" : state.openaiApiKey;
       const signature = credentials(state.accessCode, key);
       if (verifiedCredentials === signature) return true;
@@ -181,13 +175,6 @@ export const useAccessStore = createPersistStore(
       return promise;
     },
     fetchConfig(): Promise<void> {
-      if (getClientConfig()?.buildMode === "export") {
-        if (get().configStatus !== "ready") {
-          set({ configStatus: "ready", configError: "" });
-        }
-        configLoaded = true;
-        return Promise.resolve();
-      }
       if (configLoaded) return Promise.resolve();
       if (fetchPromise) return fetchPromise;
 

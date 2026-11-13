@@ -283,30 +283,6 @@ export async function resumeMcpServer(clientId: string): Promise<void> {
 }
 
 // 移除服务器
-export async function removeMcpServer(clientId: string) {
-  try {
-    const currentConfig = await getMcpConfigFromFile();
-    const { [clientId]: _, ...rest } = currentConfig.mcpServers;
-    const newConfig = {
-      ...currentConfig,
-      mcpServers: rest,
-    };
-    await updateMcpConfig(newConfig);
-
-    // 关闭并移除客户端
-    const client = clientsMap.get(clientId);
-    if (client?.client) {
-      await removeClient(client.client);
-    }
-    clientsMap.delete(clientId);
-
-    return newConfig;
-  } catch (error) {
-    logger.error(`Failed to remove server [${clientId}]: ${error}`);
-    throw error;
-  }
-}
-
 // 重启所有客户端
 export async function restartAllClients() {
   logger.info("Restarting all clients...");

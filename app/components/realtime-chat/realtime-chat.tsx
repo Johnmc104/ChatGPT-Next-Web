@@ -40,8 +40,8 @@ export function RealtimeChat({
   const [isRecording, setIsRecording] = useState(false);
   const [isConnected, setIsConnected] = useState(false);
   const [isConnecting, setIsConnecting] = useState(false);
-  const [modality, setModality] = useState("audio");
-  const [useVAD, setUseVAD] = useState(true);
+  const [modality] = useState("audio");
+  const [useVAD] = useState(true);
   const [frequencies, setFrequencies] = useState<Uint8Array | undefined>();
 
   const clientRef = useRef<RTClient | null>(null);

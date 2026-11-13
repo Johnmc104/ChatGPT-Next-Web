@@ -4,7 +4,6 @@ import styles from "./home.module.scss";
 
 import { IconButton } from "./button";
 import SettingsIcon from "../icons/settings.svg";
-import GithubIcon from "../icons/github.svg";
 import ChatGptIcon from "../icons/chatgpt.svg";
 import AddIcon from "../icons/add.svg";
 import DeleteIcon from "../icons/delete.svg";
@@ -23,7 +22,6 @@ import {
   MIN_SIDEBAR_WIDTH,
   NARROW_SIDEBAR_WIDTH,
   Path,
-  REPO_URL,
 } from "../constant";
 
 import { Link, useNavigate } from "react-router-dom";
@@ -184,10 +182,10 @@ export function SideBarHeader(props: {
         className={clsx(styles["sidebar-header"], {
           [styles["sidebar-header-narrow"]]: shouldNarrow,
         })}
-        data-tauri-drag-region
+       
       >
         <div className={styles["sidebar-title-container"]}>
-          <div className={styles["sidebar-title"]} data-tauri-drag-region>
+          <div className={styles["sidebar-title"]}>
             {title}
           </div>
           <div className={styles["sidebar-sub-title"]}>{subTitle}</div>

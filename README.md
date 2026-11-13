@@ -36,7 +36,6 @@
 - **Markdown**：LaTeX 公式、Mermaid 流程图、代码高亮
 - **Token 追踪**：实时用量显示与成本估算
 - **Cloudflare AI Gateway**：可选流量走 Cloudflare 代理
-- **桌面端**：基于 Tauri，支持 Windows / macOS / Linux
 - **PWA**：可作为 Web App 安装
 
 ## 快速开始

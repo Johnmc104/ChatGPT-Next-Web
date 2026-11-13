@@ -12,7 +12,6 @@ async function handle(
   if (req.method === "OPTIONS") {
     return NextResponse.json({ body: "OK" }, { status: 200 });
   }
-  const [...key] = resolvedParams.key;
   // only allow to request to *.upstash.io
   if (!endpoint || !new URL(endpoint).hostname.endsWith(".upstash.io")) {
     return NextResponse.json(

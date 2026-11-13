@@ -77,7 +77,6 @@ export function migrateChatStore(
   // revert default summarize model for every session
   if (version < 3.3) {
     newState.sessions.forEach((s) => {
-      const config = useAppConfig.getState();
       s.mask.modelConfig.compressModel = "";
       s.mask.modelConfig.compressProviderName = "";
     });

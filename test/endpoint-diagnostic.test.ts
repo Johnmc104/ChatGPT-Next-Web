@@ -28,28 +28,18 @@ test("application proxy paths remain relative", () => {
   );
 });
 
-test("native direct requests use the user key and never send the app access code", () => {
-  const request = buildEndpointDiagnostic({ ...config, isApp: true });
-  expect(request?.url).toBe("https://gateway.test/v1/models");
-  expect(request?.headers).toEqual({
-    Accept: "application/json",
-    Authorization: "Bearer sample",
-  });
-});
-
-test("Azure strips deployment paths and uses api-key for native diagnostics", () => {
+test("Azure strips deployment paths and sends api-key through the proxy", () => {
   const request = buildEndpointDiagnostic({
     ...config,
     url: "https://azure.test/openai/deployments/chat",
     provider: ServiceProvider.Azure,
     apiVersion: "2024-10-21",
-    isApp: true,
   });
   expect(request?.url).toBe(
-    "https://azure.test/openai/models?api-version=2024-10-21",
+    "/api/proxy/openai/models?api-version=2024-10-21",
   );
-  expect(request?.headers).toEqual({
-    Accept: "application/json",
+  expect(request?.headers).toMatchObject({
+    "X-Base-URL": "https://azure.test",
     "api-key": "sample",
   });
 });

@@ -1,6 +1,6 @@
 "use client";
 
-import { ApiPath, RAGFLOW_BASE_URL, RAGFlow } from "@/app/constant";
+import { ApiPath, RAGFlow } from "@/app/constant";
 import { BaseOpenAICompatibleApi } from "./base";
 
 /**
@@ -14,7 +14,6 @@ export class RAGFlowApi extends BaseOpenAICompatibleApi {
     super({
       providerName: "RAGFlow",
       urlConfigKey: "ragflowUrl",
-      baseUrl: RAGFLOW_BASE_URL,
       apiPath: ApiPath.RAGFlow,
       chatPath: RAGFlow.ChatPath,
       supportsVision: false,

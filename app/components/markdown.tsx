@@ -7,7 +7,6 @@ import {
   RefObject,
   useEffect,
   useMemo,
-  useCallback,
   createContext,
   useContext,
 } from "react";
@@ -67,11 +66,9 @@ function ensureKatexCss() {
 export const Mermaid = React.memo(function Mermaid(props: { code: string }) {
   const ref = useRef<HTMLDivElement>(null);
   const [hasError, setHasError] = useState(false);
-  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     if (props.code && ref.current) {
-      setLoading(true);
       loadMermaid()
         .then((m) =>
           m.run({
@@ -79,10 +76,8 @@ export const Mermaid = React.memo(function Mermaid(props: { code: string }) {
             suppressErrors: true,
           }),
         )
-        .then(() => setLoading(false))
         .catch((e) => {
           setHasError(true);
-          setLoading(false);
           console.error("[Mermaid] ", e.message);
         });
     }

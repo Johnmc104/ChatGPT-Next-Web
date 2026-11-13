@@ -8,7 +8,6 @@ import {
 import { describeUpstreamError, type StreamUsage } from "@/app/domain/chat/sse";
 import { stripThinkingBlocks } from "@/app/utils/message";
 import { getTimeoutMSByModel } from "@/app/utils/model-detection";
-import { fetch as tauriFetch } from "@/app/utils/stream";
 import { logger } from "@/app/utils/logger";
 
 /** One parsed stream frame, as returned by a provider's frame parser. */
@@ -284,7 +283,6 @@ export function streamWithThink(
     }, connectTimeoutMs);
 
     fetchEventSource(chatPath, {
-      fetch: tauriFetch as typeof globalThis.fetch,
       ...chatPayload,
       async onopen(res) {
         clearTimeout(requestTimeoutId);

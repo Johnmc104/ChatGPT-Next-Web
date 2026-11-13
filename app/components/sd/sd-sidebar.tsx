@@ -75,7 +75,7 @@ export function SideBar(props: { className?: string }) {
       {isMobileScreen ? (
         <div
           className="window-header"
-          data-tauri-drag-region
+         
           style={{
             paddingLeft: 0,
             paddingRight: 0,

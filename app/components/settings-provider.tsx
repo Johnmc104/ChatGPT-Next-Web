@@ -3,17 +3,16 @@
  * Simplified for unified proxy architecture — only OpenAI, Azure, and Stability remain.
  */
 
-import { useMemo, useState } from "react";
+import { useState } from "react";
 
 import { ListItem, PasswordInput, Select } from "./ui-lib";
 import Locale from "../locales";
 import { useAccessStore } from "../store";
-import { getClientConfig } from "../config/client";
 import {
   ApiPath,
   Azure,
-  RAGFLOW_BASE_URL,
   OPENAI_BASE_URL,
+  RAGFlow,
   ServiceProvider,
   StabilityConfig,
 } from "../constant";
@@ -58,7 +57,6 @@ function AccessStatus() {
 
 export function ProviderConfigSection(props: { showAccessCode: boolean }) {
   const accessStore = useAccessStore();
-  const clientConfig = useMemo(() => getClientConfig(), []);
   const [checkingAccess, setCheckingAccess] = useState(false);
 
   // ---- Access code ----
@@ -105,7 +103,7 @@ export function ProviderConfigSection(props: { showAccessCode: boolean }) {
   );
 
   // ---- Custom endpoint toggle ----
-  const useCustomConfigComponent = !clientConfig?.isApp && (
+  const useCustomConfigComponent = (
     <ListItem
       title={Locale.Settings.Access.CustomEndpoint.Title}
       subTitle={Locale.Settings.Access.CustomEndpoint.SubTitle}
@@ -136,7 +134,7 @@ export function ProviderConfigSection(props: { showAccessCode: boolean }) {
           placeholder={OPENAI_BASE_URL}
           apiKey={accessStore.openaiApiKey}
           provider={ServiceProvider.OpenAI}
-          defaultValue={clientConfig?.isApp ? OPENAI_BASE_URL : ApiPath.OpenAI}
+          defaultValue={ApiPath.OpenAI}
           value={accessStore.openaiUrl}
           onChange={(value) =>
             accessStore.update((access) => (access.openaiUrl = value))
@@ -272,9 +270,9 @@ export function ProviderConfigSection(props: { showAccessCode: boolean }) {
           value={accessStore.ragflowUrl}
           apiKey={accessStore.ragflowApiKey}
           provider={ServiceProvider.RAGFlow}
-          placeholder={RAGFLOW_BASE_URL}
+          placeholder={RAGFlow.ExampleEndpoint}
           defaultValue={
-            clientConfig?.isApp ? RAGFLOW_BASE_URL : ApiPath.RAGFlow
+            ApiPath.RAGFlow
           }
           onChange={(value) =>
             accessStore.update((access) => (access.ragflowUrl = value))

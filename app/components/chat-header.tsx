@@ -54,7 +54,7 @@ function _ChatHeader({
   const navigate = useNavigate();
 
   return (
-    <div className="window-header" data-tauri-drag-region>
+    <div className="window-header">
       {isMobileScreen && (
         <div className="window-actions">
           <div className={"window-action-button"}>

@@ -5,14 +5,11 @@ import React, {
   useRef,
   useCallback,
   useEffect,
-  useMemo,
 } from "react";
 import { createRoot } from "react-dom/client";
 
 import DownloadIcon from "../icons/download.svg";
 import CloseIcon from "../icons/close.svg";
-import MaxIcon from "../icons/max.svg";
-import MinIcon from "../icons/min.svg";
 
 import styles from "./image-preview.module.scss";
 import Locale from "../locales";

@@ -1,6 +1,6 @@
 import { ApiPath, ModelProvider } from "@/app/constant";
 import { getServerSideConfig } from "@/app/config/server";
-import { NextRequest, NextResponse } from "next/server";
+import { NextRequest } from "next/server";
 import { handle as openaiHandler } from "../../openai";
 import { handle as proxyHandler } from "../../proxy";
 import { logger } from "@/app/utils/logger";

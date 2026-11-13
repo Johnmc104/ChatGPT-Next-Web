@@ -1,6 +1,4 @@
-import { getClientConfig } from "../../config/client";
 import { useAccessStore } from "../../store/access";
-import { fetch as platformFetch } from "../../utils/stream";
 import { buildEndpointDiagnostic } from "../../domain/endpoint/diagnostic";
 import { ServiceProvider } from "../../constant";
 
@@ -38,7 +36,6 @@ export async function testEndpointConnection(
     url: baseUrl,
     apiKey,
     ...options,
-    isApp: !!getClientConfig()?.isApp,
     accessCode: useAccessStore.getState().accessCode,
   });
   if (!request) return { ok: false, code: "invalid", latencyMs: 0 };
@@ -63,7 +60,7 @@ export async function testEndpointConnection(
     latencyMs: Math.round(performance.now() - started),
   });
   try {
-    const response = await platformFetch(request.url, {
+    const response = await fetch(request.url, {
       method: "GET",
       headers: request.headers,
       signal: controller.signal,

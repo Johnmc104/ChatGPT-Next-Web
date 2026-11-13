@@ -1,32 +1,3 @@
-import { showToast } from "./toast";
-import { fetch as tauriStreamFetch } from "./stream";
-
-export function fetch(
-  url: string,
-  options?: Record<string, unknown>,
-): Promise<any> {
-  if (window.__TAURI__) {
-    return tauriStreamFetch(url, options);
-  }
-  return window.fetch(url, options);
-}
-
-export function adapter(config: Record<string, unknown>) {
-  const { baseURL, url, params, data: body, ...rest } = config;
-  const path = baseURL ? `${baseURL}${url}` : url;
-  const fetchUrl = params
-    ? `${path}?${new URLSearchParams(
-        params as Record<string, string>,
-      ).toString()}`
-    : path;
-  return fetch(fetchUrl as string, { ...rest, body }).then((res) => {
-    const { status, headers, statusText } = res;
-    return res
-      .text()
-      .then((data: string) => ({ status, statusText, headers, data }));
-  });
-}
-
 export function safeLocalStorage(): {
   getItem: (key: string) => string | null;
   setItem: (key: string, value: string) => void;
@@ -97,29 +68,4 @@ export function getOperationId(operation: {
     operation?.operationId ||
     `${operation.method.toUpperCase()}${operation.path.replaceAll("/", "_")}`
   );
-}
-
-export function clientUpdate() {
-  // Lazy import to avoid circular dep: platform → locales → platform
-  const Locale = require("../locales").default;
-  // this a wild for updating client app
-  return window.__TAURI__?.updater
-    .checkUpdate()
-    .then((updateResult: { shouldUpdate: boolean }) => {
-      if (updateResult.shouldUpdate) {
-        window.__TAURI__?.updater
-          .installUpdate()
-          .then(() => {
-            showToast(Locale.Settings.Update.Success);
-          })
-          .catch((e: unknown) => {
-            console.error("[Install Update Error]", e);
-            showToast(Locale.Settings.Update.Failed);
-          });
-      }
-    })
-    .catch((e: unknown) => {
-      console.error("[Check Update Error]", e);
-      showToast(Locale.Settings.Update.Failed);
-    });
 }

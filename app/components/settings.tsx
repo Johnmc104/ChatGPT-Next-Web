@@ -17,7 +17,6 @@ import styles from "./settings.module.scss";
 import ResetIcon from "../icons/reload.svg";
 import CloseIcon from "../icons/close.svg";
 import EditIcon from "../icons/edit.svg";
-import LoadingIcon from "../icons/three-dots.svg";
 
 import { List, ListItem, Popover, Select } from "./ui-lib";
 import { ModelConfigList } from "./model-config";
@@ -36,15 +35,11 @@ import Locale, {
   changeLang,
   getLang,
 } from "../locales";
-import { clientUpdate, semverCompare } from "../utils";
-import Link from "next/link";
 import {
   OPENAI_BASE_URL,
   Path,
-  RELEASE_URL,
   ServiceProvider,
   SlotID,
-  UPDATE_URL,
 } from "../constant";
 import { SearchService, usePromptStore } from "../store/prompt";
 import { ErrorBoundary } from "./error";
@@ -61,7 +56,6 @@ import { UserPromptModal } from "./settings-prompts";
 import { SyncItems } from "./settings-sync";
 import { DangerItems } from "./settings-danger";
 import { ProviderConfigSection } from "./settings-provider";
-import { logger } from "@/app/utils/logger";
 
 export function Settings() {
   const navigate = useNavigate();
@@ -70,21 +64,10 @@ export function Settings() {
   const updateConfig = config.update;
 
   const updateStore = useUpdateStore();
-  const [checkingUpdate, setCheckingUpdate] = useState(false);
-  const currentVersion = updateStore.formatVersion(updateStore.version);
-  const remoteId = updateStore.formatVersion(updateStore.remoteVersion);
-  const hasNewVersion = semverCompare(currentVersion, remoteId) === -1;
-  const updateUrl = getClientConfig()?.isApp ? RELEASE_URL : UPDATE_URL;
-
-  function checkUpdate(force = false) {
-    setCheckingUpdate(true);
-    updateStore.getLatestVersion(force).then(() => {
-      setCheckingUpdate(false);
-    });
-
-    logger.info("[Update] local version ", updateStore.version);
-    logger.info("[Update] remote version ", updateStore.remoteVersion);
-  }
+  const buildCommit = useMemo(
+    () => getClientConfig()?.commitHash?.slice(0, 7) || "unknown",
+    [],
+  );
 
   const accessStore = useAccessStore();
   const shouldHideBalanceQuery = useMemo(() => {
@@ -127,8 +110,6 @@ export function Settings() {
 
   const showUsage = accessStore.isAuthorized();
   useEffect(() => {
-    // checks per minutes
-    checkUpdate();
     showUsage && checkUsage();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
@@ -139,12 +120,6 @@ export function Settings() {
         navigate(Path.Home);
       }
     };
-    if (clientConfig?.isApp) {
-      // Force to set custom endpoint to true if it's app
-      accessStore.update((state) => {
-        state.useCustomConfig = true;
-      });
-    }
     document.addEventListener("keydown", keydownEvent);
     return () => {
       document.removeEventListener("keydown", keydownEvent);
@@ -152,12 +127,11 @@ export function Settings() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  const clientConfig = useMemo(() => getClientConfig(), []);
-  const showAccessCode = enabledAccessControl && !clientConfig?.isApp;
+  const showAccessCode = enabledAccessControl;
 
   return (
     <ErrorBoundary>
-      <div className="window-header" data-tauri-drag-region>
+      <div className="window-header">
         <div className="window-header-title">
           <div className="window-header-main-title">
             {Locale.Settings.Title}
@@ -207,38 +181,7 @@ export function Settings() {
             </Popover>
           </ListItem>
 
-          <ListItem
-            title={Locale.Settings.Update.Version(currentVersion ?? "unknown")}
-            subTitle={
-              checkingUpdate
-                ? Locale.Settings.Update.IsChecking
-                : hasNewVersion
-                ? Locale.Settings.Update.FoundUpdate(remoteId ?? "ERROR")
-                : Locale.Settings.Update.IsLatest
-            }
-          >
-            {checkingUpdate ? (
-              <LoadingIcon />
-            ) : hasNewVersion ? (
-              clientConfig?.isApp ? (
-                <IconButton
-                  icon={<ResetIcon></ResetIcon>}
-                  text={Locale.Settings.Update.GoToUpdate}
-                  onClick={() => clientUpdate()}
-                />
-              ) : (
-                <Link href={updateUrl} target="_blank" className="link">
-                  {Locale.Settings.Update.GoToUpdate}
-                </Link>
-              )
-            ) : (
-              <IconButton
-                icon={<ResetIcon></ResetIcon>}
-                text={Locale.Settings.Update.CheckUpdate}
-                onClick={() => checkUpdate(true)}
-              />
-            )}
-          </ListItem>
+          <ListItem title={Locale.Settings.Update.Version(buildCommit)} />
 
           <ListItem title={Locale.Settings.SendKey}>
             <Select
@@ -473,7 +416,7 @@ export function Settings() {
         <List>
           <ProviderConfigSection showAccessCode={showAccessCode} />
 
-          {!shouldHideBalanceQuery && !clientConfig?.isApp ? (
+          {!shouldHideBalanceQuery ? (
             <ListItem
               title={Locale.Settings.Usage.Title}
               subTitle={

@@ -5,7 +5,6 @@ import {
   OPENAI_BASE_URL,
   ServiceProvider,
 } from "../constant";
-import { cloudflareAIGatewayUrl } from "../utils/cloudflare";
 import { getModelProvider, isModelNotavailableInServer } from "../utils/model";
 import { type AuthResult } from "./auth";
 import {

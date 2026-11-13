@@ -28,7 +28,7 @@ jest.mock("@/app/utils/logger", () => ({
   },
 }));
 
-import { auth, AuthResult } from "@/app/api/auth";
+import { auth } from "@/app/api/auth";
 import { getServerSideConfig, getAccessCodeSet } from "@/app/config/server";
 
 const mockGetServerSideConfig = getServerSideConfig as jest.MockedFunction<

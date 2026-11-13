@@ -1,16 +1,11 @@
-import { getClientConfig } from "../config/client";
 import { SubmitKey } from "../store/config";
 import { LocaleType } from "./index";
 // if you are adding a new translation, please use PartialLocaleType instead of LocaleType
 
-const isApp = !!getClientConfig()?.isApp;
 const en: LocaleType = {
   WIP: "Coming Soon...",
   Error: {
-    Unauthorized: isApp
-      ? `😆 Oops, there's an issue. No worries:
-     \\ 1️⃣ Want to use your own OpenAI resources? [Click here](/#/settings) to change settings ⚙️`
-      : `😆 Oops, there's an issue. Let's fix it:
+    Unauthorized: `😆 Oops, there's an issue. Let's fix it:
      \ 1️⃣ Using a private setup? [Click here](/#/auth) to enter your key 🔑
      \ 2️⃣ Want to use your own OpenAI resources? [Click here](/#/settings) to change settings ⚙️
      `,
@@ -170,7 +165,6 @@ const en: LocaleType = {
     Download: "Download",
     MessageFromYou: "Message From You",
     MessageFromChatGPT: "Message From ChatGPT",
-    Share: "Share to ShareGPT",
     Format: {
       Title: "Export Format",
       SubTitle: "Markdown or PNG Image",
@@ -319,13 +313,6 @@ const en: LocaleType = {
 
     Update: {
       Version: (x: string) => `Version: ${x}`,
-      IsLatest: "Latest version",
-      CheckUpdate: "Check Update",
-      IsChecking: "Checking update...",
-      FoundUpdate: (x: string) => `Found new version: ${x}`,
-      GoToUpdate: "Update",
-      Success: "Update Successful.",
-      Failed: "Update Failed.",
     },
     SendKey: "Send Key",
     Theme: "Theme",

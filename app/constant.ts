@@ -1,15 +1,10 @@
-export const OWNER = "ChatGPTNextWeb";
-export const REPO = "ChatGPT-Next-Web";
-export const REPO_URL = `https://github.com/${OWNER}/${REPO}`;
-export const PLUGINS_REPO_URL = `https://github.com/${OWNER}/NextChat-Awesome-Plugins`;
-export const ISSUE_URL = `https://github.com/${OWNER}/${REPO}/issues`;
-export const UPDATE_URL = `${REPO_URL}#keep-updated`;
-export const RELEASE_URL = `${REPO_URL}/releases`;
-export const FETCH_COMMIT_URL = `https://api.github.com/repos/${OWNER}/${REPO}/commits?per_page=1`;
-export const FETCH_TAG_URL = `https://api.github.com/repos/${OWNER}/${REPO}/tags?per_page=1`;
+// Links shown in the UI point to this deployment's own repository.
+export const REPO_URL = "https://github.com/Johnmc104/ChatGPT-Next-Web";
+export const ISSUE_URL = `${REPO_URL}/issues`;
+export const PLUGINS_REPO_URL =
+  "https://github.com/ChatGPTNextWeb/NextChat-Awesome-Plugins";
 
 export const OPENAI_BASE_URL = "https://api.openai.com";
-export const RAGFLOW_BASE_URL = "http://git.johndaily.cn:8081";
 
 export const CACHE_URL_PREFIX = "/api/cache";
 export const UPLOAD_URL = `${CACHE_URL_PREFIX}/upload`;
@@ -116,7 +111,7 @@ export const Azure = {
 };
 
 export const RAGFlow = {
-  ExampleEndpoint: RAGFLOW_BASE_URL,
+  ExampleEndpoint: "https://ragflow.example.com",
   ChatPath: "v1/chat/completions",
   ListModelPath: "v1/models",
 };

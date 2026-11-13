@@ -9,7 +9,7 @@ import RestartIcon from "../icons/reload.svg";
 import EyeIcon from "../icons/eye.svg";
 import GithubIcon from "../icons/github.svg";
 import { List, ListItem, Modal } from "./ui-lib";
-import { ListToolsResponse, PresetServer } from "../mcp/types";
+import { ListToolsResponse } from "../mcp/types";
 import clsx from "clsx";
 import PlayIcon from "../icons/play.svg";
 import StopIcon from "../icons/pause.svg";

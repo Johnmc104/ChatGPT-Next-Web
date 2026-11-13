@@ -1,5 +1,4 @@
 import styles from "./ui-lib.module.scss";
-import LoadingIcon from "../icons/three-dots.svg";
 import EyeIcon from "../icons/eye.svg";
 import EyeOffIcon from "../icons/eye-off.svg";
 import DownIcon from "../icons/down.svg";
@@ -89,22 +88,6 @@ export function List(props: { children: React.ReactNode; id?: string }) {
   return (
     <div className={styles.list} id={props.id}>
       {props.children}
-    </div>
-  );
-}
-
-export function Loading() {
-  return (
-    <div
-      style={{
-        height: "100vh",
-        width: "100vw",
-        display: "flex",
-        alignItems: "center",
-        justifyContent: "center",
-      }}
-    >
-      <LoadingIcon />
     </div>
   );
 }

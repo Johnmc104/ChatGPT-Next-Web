@@ -6,7 +6,6 @@ import { Path } from "../constant";
 import { useAccessStore } from "../store";
 import Locale from "../locales";
 import BotIcon from "../icons/bot.svg";
-import { getClientConfig } from "../config/client";
 import { PasswordInput } from "./ui-lib";
 import LeftIcon from "@/app/icons/left.svg";
 import clsx from "clsx";
@@ -71,13 +70,6 @@ export function AuthPage() {
       if (mounted.current) setSubmitting(false);
     }
   };
-
-  useEffect(() => {
-    if (getClientConfig()?.isApp) {
-      navigate(Path.Settings);
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
 
   return (
     <div className={styles["auth-page"]}>

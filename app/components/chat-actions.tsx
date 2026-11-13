@@ -7,7 +7,6 @@ import { retainSelectedModel } from "../utils/model";
  */
 
 import React, {
-  useCallback,
   useEffect,
   useMemo,
   useRef,
@@ -40,13 +39,12 @@ import { useImageConfig } from "../hooks/useImageConfig";
 import { Theme, useAppConfig, useChatStore, usePluginStore } from "../store";
 import {
   isVisionModel,
-  isImageModel,
   useMobileScreen,
   showPlugins,
 } from "../utils";
 import type { ImageQuality, ImageOutputFormat, ModelSize } from "../typing";
 import { ChatControllerPool } from "../client/controller";
-import { ModelProvider, Path, ServiceProvider } from "../constant";
+import { Path, ServiceProvider } from "../constant";
 import { useAllModels } from "../hooks/useAllModels";
 import { ModelSelector } from "./model-selector";
 import { Selector, showToast } from "./ui-lib";

@@ -2,13 +2,11 @@ import OpenAPIClientAxios from "openapi-client-axios";
 import { StoreKey } from "../constant";
 import { nanoid } from "nanoid";
 import { createPersistStore } from "../utils/store";
-import { getClientConfig } from "../config/client";
 import { fetchJSON, fetchText } from "../utils/fetch";
 import yaml from "js-yaml";
-import { adapter, getOperationId } from "../utils";
+import { getOperationId } from "../utils";
 import { useAccessStore } from "./access";
 
-const isApp = getClientConfig()?.isApp !== false;
 
 export type Plugin = {
   id: string;
@@ -57,9 +55,11 @@ export const FunctionToolService = {
       servers?: { url: string }[];
     };
     const serverURL = definition?.servers?.[0]?.url;
-    const baseURL = !isApp ? "/api/proxy" : serverURL;
+    // Plugin calls go through the server proxy (CORS); the proxy never
+    // forwards server credentials to these client-chosen hosts.
+    const baseURL = "/api/proxy";
     const headers: Record<string, string | undefined> = {
-      "X-Base-URL": !isApp ? serverURL : undefined,
+      "X-Base-URL": serverURL,
     };
     if (authLocation == "header") {
       headers[headerName] = tokenValue;
@@ -74,7 +74,7 @@ export const FunctionToolService = {
     const api = new OpenAPIClientAxios({
       definition: yaml.load(plugin.content) as any,
       axiosConfigDefaults: {
-        adapter: (window.__TAURI__ ? adapter : ["xhr"]) as any,
+        adapter: ["xhr"],
         baseURL,
         headers,
       },

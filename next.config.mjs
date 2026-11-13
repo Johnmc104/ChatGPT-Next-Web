@@ -5,10 +5,7 @@ const withBundleAnalyzer = bundleAnalyzer({
   enabled: process.env.ANALYZE === "true",
 });
 
-const mode = process.env.BUILD_MODE ?? "standalone";
-console.log("[Next] build mode", mode);
-
-const disableChunk = !!process.env.DISABLE_CHUNK || mode === "export";
+const disableChunk = !!process.env.DISABLE_CHUNK;
 console.log("[Next] build with chunk: ", !disableChunk);
 
 /** @type {import('next').NextConfig} */
@@ -39,10 +36,7 @@ const nextConfig = {
 
     return config;
   },
-  output: mode,
-  images: {
-    unoptimized: mode === "export",
-  },
+  output: "standalone",
   experimental: {
     forceSwcTransforms: true,
     // Optimize barrel re-exports for these packages to reduce bundle size.
@@ -75,30 +69,28 @@ const CorsHeaders = [
   },
 ];
 
-if (mode !== "export") {
-  nextConfig.headers = async () => {
-    return [
-      {
-        source: "/api/:path*",
-        headers: CorsHeaders,
-      },
-    ];
-  };
+nextConfig.headers = async () => {
+  return [
+    {
+      source: "/api/:path*",
+      headers: CorsHeaders,
+    },
+  ];
+};
 
-  nextConfig.rewrites = async () => {
-    // Only fixed, non-API destinations are rewritten here. Model API
-    // traffic must go through app/api routes so it is authenticated.
-    const ret = [
-      {
-        source: "/google-fonts/:path*",
-        destination: "https://fonts.googleapis.com/:path*",
-      },
-    ];
+nextConfig.rewrites = async () => {
+  // Only fixed, non-API destinations are rewritten here. Model API
+  // traffic must go through app/api routes so it is authenticated.
+  const ret = [
+    {
+      source: "/google-fonts/:path*",
+      destination: "https://fonts.googleapis.com/:path*",
+    },
+  ];
 
-    return {
-      beforeFiles: ret,
-    };
+  return {
+    beforeFiles: ret,
   };
-}
+};
 
 export default withBundleAnalyzer(nextConfig);

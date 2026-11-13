@@ -6,13 +6,12 @@ import { IconButton } from "@/app/components/button";
 import ReturnIcon from "@/app/icons/return.svg";
 import Locale from "@/app/locales";
 import { Path } from "@/app/constant";
-import React, { useEffect, useMemo, useRef, useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import { copyToClipboard, useMobileScreen } from "@/app/utils";
 import { useNavigate, useLocation } from "react-router-dom";
 import { useAppConfig } from "@/app/store";
 import MinIcon from "@/app/icons/min.svg";
 import MaxIcon from "@/app/icons/max.svg";
-import { getClientConfig } from "@/app/config/client";
 import { ChatAction } from "@/app/components/chat-actions";
 import DeleteIcon from "@/app/icons/clear.svg";
 import CopyIcon from "@/app/icons/copy.svg";
@@ -22,7 +21,6 @@ import { useSdStore } from "@/app/store/sd";
 import LoadingIcon from "@/app/icons/three-dots.svg";
 import ErrorIcon from "@/app/icons/delete.svg";
 import SDIcon from "@/app/icons/sd.svg";
-import { Property } from "csstype";
 import {
   showConfirm,
   showImageModal,
@@ -37,7 +35,7 @@ import clsx from "clsx";
 
 function getSdTaskStatus(item: SdDrawItem) {
   let s: string;
-  let color: Property.Color | undefined = undefined;
+  let color: React.CSSProperties["color"] = undefined;
   switch (item.status) {
     case "success":
       s = Locale.Sd.Status.Success;
@@ -90,8 +88,7 @@ export function Sd() {
   const isMobileScreen = useMobileScreen();
   const navigate = useNavigate();
   const location = useLocation();
-  const clientConfig = useMemo(() => getClientConfig(), []);
-  const showMaxIcon = !isMobileScreen && !clientConfig?.isApp;
+  const showMaxIcon = !isMobileScreen;
   const config = useAppConfig();
   const scrollRef = useRef<HTMLDivElement>(null);
   const sdStore = useSdStore();
@@ -107,7 +104,7 @@ export function Sd() {
       <SideBar className={clsx({ [homeStyles["sidebar-show"]]: isSd })} />
       <WindowContent>
         <div className={chatStyles.chat} key={"1"}>
-          <div className="window-header" data-tauri-drag-region>
+          <div className="window-header">
             {isMobileScreen && (
               <div className="window-actions">
                 <div className={"window-action-button"}>

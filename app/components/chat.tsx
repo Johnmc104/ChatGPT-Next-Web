@@ -21,7 +21,6 @@ import React, {
 } from "react";
 
 import SendWhiteIcon from "../icons/send-white.svg";
-import LoadingIcon from "../icons/three-dots.svg";
 
 import { useCostEstimate, formatCost } from "../hooks/useCostEstimate";
 import { useModelInfo } from "../hooks/useModelInfo";
@@ -50,20 +49,17 @@ import styles from "./chat.module.scss";
 
 import { showConfirm, showToast } from "./ui-lib";
 import { useNavigate } from "react-router-dom";
-import { Path, ServiceProvider, UNFINISHED_INPUT } from "../constant";
-import { Avatar } from "./emoji";
+import { Path, UNFINISHED_INPUT } from "../constant";
 import { ChatCommandPrefix, useChatCommand, useCommand } from "../command";
 import { ChatControllerPool } from "../client/controller";
 import { settleStaleMessage } from "../store/chat-repair";
 import { ExportMessageModal } from "./exporter";
-import { getClientConfig } from "../config/client";
 
 import isEmpty from "lodash-es/isEmpty";
 import { RealtimeChat } from "@/app/components/realtime-chat";
 import clsx from "clsx";
 
 // --- Import extracted components for internal use ---
-import { ChatAction } from "./chat-actions";
 import { ChatActions } from "./chat-actions";
 import { EditMessageModal as EditMessageModalComponent } from "./chat-modals";
 import { DeleteImageButton as DeleteImageButtonComponent } from "./chat-modals";
@@ -82,7 +78,6 @@ import { applySettingsLink } from "../services/settings/link";
 import {
   useSubmitHandler,
   PromptHints as PromptHintsComponent,
-  ClearContextDivider,
   RenderPrompt,
 } from "./chat-input";
 import { useScrollToBottom } from "../hooks/useChatScroll";
@@ -380,7 +375,7 @@ function _Chat() {
   };
 
   const accessStore = useAccessStore();
-  const { speechStatus, speechLoading, openaiSpeech } = useChatTTS();
+  const { speechStatus, openaiSpeech } = useChatTTS();
 
   const context: RenderMessage[] = useMemo(() => {
     return session.mask.hideContext ? [] : session.mask.context.slice();
@@ -466,10 +461,9 @@ function _Chat() {
       inputRef,
     });
 
-  const clientConfig = useMemo(() => getClientConfig(), []);
 
   const autoFocus = !isMobileScreen;
-  const showMaxIcon = !isMobileScreen && !clientConfig?.isApp;
+  const showMaxIcon = !isMobileScreen;
 
   useCommand({
     fill: setUserInput,

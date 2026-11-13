@@ -21,7 +21,7 @@ export default [
       "unused-imports": unusedImports,
     },
     rules: {
-      "unused-imports/no-unused-imports": "off",
+      "unused-imports/no-unused-imports": "error",
       "no-console": ["warn", { allow: ["warn", "error"] }],
       // Existing memoized wrappers use underscore-prefixed component names.
       // Keep their hook behavior unchanged while the app migrates incrementally.

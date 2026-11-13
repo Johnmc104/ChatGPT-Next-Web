@@ -1,6 +1,6 @@
 import { useMemo } from "react";
 import { useChatStore } from "../store";
-import { useModelInfo, getContextLength } from "./useModelInfo";
+import { useModelInfo } from "./useModelInfo";
 import { computeEffectiveTokens } from "../utils/token-calc";
 
 /**

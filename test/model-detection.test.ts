@@ -25,7 +25,6 @@ jest.mock("@/app/locales", () => ({
 jest.mock("@/app/store", () => ({
   useAccessStore: { getState: () => ({ visionModels: "" }) },
 }));
-jest.mock("@/app/utils/stream", () => ({ fetch: jest.fn() }));
 jest.mock("@/app/hooks/useModelInfo", () => ({
   hasCapability: jest.fn().mockReturnValue(false),
   getClientModelInfo: jest.fn().mockReturnValue(null),

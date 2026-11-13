@@ -1,15 +1,9 @@
-import { getClientConfig } from "../config/client";
 import { SubmitKey } from "../store/config";
-
-const isApp = !!getClientConfig()?.isApp;
 
 const cn = {
   WIP: "该功能仍在开发中……",
   Error: {
-    Unauthorized: isApp
-      ? `😆 对话遇到了一些问题，不用慌:
-       \\ 如果你想消耗自己的 OpenAI 资源，点击[这里](/#/settings)修改设置 ⚙️`
-      : `😆 对话遇到了一些问题，不用慌:
+    Unauthorized: `😆 对话遇到了一些问题，不用慌:
        \ 如果你第一次使用，点击[这里](/#/auth)输入访问秘钥 🔑
        `,
   },
@@ -162,7 +156,6 @@ const cn = {
     Title: "分享聊天记录",
     Copy: "全部复制",
     Download: "下载文件",
-    Share: "分享到 ShareGPT",
     MessageFromYou: "用户",
     MessageFromChatGPT: "ChatGPT",
     Format: {
@@ -309,13 +302,6 @@ const cn = {
 
     Update: {
       Version: (x: string) => `当前版本：${x}`,
-      IsLatest: "已是最新版本",
-      CheckUpdate: "检查更新",
-      IsChecking: "正在检查更新...",
-      FoundUpdate: (x: string) => `发现新版本：${x}`,
-      GoToUpdate: "前往更新",
-      Success: "更新成功！",
-      Failed: "更新失败",
     },
     SendKey: "发送键",
     Theme: "主题",

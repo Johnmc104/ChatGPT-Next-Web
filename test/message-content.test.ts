@@ -21,7 +21,6 @@ jest.mock("@/app/locales", () => ({
   default: { Copy: { Success: "", Failed: "" }, Download: { Success: "", Failed: "" } },
 }));
 jest.mock("@/app/store", () => ({ useAccessStore: jest.fn() }));
-jest.mock("@/app/utils/stream", () => ({ fetch: jest.fn() }));
 jest.mock("@/app/hooks/useModelInfo", () => ({
   hasCapability: jest.fn().mockReturnValue(false),
   getClientModelInfo: jest.fn().mockReturnValue(null),

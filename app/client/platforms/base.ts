@@ -11,7 +11,6 @@ import Locale from "../../locales";
  * is handled here.
  */
 
-import { REQUEST_TIMEOUT_MS } from "@/app/constant";
 import {
   useAccessStore,
   useAppConfig,
@@ -28,7 +27,6 @@ import {
   MultimodalContent,
   SpeechOptions,
 } from "../api";
-import { getClientConfig } from "@/app/config/client";
 import {
   getMessageTextContent,
   getTimeoutMSByModel,
@@ -47,7 +45,6 @@ import {
   textFromContent,
 } from "@/app/domain/chat/sse";
 import { stripThinkingFromContent } from "@/app/utils/message";
-import { fetch } from "@/app/utils/stream";
 import { logger } from "@/app/utils/logger";
 
 // ---------------------------------------------------------------------------
@@ -85,10 +82,7 @@ export interface ProviderConfig {
    */
   urlConfigKey: string;
 
-  /** Fallback base URL used in the native (Tauri) app. */
-  baseUrl: string;
-
-  /** Proxy API path prefix used in the web build (Next.js rewrites). */
+  /** Same-origin API route prefix, e.g. `/api/openai`. */
   apiPath: string;
 
   /** Path appended for chat completions, e.g. `"/v1/chat/completions"`. */
@@ -147,8 +141,7 @@ export class BaseOpenAICompatibleApi implements LLMApi {
     }
 
     if (baseUrl.length === 0) {
-      const isApp = !!getClientConfig()?.isApp;
-      baseUrl = isApp ? this.config.baseUrl : this.config.apiPath;
+      baseUrl = this.config.apiPath;
     }
 
     if (baseUrl.endsWith("/")) {

@@ -1,15 +1,10 @@
 import { useEffect, RefObject } from "react";
 import { useNavigate } from "react-router-dom";
 import { useChatStore } from "../store";
-import { useAccessStore } from "../store/access";
 import { copyToClipboard, getMessageTextContent } from "../utils";
-import { showConfirm } from "./ui-lib";
-import { Path, UNFINISHED_INPUT } from "../constant";
-import Locale from "../locales";
+import { Path } from "../constant";
 import { ChatSession, ChatMessage } from "../store/chat-types";
-import { safeLocalStorage } from "../utils/platform";
 
-const localStorage = safeLocalStorage();
 
 export function useChatKeyboardShortcuts(opts: {
   inputRef: RefObject<HTMLTextAreaElement | null>;

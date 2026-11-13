@@ -2,7 +2,6 @@
 // azure and openai, using same models. so using same LLMApi.
 import {
   ApiPath,
-  OPENAI_BASE_URL,
   OpenaiPath,
   Azure,
   REQUEST_TIMEOUT_MS,
@@ -20,7 +19,6 @@ import {
 import { collectModelsWithDefaultModel } from "@/app/utils/model";
 import {
   preProcessImageContent,
-  uploadImage,
   base64Image2Blob,
   cacheBase64Image,
 } from "@/app/services/media/image";
@@ -33,7 +31,6 @@ import {
 import { describeUpstreamError, textFromContent } from "@/app/domain/chat/sse";
 import { stripThinkingFromContent } from "@/app/utils/message";
 import { cloudflareAIGatewayUrl } from "@/app/utils/cloudflare";
-import { ModelSize, DalleStyle, ImageQuality } from "@/app/typing";
 
 import {
   ChatOptions,
@@ -44,7 +41,6 @@ import {
   SpeechOptions,
 } from "../api";
 import Locale from "../../locales";
-import { getClientConfig } from "@/app/config/client";
 import {
   getMessageTextContent,
   getMessageImages,
@@ -56,7 +52,6 @@ import {
   isReasoningModel,
   getTimeoutMSByModel,
 } from "@/app/utils";
-import { fetch } from "@/app/utils/stream";
 import { BaseOpenAICompatibleApi } from "./base";
 import { logger } from "@/app/utils/logger";
 
@@ -86,7 +81,6 @@ export class ChatGPTApi extends BaseOpenAICompatibleApi {
     super({
       providerName: "OpenAI",
       urlConfigKey: "openaiUrl",
-      baseUrl: OPENAI_BASE_URL,
       apiPath: ApiPath.OpenAI,
       chatPath: OpenaiPath.ChatPath,
       supportsThinking: true,
@@ -106,9 +100,7 @@ export class ChatGPTApi extends BaseOpenAICompatibleApi {
     }
 
     if (baseUrl.length === 0) {
-      const isApp = !!getClientConfig()?.isApp;
-      const apiPath = isAzure ? ApiPath.Azure : ApiPath.OpenAI;
-      baseUrl = isApp ? OPENAI_BASE_URL : apiPath;
+      baseUrl = isAzure ? ApiPath.Azure : ApiPath.OpenAI;
     }
 
     if (baseUrl.endsWith("/")) {
@@ -125,15 +117,12 @@ export class ChatGPTApi extends BaseOpenAICompatibleApi {
     logger.info("[Proxy Endpoint] ", baseUrl, path);
 
     // When using custom config with external URL, use proxy to avoid CORS
-    const isApp = !!getClientConfig()?.isApp;
     if (
-      !isApp &&
       accessStore.useCustomConfig &&
       baseUrl.startsWith("http") &&
       !baseUrl.startsWith(location.origin)
     ) {
       // Use server-side proxy for external URLs
-      const targetUrl = cloudflareAIGatewayUrl([baseUrl, path].join("/"));
       if (customHeaders) {
         customHeaders["X-Base-URL"] = baseUrl;
       }
@@ -150,9 +139,7 @@ export class ChatGPTApi extends BaseOpenAICompatibleApi {
    */
   getCustomBaseUrl(): string | undefined {
     const accessStore = useAccessStore.getState();
-    const isApp = !!getClientConfig()?.isApp;
-
-    if (!isApp && accessStore.useCustomConfig) {
+    if (accessStore.useCustomConfig) {
       let baseUrl = accessStore.openaiUrl;
       if (baseUrl.endsWith("/")) {
         baseUrl = baseUrl.slice(0, baseUrl.length - 1);

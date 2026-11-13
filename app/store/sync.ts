@@ -1,4 +1,3 @@
-import { getClientConfig } from "../config/client";
 import { ApiPath, STORAGE_KEY, StoreKey } from "../constant";
 import { createPersistStore } from "../utils/store";
 import {
@@ -20,7 +19,6 @@ export interface WebDavConfig {
   password: string;
 }
 
-const isApp = !!getClientConfig()?.isApp;
 export type SyncStore = GetStoreState<typeof useSyncStore>;
 
 const DEFAULT_SYNC_STATE = {
@@ -58,11 +56,7 @@ export const useSyncStore = createPersistStore(
 
     export() {
       const state = getLocalAppState();
-      const datePart = isApp
-        ? `${new Date().toLocaleDateString().replace(/\//g, "_")} ${new Date()
-            .toLocaleTimeString()
-            .replace(/:/g, "_")}`
-        : new Date().toLocaleString();
+      const datePart = new Date().toLocaleString();
 
       const fileName = `Backup-${datePart}.json`;
       downloadAs(JSON.stringify(state), fileName);

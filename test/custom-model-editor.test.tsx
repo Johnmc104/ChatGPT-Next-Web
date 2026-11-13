@@ -1,5 +1,5 @@
 jest.mock("../app/icons/down.svg", () => () => null);
-import React, { useState } from "react";
+import { useState } from "react";
 import { fireEvent, render, screen } from "@testing-library/react";
 import { CustomModelEditor } from "../app/components/custom-model-editor";
 import { ModelCapabilitiesEditor } from "../app/components/model-capabilities";

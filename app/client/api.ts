@@ -1,4 +1,3 @@
-import { getClientConfig } from "../config/client";
 import {
   ACCESS_CODE_PREFIX,
   ModelProvider,
@@ -12,19 +11,14 @@ import {
 } from "../typing";
 import {
   ChatMessageTool,
-  ChatMessage,
-  ModelType,
   useAccessStore,
 } from "../store";
 import { ChatGPTApi } from "./platforms/openai";
 import { RAGFlowApi } from "./platforms/ragflow";
-import { logger } from "@/app/utils/logger";
 
 export const ROLES = ["system", "user", "assistant"] as const;
 export type MessageRole = (typeof ROLES)[number];
 
-export const Models = ["gpt-3.5-turbo", "gpt-4"] as const;
-export type ChatModel = ModelType;
 
 export interface MultimodalContent {
   type: "text" | "image_url";
@@ -127,50 +121,6 @@ export class ClientApi {
     }
   }
 
-  config() {}
-
-  prompts() {}
-
-  masks() {}
-
-  async share(messages: ChatMessage[], avatarUrl: string | null = null) {
-    const msgs = messages
-      .map((m) => ({
-        from: m.role === "user" ? "human" : "gpt",
-        value: m.content,
-      }))
-      .concat([
-        {
-          from: "human",
-          value:
-            "Share from [NextChat]: https://github.com/Yidadaa/ChatGPT-Next-Web",
-        },
-      ]);
-    // 敬告二开开发者们，为了开源大模型的发展，请不要修改上述消息，此消息用于后续数据清洗使用
-    // Please do not modify this message
-
-    logger.info("[Share]", messages, msgs);
-    const clientConfig = getClientConfig();
-    const proxyUrl = "/sharegpt";
-    const rawUrl = "https://sharegpt.com/api/conversations";
-    const shareUrl = clientConfig?.isApp ? rawUrl : proxyUrl;
-    const res = await fetch(shareUrl, {
-      body: JSON.stringify({
-        avatarUrl,
-        items: msgs,
-      }),
-      headers: {
-        "Content-Type": "application/json",
-      },
-      method: "POST",
-    });
-
-    const resJson = await res.json();
-    logger.info("[Share]", resJson);
-    if (resJson.id) {
-      return `https://shareg.pt/${resJson.id}`;
-    }
-  }
 }
 
 export function getBearerToken(
@@ -182,7 +132,7 @@ export function getBearerToken(
     : "";
 }
 
-export function validString(x: string): boolean {
+function validString(x: string): boolean {
   return x?.length > 0;
 }
 
@@ -231,23 +181,6 @@ export function getHeaders(
   }
 
   return headers;
-}
-
-/**
- * Check if custom BASE_URL is configured (e.g., OpenRouter, Cloudflare AI Gateway)
- * When custom BASE_URL is set, all models should use OpenAI-compatible API
- */
-export function hasCustomBaseUrl(): boolean {
-  const accessStore = useAccessStore.getState();
-  // Check if server has custom BASE_URL configured (via environment variable)
-  if (accessStore.hasCustomBaseUrl) {
-    return true;
-  }
-  // Check if user enabled custom config with a custom URL (via settings page)
-  if (accessStore.useCustomConfig && accessStore.openaiUrl) {
-    return true;
-  }
-  return false;
 }
 
 export function getClientApi(provider: ServiceProvider): ClientApi {

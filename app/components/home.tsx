@@ -186,10 +186,7 @@ const useHasHydrated = () => {
 
 const loadAsyncGoogleFont = () => {
   const linkEl = document.createElement("link");
-  const proxyFontUrl = "/google-fonts";
-  const remoteFontUrl = "https://fonts.googleapis.com";
-  const googleFontUrl =
-    getClientConfig()?.buildMode === "export" ? remoteFontUrl : proxyFontUrl;
+  const googleFontUrl = "/google-fonts";
   linkEl.rel = "stylesheet";
   linkEl.href =
     googleFontUrl +
@@ -218,7 +215,7 @@ function Screen() {
 
   const isMobileScreen = useMobileScreen();
   const shouldTightBorder =
-    getClientConfig()?.isApp || (tightBorder && !isMobileScreen);
+    tightBorder && !isMobileScreen;
 
   useEffect(() => {
     const idleWindow = window as Window & {

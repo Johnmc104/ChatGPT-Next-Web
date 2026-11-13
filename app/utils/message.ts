@@ -22,7 +22,7 @@ export function getMessageTextContent(message: RequestMessage) {
  * Remove reasoning blocks written by the stream renderer
  * (`<!--THINKING-->…<!--/THINKING-->`) and raw `<think>…</think>` tags.
  * An unterminated block (stream cut off mid-reasoning) is removed to the end.
- * Unlike getMessageTextContentWithoutThinking, ordinary blockquotes are kept.
+ * Ordinary blockquotes are kept.
  */
 export function stripThinkingBlocks(text: string): string {
   if (!text.includes("<!--THINKING-->") && !text.includes("<think>")) {
@@ -51,57 +51,6 @@ export function stripThinkingFromContent<T extends RequestMessage["content"]>(
       ? { ...part, text: stripThinkingBlocks(part.text) }
       : part,
   ) as T;
-}
-
-export function getMessageTextContentWithoutThinking(message: RequestMessage) {
-  let content = "";
-
-  if (typeof message.content === "string") {
-    content = message.content;
-  } else if (Array.isArray(message.content)) {
-    for (const c of message.content) {
-      if (c.type === "text") {
-        content = c.text ?? "";
-        break;
-      }
-    }
-  } else {
-    content =
-      typeof message.content === "object" && message.content !== null
-        ? JSON.stringify(message.content)
-        : String(message.content ?? "");
-  }
-
-  // New format: strip content between <!--THINKING--> and <!--/THINKING--> markers
-  if (content.includes("<!--THINKING-->")) {
-    return content
-      .replace(/<!--THINKING-->[\s\S]*?<!--\/THINKING-->/g, "")
-      .replace(/\n{3,}/g, "\n\n")
-      .trim();
-  }
-
-  // Backward compatibility: strip leading blockquote lines (old thinking format)
-  const lines = content.split("\n");
-  let thinkingEndIndex = 0;
-  for (let i = 0; i < lines.length; i++) {
-    const line = lines[i];
-    if (line.startsWith("> ") || line.trim() === "") {
-      thinkingEndIndex = i + 1;
-    } else {
-      break;
-    }
-  }
-
-  if (thinkingEndIndex > 0) {
-    const hasBlockquote = lines
-      .slice(0, thinkingEndIndex)
-      .some((l) => l.startsWith("> "));
-    if (hasBlockquote) {
-      return lines.slice(thinkingEndIndex).join("\n").trim();
-    }
-  }
-
-  return content.trim();
 }
 
 export function getMessageImages(message: RequestMessage): string[] {

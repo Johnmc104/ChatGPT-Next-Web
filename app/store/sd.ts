@@ -10,7 +10,6 @@ import { nanoid } from "nanoid";
 import { cacheBase64Image } from "@/app/services/media/image";
 import {
   models,
-  getModelParamBasicData,
   SdFormData,
   SdModelConfig,
 } from "./sd-config";
@@ -34,11 +33,6 @@ const defaultModel: SdModelRef = {
   name: models[0].name,
   value: models[0].value,
 };
-
-// Lazy — models[0].params() reads Locale which is unavailable during SSR
-function getDefaultParams(): SdFormData {
-  return getModelParamBasicData(models[0].params({}), {});
-}
 
 const DEFAULT_SD_STATE = {
   currentId: 0,
@@ -67,13 +61,6 @@ export const useSdStore = createPersistStore<
 >(
   DEFAULT_SD_STATE,
   (set, _get) => {
-    function get() {
-      return {
-        ..._get(),
-        ...methods,
-      };
-    }
-
     const methods = {
       getNextId() {
         const id = _get().currentId + 1;

@@ -4,7 +4,7 @@
  * Extracted from chat.tsx — Sprint 2.1 (Phase 2).
  */
 
-import React, { useState } from "react";
+import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 
 import ResetIcon from "../icons/reload.svg";

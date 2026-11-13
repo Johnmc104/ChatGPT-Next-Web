@@ -8,7 +8,6 @@ import {
   createTimeoutController,
   buildUpstreamHeaders,
   cleanResponseHeaders,
-  SKIP_HEADERS,
 } from "@/app/api/url-builder";
 
 // --- normalizeBaseUrl ---

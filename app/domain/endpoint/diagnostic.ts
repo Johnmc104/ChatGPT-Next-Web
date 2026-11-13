@@ -6,7 +6,6 @@ export interface EndpointDiagnosticConfig {
   apiKey: string;
   provider?: ServiceProvider;
   apiVersion?: string;
-  isApp?: boolean;
   accessCode?: string;
 }
 
@@ -34,24 +33,14 @@ export function buildEndpointDiagnostic(config: EndpointDiagnosticConfig) {
   target.hash = "";
   const key = config.apiKey.trim();
   const headers: Record<string, string> = { Accept: "application/json" };
-  const direct = !relative && config.isApp;
-  if (direct) {
-    if (key) {
-      headers[
-        provider === ServiceProvider.Azure ? "api-key" : "Authorization"
-      ] = provider === ServiceProvider.Azure ? key : `Bearer ${key}`;
-    }
-  } else {
-    if (config.accessCode?.trim()) {
-      headers.Authorization = `Bearer ${ACCESS_CODE_PREFIX}${config.accessCode.trim()}`;
-    } else if (key) {
-      headers.Authorization = `Bearer ${key}`;
-    }
-    if (key) headers["X-User-Api-Key"] = key;
-    if (provider === ServiceProvider.Azure && key) headers["api-key"] = key;
+  if (config.accessCode?.trim()) {
+    headers.Authorization = `Bearer ${ACCESS_CODE_PREFIX}${config.accessCode.trim()}`;
+  } else if (key) {
+    headers.Authorization = `Bearer ${key}`;
   }
+  if (key) headers["X-User-Api-Key"] = key;
+  if (provider === ServiceProvider.Azure && key) headers["api-key"] = key;
   if (relative) return { url: target.pathname + target.search, headers };
-  if (direct) return { url: target.toString(), headers };
   // Give the server proxy an origin and an already-normalized request path.
   headers["X-Base-URL"] = target.origin;
   return { url: `/api/proxy${target.pathname}${target.search}`, headers };

@@ -1,6 +1,5 @@
 import styles from "./ui-lib.module.scss";
 import { createRoot } from "react-dom/client";
-import React from "react";
 
 export type ToastProps = {
   content: string;

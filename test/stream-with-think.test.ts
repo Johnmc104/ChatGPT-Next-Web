@@ -16,7 +16,6 @@ jest.mock("@/app/store", () => ({}));
 jest.mock("@/app/utils/model-detection", () => ({
   getTimeoutMSByModel: () => 120_000,
 }));
-jest.mock("@/app/utils/stream", () => ({ fetch: jest.fn() }));
 
 import Locale from "../app/locales";
 import { parseChatCompletionChunk } from "../app/domain/chat/sse";

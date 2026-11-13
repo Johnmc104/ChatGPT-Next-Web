@@ -1,15 +1,13 @@
 import { testEndpointConnection } from "../app/services/endpoint/test";
-import { fetch as platformFetch } from "../app/utils/stream";
 
-jest.mock("../app/config/client", () => ({
-  getClientConfig: () => ({ isApp: false }),
-}));
 jest.mock("../app/store/access", () => ({
   useAccessStore: { getState: () => ({ accessCode: "" }) },
 }));
-jest.mock("../app/utils/stream", () => ({ fetch: jest.fn() }));
-const fetchMock = platformFetch as jest.Mock;
-beforeEach(() => fetchMock.mockReset());
+const fetchMock = jest.fn();
+beforeEach(() => {
+  fetchMock.mockReset();
+  global.fetch = fetchMock as unknown as typeof fetch;
+});
 afterEach(() => jest.useRealTimers());
 
 test.each([
