@@ -6,7 +6,8 @@ import {
   forwardRef,
   useImperativeHandle,
 } from "react";
-import { useParams } from "react-router";
+import { useParams } from "react-router-dom";
+import { getHeaders } from "../client/api";
 import { IconButton } from "./button";
 import { nanoid } from "nanoid";
 import ExportIcon from "../icons/share.svg";
@@ -129,6 +130,8 @@ export function ArtifactsShareButton({
       ? Promise.resolve({ id })
       : fetch(ApiPath.Artifacts, {
           method: "POST",
+          // Authorization only; the body is raw HTML, not JSON.
+          headers: getHeaders(true),
           body: code,
         })
           .then((res) => res.json())

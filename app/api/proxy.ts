@@ -9,12 +9,69 @@ import {
   cleanResponseHeaders,
   createTimeoutController,
   fetchWithRetry,
+  normalizeBaseUrl,
 } from "./url-builder";
 import { logger } from "@/app/utils/logger";
+
+export interface ProxyTarget {
+  /** Upstream configured on the server. Only it may receive the server key. */
+  serverBaseUrl: string;
+  /** Provider used for authentication and server-key selection. */
+  provider: ModelProvider;
+  /** Whether the client may choose the upstream via `X-Base-URL`. */
+  allowClientBaseUrl: boolean;
+}
+
+export type ResolvedUpstream =
+  { baseUrl: string; trusted: boolean } | { error: string };
+
+/**
+ * Decide which upstream a proxied request goes to and whether it is the
+ * server's own upstream ("trusted"). Server credentials must never be sent
+ * to an upstream the client picked: an access-code holder could otherwise
+ * point `X-Base-URL` at their own host and receive the server API key.
+ */
+export function resolveUpstream(
+  clientBaseUrl: string | null,
+  target: ProxyTarget,
+): ResolvedUpstream {
+  const serverBaseUrl = target.serverBaseUrl.trim();
+  const requested = target.allowClientBaseUrl ? clientBaseUrl?.trim() : "";
+
+  if (requested) {
+    let protocol: string;
+    try {
+      protocol = new URL(normalizeBaseUrl(requested)).protocol;
+    } catch {
+      return { error: "invalid upstream URL" };
+    }
+    if (protocol !== "https:" && protocol !== "http:") {
+      return { error: "unsupported upstream protocol" };
+    }
+    const trusted =
+      !!serverBaseUrl &&
+      normalizeBaseUrl(requested) === normalizeBaseUrl(serverBaseUrl);
+    return { baseUrl: requested, trusted };
+  }
+
+  if (!serverBaseUrl) {
+    return { error: "upstream URL is not configured on the server" };
+  }
+  return { baseUrl: serverBaseUrl, trusted: true };
+}
+
+function defaultTarget(): ProxyTarget {
+  return {
+    serverBaseUrl: getServerSideConfig().baseUrl ?? "",
+    provider: ModelProvider.GPT,
+    allowClientBaseUrl: true,
+  };
+}
 
 export async function handle(
   req: NextRequest,
   { params }: { params: Promise<{ path: string[] }> },
+  target: ProxyTarget = defaultTarget(),
 ) {
   const resolvedParams = await params;
   logger.debug("[Proxy Route] params", resolvedParams);
@@ -23,36 +80,39 @@ export async function handle(
     return NextResponse.json({ body: "OK" }, { status: 200 });
   }
 
-  // Authenticate the request
-  const authResult = await auth(req, ModelProvider.GPT);
+  const authResult = await auth(req, target.provider);
   if (authResult.error) {
     return NextResponse.json(authResult, { status: 401 });
   }
 
-  const serverConfig = getServerSideConfig();
+  const upstream = resolveUpstream(req.headers.get("x-base-url"), target);
+  if ("error" in upstream) {
+    return NextResponse.json(
+      { error: true, message: upstream.error },
+      { status: 400 },
+    );
+  }
 
   // remove path params from searchParams
   req.nextUrl.searchParams.delete("path");
   req.nextUrl.searchParams.delete("provider");
 
-  const subpath = resolvedParams.path.join("/");
-  const baseUrl = req.headers.get("x-base-url") || serverConfig.baseUrl || "";
-  const queryString = req.nextUrl.searchParams.toString();
-
   const fetchUrl = buildFetchUrl({
-    baseUrl,
-    requestPath: subpath,
-    queryString,
+    baseUrl: upstream.baseUrl,
+    requestPath: resolvedParams.path.join("/"),
+    queryString: req.nextUrl.searchParams.toString(),
     useCloudflareGateway: true,
   });
 
-  logger.info("[Proxy] fetchUrl:", fetchUrl);
+  logger.info("[Proxy] fetchUrl:", fetchUrl, "trusted:", upstream.trusted);
 
-  // Build clean upstream headers
   const headers = buildUpstreamHeaders(req);
-
-  // Set Authorization header using unified resolver
-  const authValue = resolveAuthHeaderValue(req, authResult);
+  // A client-chosen upstream only receives the user's own credentials.
+  const authValue = resolveAuthHeaderValue(
+    req,
+    upstream.trusted ? authResult : undefined,
+  );
+  headers.delete("authorization");
   if (authValue) {
     headers.set("Authorization", authValue);
   }

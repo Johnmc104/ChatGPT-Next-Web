@@ -2,6 +2,8 @@ import md5 from "spark-md5";
 import { NextRequest, NextResponse } from "next/server";
 import { getServerSideConfig } from "@/app/config/server";
 import { logger } from "@/app/utils/logger";
+import { ModelProvider } from "@/app/constant";
+import { auth } from "../auth";
 
 async function handle(
   req: NextRequest,
@@ -14,6 +16,15 @@ async function handle(
     Authorization: `Bearer ${serverConfig.cloudflareKVApiKey}`,
   });
   if (req.method === "POST") {
+    // Saving is restricted to authorized users: artifacts are rendered as
+    // HTML under this domain. Reading stays public so share links work.
+    const authResult = await auth(req, ModelProvider.GPT);
+    if (authResult.error) {
+      return NextResponse.json(
+        { error: true, code: authResult.code },
+        { status: 401 },
+      );
+    }
     const clonedBody = await req.text();
     const hashedCode = md5.hash(clonedBody).trim();
     const body: {

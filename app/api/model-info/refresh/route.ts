@@ -1,4 +1,6 @@
-import { NextResponse } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
+import { ModelProvider } from "@/app/constant";
+import { auth } from "../../auth";
 
 import { refreshModelInfo, getModelInfoCache } from "../cache";
 import { logger } from "@/app/utils/logger";
@@ -7,12 +9,17 @@ import { logger } from "@/app/utils/logger";
  * POST /api/model-info/refresh
  *
  * Manually trigger a refresh of the model info cache from OpenRouter.
- * Reserved for admin use — trigger via:
- *   curl -X POST http://localhost:3000/api/model-info/refresh
- *
- * No authentication for now (manual curl only, not exposed in UI).
+ * Requires the same authorization as chat requests, e.g.
+ *   curl -X POST -H "Authorization: Bearer nk-<code>" <site>/api/model-info/refresh
  */
-async function handle() {
+async function handle(req: NextRequest) {
+  const authResult = await auth(req, ModelProvider.GPT);
+  if (authResult.error) {
+    return NextResponse.json(
+      { success: false, code: authResult.code },
+      { status: 401 },
+    );
+  }
   try {
     const count = await refreshModelInfo();
     const { updated_at } = getModelInfoCache();

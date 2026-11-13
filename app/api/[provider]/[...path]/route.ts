@@ -1,4 +1,5 @@
-import { ApiPath } from "@/app/constant";
+import { ApiPath, ModelProvider } from "@/app/constant";
+import { getServerSideConfig } from "@/app/config/server";
 import { NextRequest, NextResponse } from "next/server";
 import { handle as openaiHandler } from "../../openai";
 import { handle as proxyHandler } from "../../proxy";
@@ -16,6 +17,17 @@ async function handle(
   // OpenAI and Azure have special handling (GPT-4 filtering, Azure URL rewriting).
   // Everything else is a generic proxy pass-through.
   switch (apiPath) {
+    case ApiPath.RAGFlow:
+      // RAGFlow is a separate service: fixed upstream and its own key.
+      return proxyHandler(
+        req,
+        { params: Promise.resolve({ path: resolvedParams.path }) },
+        {
+          serverBaseUrl: getServerSideConfig().ragflowUrl ?? "",
+          provider: ModelProvider.RAGFlow,
+          allowClientBaseUrl: false,
+        },
+      );
     case ApiPath.Azure:
     case ApiPath.OpenAI:
     case ApiPath.Stability:

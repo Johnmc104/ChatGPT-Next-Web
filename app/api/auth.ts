@@ -93,8 +93,12 @@ export async function auth(
 
     // Unified proxy fallback: when a provider-specific key is not configured
     // but BASE_URL is set (unified proxy mode), fall back to the default apiKey.
-    // This allows all providers to share the same API key through the proxy.
-    if (!systemApiKey && serverConfig.baseUrl) {
+    // RAGFlow is a separate service and never receives the main API key.
+    if (
+      !systemApiKey &&
+      serverConfig.baseUrl &&
+      modelProvider !== ModelProvider.RAGFlow
+    ) {
       logger.info(
         "[Auth] provider-specific key not set, falling back to default apiKey (unified proxy mode)",
       );
