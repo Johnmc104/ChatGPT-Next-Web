@@ -18,6 +18,7 @@ export class RAGFlowApi extends BaseOpenAICompatibleApi {
       apiPath: ApiPath.RAGFlow,
       chatPath: RAGFlow.ChatPath,
       supportsVision: false,
+      serverManagedAuth: true,
     });
   }
 }

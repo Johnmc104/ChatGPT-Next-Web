@@ -15,7 +15,6 @@ import { REQUEST_TIMEOUT_MS } from "@/app/constant";
 import {
   useAccessStore,
   useAppConfig,
-  useChatStore,
   ChatMessageTool,
   usePluginStore,
   ModelConfig,
@@ -114,6 +113,12 @@ export interface ProviderConfig {
    * - "auto": check isVisionModel(model) to decide
    */
   supportsVision?: boolean | "auto";
+
+  /**
+   * When true the server holds the provider key (e.g. RAGFlow), so the
+   * user's OpenAI key is never attached to these requests.
+   */
+  serverManagedAuth?: boolean;
 }
 
 // ---------------------------------------------------------------------------
@@ -159,6 +164,12 @@ export class BaseOpenAICompatibleApi implements LLMApi {
     logger.info("[Proxy Endpoint] ", baseUrl, path);
 
     return [baseUrl, path].join("/");
+  }
+
+  protected requestHeaders() {
+    return getHeaders(false, undefined, {
+      omitUserApiKey: !!this.config.serverManagedAuth,
+    });
   }
 
   // ---- Response extraction -----------------------------------------------
@@ -325,10 +336,9 @@ export class BaseOpenAICompatibleApi implements LLMApi {
     }
 
     const modelConfig = {
+      // Request-scoped: the caller passes the target session's config.
       ...useAppConfig.getState().modelConfig,
-      ...useChatStore.getState().currentSession().mask.modelConfig,
-      model: options.config.model,
-      providerName: options.config.providerName,
+      ...options.config,
     };
 
     const shouldStream = !!options.config.stream;
@@ -353,20 +363,18 @@ export class BaseOpenAICompatibleApi implements LLMApi {
         method: "POST",
         body: JSON.stringify(requestPayload),
         signal: controller.signal,
-        headers: getHeaders(),
+        headers: this.requestHeaders(),
       };
 
       if (shouldStream) {
         const [tools, funcs] = usePluginStore
           .getState()
-          .getAsTools(
-            useChatStore.getState().currentSession().mask?.plugin || [],
-          );
+          .getAsTools(options.plugins ?? []);
 
         return streamWithThink(
           chatPath,
           requestPayload,
-          getHeaders(),
+          this.requestHeaders(),
           tools as ChatMessageTool[],
           funcs,
           controller,

@@ -379,6 +379,7 @@ export function createChatActions(
     api.llm.chat({
       messages: sendMessages,
       config: { ...modelConfig, stream: true },
+      plugins: session.mask.plugin ?? [],
       onUpdate(message) {
         botMessage.streaming = true;
         if (message) {

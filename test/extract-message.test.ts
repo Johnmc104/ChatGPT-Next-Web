@@ -8,6 +8,8 @@ jest.mock("../app/services/model/capabilities", () => ({
 
 // We test extractMessage in isolation by instantiating ChatGPTApi directly.
 // Mock the store dependencies that ChatGPTApi constructor/methods use.
+const mockGetAsTools = jest.fn((_ids: string[]) => [[], []]);
+
 jest.mock("@/app/store", () => ({
   useAccessStore: {
     getState: () => ({
@@ -28,7 +30,9 @@ jest.mock("@/app/store", () => ({
       }),
     }),
   },
-  usePluginStore: { getState: () => ({ getAsTools: () => [[], []] }) },
+  usePluginStore: {
+    getState: () => ({ getAsTools: (ids: string[]) => mockGetAsTools(ids) }),
+  },
   ChatControllerPool: { addController: jest.fn(), remove: jest.fn() },
 }));
 
@@ -339,7 +343,8 @@ describe("chat request payload", () => {
     { role: "user", content: "first" },
     {
       role: "assistant",
-      content: "<!--THINKING-->\n> private reasoning\n<!--/THINKING-->\n\nreply",
+      content:
+        "<!--THINKING-->\n> private reasoning\n<!--/THINKING-->\n\nreply",
     },
     {
       role: "user",
@@ -361,11 +366,45 @@ describe("chat request payload", () => {
 
   test("strips reasoning blocks from assistant history", async () => {
     const payload = await sentPayload("gpt-4o", history);
-    const assistant = payload.messages.find(
-      (m: any) => m.role === "assistant",
-    );
+    const assistant = payload.messages.find((m: any) => m.role === "assistant");
     expect(assistant.content).toBe("reply");
     // The user's image is still sent.
     expect(JSON.stringify(payload.messages.at(-1))).toContain("image_url");
+  });
+});
+
+describe("request scoping", () => {
+  const { streamWithThink } = jest.requireMock("@/app/services/chat/stream");
+
+  test("uses the request's config and plugins, not the current session", async () => {
+    (streamWithThink as jest.Mock).mockClear();
+    const api = new ChatGPTApi();
+    jest.spyOn(api, "path").mockReturnValue("/fixture/chat");
+    await api.chat({
+      messages: [{ role: "user", content: "hi" }],
+      config: {
+        model: "gpt-4o",
+        providerName: "OpenAI",
+        stream: true,
+        temperature: 0.2,
+      },
+      onFinish: jest.fn(),
+    });
+    const [, payload] = (streamWithThink as jest.Mock).mock.calls[0];
+    expect(payload.temperature).toBe(0.2);
+    // No plugins requested → no tools, whatever the current session has.
+    expect(mockGetAsTools).toHaveBeenLastCalledWith([]);
+  });
+
+  test("passes the requested plugins to the tool registry", async () => {
+    const api = new ChatGPTApi();
+    jest.spyOn(api, "path").mockReturnValue("/fixture/chat");
+    await api.chat({
+      messages: [{ role: "user", content: "hi" }],
+      config: { model: "gpt-4o", providerName: "OpenAI", stream: true },
+      plugins: ["search"],
+      onFinish: jest.fn(),
+    });
+    expect(mockGetAsTools).toHaveBeenLastCalledWith(["search"]);
   });
 });

@@ -15,7 +15,6 @@ import {
   ChatMessage,
   ModelType,
   useAccessStore,
-  useChatStore,
 } from "../store";
 import { ChatGPTApi } from "./platforms/openai";
 import { RAGFlowApi } from "./platforms/ragflow";
@@ -67,6 +66,8 @@ export interface SpeechOptions {
 export interface ChatOptions {
   messages: RequestMessage[];
   config: LLMConfig;
+  /** Plugin ids whose tools may be called; omit for tool-less requests. */
+  plugins?: string[];
 
   onUpdate?: (message: string | MultimodalContent[], chunk: string) => void;
   // `message` may be a plain string for text completions, or a
@@ -188,6 +189,10 @@ export function validString(x: string): boolean {
 export function getHeaders(
   ignoreHeaders: boolean = false,
   customBaseUrl?: string,
+  options: {
+    /** Providers whose key is held by the server (RAGFlow) skip user keys. */
+    omitUserApiKey?: boolean;
+  } = {},
 ) {
   const accessStore = useAccessStore.getState();
   let headers: Record<string, string> = {};
@@ -203,16 +208,10 @@ export function getHeaders(
     headers["X-Base-URL"] = customBaseUrl;
   }
 
-  // ---------------------------------------------------------------------------
-  // Header logic for unified proxy + RAGFlow:
-  // - RAGFlow: auth is server-side (RAGFLOW_API_KEY env), no client key needed
-  // - Everything else: user's openaiApiKey for custom endpoints
-  // ---------------------------------------------------------------------------
-
-  const modelConfig = useChatStore.getState().currentSession().mask.modelConfig;
-  const isRAGFlow = modelConfig.providerName === ServiceProvider.RAGFlow;
   const apiKey =
-    isRAGFlow || accessStore.hideUserApiKey ? "" : accessStore.openaiApiKey;
+    options.omitUserApiKey || accessStore.hideUserApiKey
+      ? ""
+      : accessStore.openaiApiKey;
 
   // 1. Always send access code if available (for server-side authentication)
   if (validString(accessStore.accessCode)) {

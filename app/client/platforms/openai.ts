@@ -15,7 +15,6 @@ import {
   ChatMessageTool,
   useAccessStore,
   useAppConfig,
-  useChatStore,
   usePluginStore,
 } from "@/app/store";
 import { collectModelsWithDefaultModel } from "@/app/utils/model";
@@ -402,12 +401,9 @@ export class ChatGPTApi extends BaseOpenAICompatibleApi {
 
   async chat(options: ChatOptions) {
     const modelConfig = {
+      // Request-scoped: the caller passes the target session's config.
       ...useAppConfig.getState().modelConfig,
-      ...useChatStore.getState().currentSession().mask.modelConfig,
-      ...{
-        model: options.config.model,
-        providerName: options.config.providerName,
-      },
+      ...options.config,
     };
 
     let requestPayload: RequestPayload | ImageGenerationPayload;
@@ -559,9 +555,7 @@ export class ChatGPTApi extends BaseOpenAICompatibleApi {
       if (shouldStream) {
         const [tools, funcs] = usePluginStore
           .getState()
-          .getAsTools(
-            useChatStore.getState().currentSession().mask?.plugin || [],
-          );
+          .getAsTools(options.plugins ?? []);
         streamWithThink(
           chatPath,
           requestPayload,
