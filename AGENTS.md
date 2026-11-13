@@ -2,7 +2,7 @@
 
 ## Project Structure & Module Organization
 
-This Next.js/React application is deployed on Vercel. Application code, API routes, state, and UI components live under `app/`; static files are in `public/`. Jest tests are in `test/` and use `*.test.ts` or `*.test.tsx`. Build helpers are in `scripts/`. `plan/` holds the current engineering plans, reports and acceptance records; `docs/guides/` holds user guides and `docs/archive/` holds outdated early analyses kept for history. Keep provider behavior near its route or helper in `app/api/`.
+This Next.js/React application is deployed on Vercel. Application code, API routes, state, and UI components live under `app/`; static files are in `public/`. Jest tests are in `test/` and use `*.test.ts` or `*.test.tsx`. Build helpers are in `scripts/`. `plan/` holds the engineering plans, reports and acceptance records; `docs/` holds the user guide and FAQ (keep them in sync with user-visible behavior). Keep provider behavior near its route or helper in `app/api/`.
 
 ## Build, Test, and Development Commands
 

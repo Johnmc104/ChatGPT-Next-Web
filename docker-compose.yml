@@ -1,7 +1,7 @@
 services:
-  chatgpt-next-web:
+  nextchat:
     profiles: [ "no-proxy" ]
-    container_name: chatgpt-next-web
+    container_name: nextchat
     build: .
     image: nextchat
     ports:
@@ -16,9 +16,9 @@ services:
       - ENABLE_BALANCE_QUERY=$ENABLE_BALANCE_QUERY
       - DISABLE_FAST_LINK=$DISABLE_FAST_LINK
 
-  chatgpt-next-web-proxy:
+  nextchat-proxy:
     profiles: [ "proxy" ]
-    container_name: chatgpt-next-web-proxy
+    container_name: nextchat-proxy
     build: .
     image: nextchat
     ports:

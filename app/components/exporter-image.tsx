@@ -18,6 +18,7 @@ import NextImage from "next/image";
 
 import { MaskAvatar } from "./mask";
 import clsx from "clsx";
+import { REPO_URL } from "../constant";
 import { PreviewActions } from "./exporter";
 
 import LoadingIcon from "../icons/three-dots.svg";
@@ -97,11 +98,7 @@ export function ImagePreviewer(props: {
 
   return (
     <div className={styles["image-previewer"]}>
-      <PreviewActions
-        copy={copy}
-        download={download}
-        showCopy={!isMobile}
-      />
+      <PreviewActions copy={copy} download={download} showCopy={!isMobile} />
       <div
         className={clsx(styles["preview-body"], styles["default-theme"])}
         ref={previewRef}
@@ -119,7 +116,7 @@ export function ImagePreviewer(props: {
           <div>
             <div className={styles["main-title"]}>NextChat</div>
             <div className={styles["sub-title"]}>
-              github.com/ChatGPTNextWeb/ChatGPT-Next-Web
+              {REPO_URL.replace(/^https:\/\//, "")}
             </div>
             <div className={styles["icons"]}>
               <MaskAvatar avatar={config.avatar} />

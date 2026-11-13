@@ -445,7 +445,7 @@ export class ChatGPTApi extends BaseOpenAICompatibleApi {
         return;
       }
 
-      // O1 not support image, tools (plugin in ChatGPTNextWeb) and system, stream, logprobs, temperature, top_p, n, presence_penalty, frequency_penalty yet.
+      // o1/o3: no system messages; sampling parameters are pinned below.
       requestPayload = {
         messages,
         stream: options.config.stream,

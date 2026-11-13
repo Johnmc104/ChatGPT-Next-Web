@@ -59,7 +59,7 @@ export class MCPClientLogger {
     const formattedMessage = this.formatMessage(message);
     const logMessage = `${color}${colors.bright}[${this.prefix}]${colors.reset} ${formattedMessage}`;
 
-    // 只使用 console.log，这样日志会显示在 Tauri 的终端中
+    // 只使用 console.log，日志输出到服务端控制台
     // eslint-disable-next-line no-console
     console.log(logMessage);
   }

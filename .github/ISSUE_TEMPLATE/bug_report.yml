@@ -1,0 +1,40 @@
+name: 缺陷反馈
+description: 报告一个问题
+title: "[Bug] "
+labels: ["bug"]
+body:
+  - type: dropdown
+    attributes:
+      label: 部署方式
+      options:
+        - Vercel
+        - Docker
+        - 本地运行
+    validations:
+      required: true
+  - type: input
+    attributes:
+      label: 版本
+      description: 设置页显示的版本（commit 短哈希）
+    validations:
+      required: true
+  - type: input
+    attributes:
+      label: 浏览器与系统
+      placeholder: 例如 Chrome 140 / macOS
+  - type: input
+    attributes:
+      label: 模型与上游
+      description: 使用的模型名，以及走服务端 BASE_URL 还是自定义接口
+  - type: textarea
+    attributes:
+      label: 问题描述与复现步骤
+    validations:
+      required: true
+  - type: textarea
+    attributes:
+      label: 期望结果
+  - type: textarea
+    attributes:
+      label: 错误信息或截图
+      description: 回复中的错误 JSON、浏览器控制台或 Vercel 日志（请去掉 Key 和访问码）
